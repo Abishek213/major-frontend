@@ -1,0 +1,27 @@
+[
+    {
+      "id": 1,
+      "event_name": "Wedding Celebration",
+      "event_date": "2024-12-20",
+      "location": "Paris, France",
+      "category": "Weddings",
+      "host": "JohnDoe"
+    },
+    {
+      "id": 2,
+      "event_name": "Tech Conference 2024",
+      "event_date": "2024-12-25",
+      "location": "San Francisco, USA",
+      "category": "Conferences",
+      "host": "JaneSmith"
+    },
+    {
+      "id": 3,
+      "event_name": "New Year Party",
+      "event_date": "2024-12-31",
+      "location": "New York, USA",
+      "category": "Parties",
+      "host": "MikeJones"
+    }
+  ]
+  
