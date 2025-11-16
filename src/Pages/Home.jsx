@@ -2,16 +2,17 @@ import React, { useEffect } from 'react';
 import { Calendar, Users, MapPin, Trophy, Star, ArrowRight } from 'lucide-react';
 import { motion } from "framer-motion";
 import { useTheme } from '../context/ThemeContext';
-import eventImage from '../assets/images/event.webp';
-import communityImage from '../assets/images/community.webp';
-import locationImage from '../assets/images/location.jpg';
-import premiumImage from '../assets/images/premium.jpg';
-import bookingImage from '../assets/images/booking.jpg';
-import man1 from '../assets/images/man1.jpg';
-import man2 from '../assets/images/man2.jpg';
-import woman from '../assets/images/woman.jpg';
-import eventAofficeImage from '../assets/images/eventAoffice.webp';
-import ceoImage from '../assets/images/ceo.png';
+import eventImage from '../../assets/images/event.webp';
+import communityImage from '../../assets/images/community.webp';
+import locationImage from '../../assets/images/location.jpg';
+import premiumImage from '../../assets/images/premium.jpg';
+import bookingImage from '../../assets/images/booking.jpg';
+import man1 from '../../assets/images/man1.jpg';
+import man2 from '../../assets/images/man2.jpg';
+import woman from '../../assets/images/woman.jpg';
+import eventAOfficeImage from '../../assets/images/eventAoffice.webp';
+import ceoImage from '../../assets/images/ceo.png';
+
 
 const Home = () => {
   const { isDarkMode } = useTheme();
