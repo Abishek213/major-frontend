@@ -6,9 +6,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@Components/ui/select";
-import { Button } from "@Components/ui/button";
-import { Input } from "@Components/ui/input";
+} from "@components/ui/select";
+import { Button } from "@components/ui/button";
+import { Input } from "@components/ui/input";
 import api from '../../../utils/api';
 
 const CategoriesManagement = ({ isDarkMode }) => {
