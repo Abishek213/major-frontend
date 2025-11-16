@@ -3,10 +3,10 @@ import { Calendar, Users, MapPin, Trophy, Star, ArrowRight } from 'lucide-react'
 import { motion } from "framer-motion";
 import { useTheme } from '../context/ThemeContext';
 import eventImage from '../assets/images/event.webp';
-import communityImage from '../assets/images/community.webp';
-import locationImage from '../assets/images/location.jpg';
-import premiumImage from '../assets/images/premium.jpg';
-import bookingImage from '../assets/images/booking.jpg';
+//import communityImage from '../assets/images/Community.webp';
+//import locationImage from '../assets/images/location.jpg';
+//import premiumImage from '../assets/images/premium.jpg';
+//import bookingImage from '../assets/images/booking.jpg';
 import Man1 from '../assets/images/man1.jpg';
 import Man2 from '../assets/images/man2.jpg';
 import Woman from '../assets/images/woman.jpg';
