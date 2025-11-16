@@ -3,7 +3,7 @@ import { Calendar, Users, MapPin, Trophy, Star, ArrowRight } from 'lucide-react'
 import { motion } from "framer-motion";
 import { useTheme } from '../context/ThemeContext';
 import eventImage from '../assets/images/event.webp';
-//import communityImage from '../assets/images/Community.webp';
+
 //import locationImage from '../assets/images/location.jpg';
 //import premiumImage from '../assets/images/premium.jpg';
 //import bookingImage from '../assets/images/booking.jpg';
