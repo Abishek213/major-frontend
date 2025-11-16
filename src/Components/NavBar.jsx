@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import eventA from "../assets/images/eventA.png";
+
 import { useTheme } from '../context/ThemeContext';
 import { useSidebar } from '../context/SidebarContext';
 import NotificationDropdown from './NotificationDropdown';
@@ -152,7 +152,7 @@ const renderDashboardNavbar = () => {
         <div className="flex items-center justify-between w-full">
           {/* Logo Left */}
           <Link to="/" className="flex items-center">
-            <img src={eventA} alt="logo" className={`h-12 w-auto ${isDarkMode ? 'invert' : ''}`} />
+            <img src='/images/eventA.png' alt="logo" className={`h-12 w-auto ${isDarkMode ? 'invert' : ''}`} />
           </Link>
 
           {/* Center Navigation */}
