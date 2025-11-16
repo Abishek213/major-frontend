@@ -3,7 +3,7 @@ import { Mail, Phone, MessageSquare, Send, MapPin } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import emailjs from '@emailjs/browser';
 import { motion } from 'framer-motion';
-import contactimage from '../../assets/images/contactimage.avif;';
+
 
 const Contact = () => {
   const { isDarkMode } = useTheme();
@@ -101,7 +101,7 @@ const Contact = () => {
           {/* 3D Motion Image */}
           <div className="w-full h-full flex justify-center items-center">
             <motion.img
-              src={contactimage}
+              src='/images/contactimage.avif'// Changed to absolute path
               alt="3D Motion Image"
               className="rounded-2xl shadow-xl w-full max-w-sm"
               initial={{ scale: 1, rotateY: 0 }}

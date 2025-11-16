@@ -2,12 +2,6 @@ import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Users, MapPin, Trophy, Check, ArrowRight } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import eventImage from '../../assets/images/event.webp';
-import communityImage from '../../assets/images/community.webp';
-import locationImage from '../../assets/images/location.jpg';
-import premiumImage from '../../assets/images/premium.jpg';
-import bookingImage from '../../assets/images/booking.jpg';
-
 
 const About = () => {
   const { isDarkMode } = useTheme();
@@ -39,36 +33,37 @@ const About = () => {
   ];
 
   const features = [
-    {
+        {
       icon: <Calendar className={`w-8 h-8 ${isDarkMode ? 'text-gray-400' : 'text-blue-500'}`} />,
       title: 'Event Creation & Customization',
       description: 'Create and manage events effortlessly with our intuitive interface',
-      image: eventImage,
+      image: '/images/event.webp', // Changed to absolute path
     },
     {
       icon: <Calendar className={`w-8 h-8 ${isDarkMode ? 'text-gray-400' : 'text-blue-500'}`} />,
       title: 'Seamless Ticket Booking',
       description: 'Create and manage events effortlessly with our intuitive interface',
-      image: bookingImage,
+      image: '/images/booking.jpg', // Changed to absolute path
     },
     {
       icon: <Users className={`w-8 h-8 ${isDarkMode ? 'text-gray-400' : 'text-blue-500'}`} />,
       title: 'Community Building',
       description: 'Connect with like-minded people and build your community',
-      image: communityImage,
+      image: '/images/community.webp', // Changed to absolute path
     },
     {
       icon: <MapPin className={`w-8 h-8 ${isDarkMode ? 'text-gray-400' : 'text-blue-500'}`} />,
       title: 'Location Services',
       description: 'Find events near you with advanced location filtering',
-      image: locationImage,
+      image: '/images/location.jpg', // Changed to absolute path
     },
     {
       icon: <Trophy className={`w-8 h-8 ${isDarkMode ? 'text-gray-400' : 'text-blue-500'}`} />,
       title: 'Premium Features',
       description: 'Access exclusive features and premium event content',
-      image: premiumImage,
+      image: '/images/premium.jpg', // Changed to absolute path
     },
+  
   ];
 
   return (
