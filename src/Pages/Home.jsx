@@ -7,10 +7,10 @@ import communityImage from '../assets/images/community.webp';
 import locationImage from '../assets/images/location.jpg';
 import premiumImage from '../assets/images/premium.jpg';
 import bookingImage from '../assets/images/booking.jpg';
-import Man1 from '../assets/images/man1.jpg';
-import Man2 from '../assets/images/man2.jpg';
-import Woman from '../assets/images/woman.jpg';
-import eventAOfficeImage from '../assets/images/eventAoffice.webp';
+import man1 from '../assets/images/man1.jpg';
+import man2 from '../assets/images/man2.jpg';
+import woman from '../assets/images/woman.jpg';
+import eventAofficeImage from '../assets/images/eventAoffice.webp';
 import ceoImage from '../assets/images/ceo.png';
 
 const Home = () => {
