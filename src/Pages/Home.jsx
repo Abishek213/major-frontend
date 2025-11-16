@@ -6,8 +6,8 @@ import eventImage from '../../assets/images/event.webp';
 import communityImage from '../../assets/images/community.webp';
 import locationImage from '../../assets/images/location.jpg';
 import premiumImage from '../../assets/images/premium.jpg';
-import bookingImage from '../../assets/images/booking.jpg';
-import man1 from '../../assets/images/man1.jpg';
+import booking from '../../assets/images/booking.jpg';
+import man from '../../assets/images/man.jpg';
 import man2 from '../../assets/images/man2.jpg';
 import woman from '../../assets/images/woman.jpg';
 import eventAOfficeImage from '../../assets/images/eventAoffice.webp';
@@ -27,7 +27,7 @@ const Home = () => {
       role: 'Event Organizer',
       content: 'eventA has transformed how I manage my events. The platform is intuitive and powerful.',
       rating: 5,
-      image: man1,
+      image: man,
     },
     {
       name: 'Michael Chen',
