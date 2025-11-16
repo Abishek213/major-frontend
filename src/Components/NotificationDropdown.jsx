@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useNotifications } from '../context/NotificationContext';
+import { useNotifications } from '@/context/NotificationContext';
 import { formatDistance } from 'date-fns';
 import { Bell, Filter, Check, Loader, Trash2 } from 'lucide-react';
 

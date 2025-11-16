@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
-import { useSidebar } from '../context/SidebarContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useSidebar } from '@/context/SidebarContext';
 import { 
   adminDashboardConfig, 
   organizerDashboardConfig, 

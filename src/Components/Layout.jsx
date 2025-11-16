@@ -1,9 +1,9 @@
 import PropTypes from "prop-types";
 import NavBar from "./NavBar";
 import Footer from "./Footer";
-import { ThemeProvider } from '../context/ThemeContext';
-import { SidebarProvider, useSidebar } from '../context/SidebarContext';
-import { ErrorBoundary } from '../Components/ErrorBoundary';
+import { ThemeProvider } from '@/context/ThemeContext';
+import { SidebarProvider, useSidebar } from '@/context/SidebarContext';
+import { ErrorBoundary } from '@/Components/ErrorBoundary';
 
 const LayoutContent = ({ children }) => {
   const { isSidebarOpen } = useSidebar();

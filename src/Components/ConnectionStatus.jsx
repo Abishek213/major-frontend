@@ -1,7 +1,7 @@
 import React from 'react';
 import { AlertCircle, WifiOff } from "lucide-react";
-import { Alert, AlertDescription } from '../components/ui/alert';
-import { useTheme } from '../context/ThemeContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTheme } from '@/context/ThemeContext';
 
 const ConnectionStatus = ({ 
   isConnected, 

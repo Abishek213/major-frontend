@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Routes, Route, Navigate } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
-import { clearAuth } from '../utils/auth';
-import { useSidebar } from '../context/SidebarContext';
-import { ErrorBoundary } from '../Components/ErrorBoundary';
-import { Spinner } from '../Components/ui/spinner';
+import { useTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/context/AuthContext';
+import { clearAuth } from '@/utils/auth';
+import { useSidebar } from '@/context/SidebarContext';
+import { ErrorBoundary } from '@/Components/ErrorBoundary';
+import { Spinner } from '@/Components/ui/spinner';
 import NavBar from './NavBar';
 import Sidebar from './Sidebar';
 import { adminDashboardConfig, organizerDashboardConfig, userDashboardConfig } from '../config/dashboardConfig';

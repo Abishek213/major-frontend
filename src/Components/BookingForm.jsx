@@ -6,7 +6,7 @@ import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Loader2 } from 'lucide-react';
-import api from '../utils/api';
+import api from '@/utils/api';
 
 const PAYMENT_METHODS = {
   ESEWA: {

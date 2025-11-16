@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { useTheme } from '../context/ThemeContext';
-import { useSidebar } from '../context/SidebarContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useSidebar } from '@/context/SidebarContext';
 import NotificationDropdown from './NotificationDropdown';
-import { useNotifications } from '../context/NotificationContext';
-import ConnectionStatus from '../components/ConnectionStatus';
-import websocketManager from '../utils/websocketManager';
+import { useNotifications } from '@/context/NotificationContext';
+import ConnectionStatus from '@/components/ConnectionStatus';
+import websocketManager from '@/utils/websocketManager';
 import { jwtDecode } from "jwt-decode";
 import { 
   Bell, User, LogOut, Settings, 
