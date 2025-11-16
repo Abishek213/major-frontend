@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../utils/api';
 import { useNavigate } from 'react-router-dom';
-import websocketManager from '../../../utils/websocketManager';
+import websocketManager from '@utils/websocketManager';
 
 const EventsManagement = ({ isDarkMode }) => {
   const [pendingEvents, setPendingEvents] = useState([]);
