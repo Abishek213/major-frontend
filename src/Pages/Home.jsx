@@ -27,21 +27,21 @@ const Home = () => {
       role: 'Event Organizer',
       content: 'eventA has transformed how I manage my events. The platform is intuitive and powerful.',
       rating: 5,
-      image: Man1,
+      image: man1,
     },
     {
       name: 'Michael Chen',
       role: 'Regular Attendee',
       content: "I've discovered amazing events and met wonderful people through this platform.",
       rating: 5,
-      image: Man2,
+      image: man2,
     },
     {
       name: 'Emily Rodriguez',
       role: 'Community Leader',
       content: 'The best platform for creating and managing community events. Highly recommended!',
       rating: 5,
-      image: Woman,
+      image: woman,
     },
   ];
 
