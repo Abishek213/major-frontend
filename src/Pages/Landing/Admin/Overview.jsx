@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Users, CheckCircle, Tag, Filter, FileText, Clock, Shield, ChevronDown } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Alert, AlertDescription } from '../../../Components/ui/alert';
+import { Alert, AlertDescription } from '@Components/ui/alert';
 import {
   DropdownMenu,
   DropdownMenuContent,
