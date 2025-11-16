@@ -2,17 +2,6 @@ import React, { useEffect } from 'react';
 import { Calendar, Users, MapPin, Trophy, Star, ArrowRight } from 'lucide-react';
 import { motion } from "framer-motion";
 import { useTheme } from '../context/ThemeContext';
-import eventImage from '../../assets/images/event.webp';
-import communityImage from '../../assets/images/community.webp';
-import locationImage from '../../assets/images/location.jpg';
-import premiumImage from '../../assets/images/premium.jpg';
-import booking from '../../assets/images/booking.jpg';
-import man from '../../assets/images/man.jpg';
-import man2 from '../../assets/images/man2.jpg';
-import woman from '../../assets/images/woman.jpg';
-import eventAOfficeImage from '../../assets/images/eventAoffice.webp';
-import ceoImage from '../../assets/images/ceo.png';
-
 
 const Home = () => {
   const { isDarkMode } = useTheme();
@@ -27,21 +16,21 @@ const Home = () => {
       role: 'Event Organizer',
       content: 'eventA has transformed how I manage my events. The platform is intuitive and powerful.',
       rating: 5,
-      image: man,
+     image: '/images/man1.jpg',
     },
     {
       name: 'Michael Chen',
       role: 'Regular Attendee',
       content: "I've discovered amazing events and met wonderful people through this platform.",
       rating: 5,
-      image: man2,
+       image: '/images/man2.jpg',
     },
     {
       name: 'Emily Rodriguez',
       role: 'Community Leader',
       content: 'The best platform for creating and managing community events. Highly recommended!',
       rating: 5,
-      image: woman,
+       image: '/images/woman.jpg',
     },
   ];
 
@@ -90,7 +79,7 @@ const Home = () => {
             </p>
           </div>
           <div className="flex-1 flex justify-center">
-            <img src={eventAOfficeImage} alt="eventA Office" className="rounded-2xl shadow-xl w-full max-w-lg object-cover" />
+            <img src="/images/eventAoffice.webp" alt="eventA Office" className="rounded-2xl shadow-xl w-full max-w-lg object-cover" />
           </div>
         </div>
       </div>
@@ -110,7 +99,7 @@ const Home = () => {
                 animate={{ scale: [1, 1.5, 1] }}
                 transition={{ repeat: Infinity, duration: 2 }}
               >
-                <img src={ceoImage} alt="CEO" className="w-full h-full object-cover rounded-full" />
+                <img src="/images/ceo.png" alt="CEO" className="w-full h-full object-cover rounded-full" />
               </motion.div>
               <h2 className="text-2xl font-semibold">Abishek Bhatta</h2>
               <p className="text-base text-gray-300">CEO of eventA</p>
