@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Button } from '../../../components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '../../../components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
+import { Button } from '@components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert';
 import { 
   CheckCircleIcon, 
   XCircleIcon, 
