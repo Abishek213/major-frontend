@@ -26,8 +26,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogAction
-} from '@components/ui/dialog';
-import websocketManager from '@utils/websocketManager';
+} from '@/components/ui/dialog';
+import websocketManager from '@/utils/websocketManager';
 
 // Improved helper function to organize categories with recursive support
 const organizeCategories = (categories) => {
