@@ -7,7 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown";
+} from "@/components/ui/dropdown.jsx";
 import api from '../../../utils/api';
 
 const OverviewDashboard = ({ isDarkMode }) => {

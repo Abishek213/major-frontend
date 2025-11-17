@@ -4,9 +4,9 @@ import {
   Calendar, MapPin, Clock, Users, Tag, User, CalendarCheck, Share2, XCircle, 
   Calendar as CalendarIcon, ArrowLeft, Check, Heart 
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.jsx';
+import { Button } from "@/components/ui/button.jsx";
 import api from '../../../utils/api';
 
 const EventDetails = ({ isDarkMode }) => {
