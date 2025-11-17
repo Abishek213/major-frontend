@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card.jsx';
+import { Card, CardContent } from '@/components/ui/card';
 import api from '../../../../utils/api';
 
 const BookingFailed = () => {
