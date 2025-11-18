@@ -16,7 +16,7 @@ const Home = () => {
       role: 'Event Organizer',
       content: 'eventA has transformed how I manage my events. The platform is intuitive and powerful.',
       rating: 5,
-     image: '/images/man1.jpg',
+     image: '/images/man.jpg',
     },
     {
       name: 'Michael Chen',

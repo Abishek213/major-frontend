@@ -265,7 +265,7 @@ const renderRegularNavbar = () => {
         <div className="flex items-center justify-between w-full">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <img src={eventA} alt="logo" className={`h-12 w-auto ${isDarkMode ? 'invert' : ''}`} />
+            <img src='/images/eventA.png' alt="logo" className={`h-12 w-auto ${isDarkMode ? 'invert' : ''}`} />
           </Link>
 
           {/* Center Menu */}
