@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import Layout from './Components/Layout';
+import Layout from './components/Layout';
 import Home from './Pages/Home';
 import PublicEvent from './Pages/PublicEvent';
 import About from './Pages/About';
@@ -9,8 +9,8 @@ import Contact from './Pages/Contact';
 import LoginSignup from './Pages/LoginSignup';
 import Userprofile from './Pages/Userprofile';
 import Usersettings from './Pages/UserSettings';
-import PrivateRoute from './Components/PrivateRoute';
-import Dashboard from './Components/Dashboard';
+import PrivateRoute from './components/PrivateRoute';
+import Dashboard from './components/Dashboard';
 import { organizerDashboardConfig, adminDashboardConfig, userDashboardConfig } from './config/dashboardConfig';
 
 const App = () => {

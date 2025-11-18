@@ -1,7 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { AuthProvider } from './context/AuthContext'
-import { ErrorBoundary } from './Components/ErrorBoundary'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { SidebarProvider } from './context/SidebarContext'
 import { NotificationProvider } from './context/NotificationContext'
 import App from './App'

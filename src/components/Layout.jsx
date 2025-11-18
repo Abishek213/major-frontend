@@ -3,7 +3,7 @@ import NavBar from "./NavBar";
 import Footer from "./Footer";
 import { ThemeProvider } from '@/context/ThemeContext';
 import { SidebarProvider, useSidebar } from '@/context/SidebarContext';
-import { ErrorBoundary } from '@/Components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const LayoutContent = ({ children }) => {
   const { isSidebarOpen } = useSidebar();

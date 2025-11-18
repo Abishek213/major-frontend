@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Phone  } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import api from "../utils/api";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogAction } from '../Components/ui/dialog';
-import { Alert, AlertTitle, AlertDescription } from '../Components/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogAction } from '../components/ui/dialog';
+import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
 
 const LoginSignup = () => {
   const { isDarkMode } = useTheme();
