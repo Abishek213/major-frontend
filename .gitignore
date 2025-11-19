@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.class
+*.log
+*.tsbuildinfo
+*.env
+.env.local
+.env.*.local
+.cache
