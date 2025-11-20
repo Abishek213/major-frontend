@@ -107,7 +107,7 @@ const NavBar = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
-    window.location.href = '/loginsignup';
+    navigate('/loginsignup');
   };
 
   const getNavigationItems = () => {
@@ -148,7 +148,7 @@ const renderDashboardNavbar = () => {
         marginLeft: isSidebarOpen ? '16rem' : '4rem',
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 py-4">
+      <div className="px-4 py-4 mx-auto max-w-7xl">
         <div className="flex items-center justify-between w-full">
           {/* Logo Left */}
           <Link to="/" className="flex items-center">
@@ -156,7 +156,7 @@ const renderDashboardNavbar = () => {
           </Link>
 
           {/* Center Navigation */}
-          <div className="hidden lg:flex justify-center flex-1">
+          <div className="justify-center flex-1 hidden lg:flex">
             <ul className="flex items-center gap-6">
               {getNavigationItems().map((item) => (
                 <li key={item.to}>
@@ -164,7 +164,7 @@ const renderDashboardNavbar = () => {
                     to={item.to} 
                     className={`flex items-center gap-2 ${themeClasses.textMuted} hover:text-blue-600`}
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="w-4 h-4" />
                     {item.text}
                   </Link>
                 </li>
@@ -178,7 +178,7 @@ const renderDashboardNavbar = () => {
               onClick={() => setIsDarkMode(!isDarkMode)}
               className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
             >
-              {isDarkMode ? <Sun className="h-5 w-5 text-gray-300" /> : <Moon className="h-5 w-5 text-gray-600" />}
+              {isDarkMode ? <Sun className="w-5 h-5 text-gray-300" /> : <Moon className="w-5 h-5 text-gray-600" />}
             </button>
 
             {!isAuthenticated ? (
@@ -192,7 +192,7 @@ const renderDashboardNavbar = () => {
                     onClick={() => navigate('/userdb')}
                     className={`flex items-center gap-2 px-6 py-2 rounded-full ${themeClasses.button}`}
                   >
-                    <LayoutDashboard className="h-4 w-4" />
+                    <LayoutDashboard className="w-4 h-4" />
                     <span>Dashboard</span>
                   </button>
                 )}
@@ -207,7 +207,7 @@ const renderDashboardNavbar = () => {
                   >
                     <Bell className={`w-6 h-6 ${themeClasses.text}`} />
                     {unreadCount > 0 && (
-                      <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-bounce">
+                      <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs text-white bg-red-500 rounded-full animate-bounce">
                         {unreadCount}
                       </span>
                     )}
@@ -221,8 +221,8 @@ const renderDashboardNavbar = () => {
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
                     className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600">
+                      <span className="text-sm font-medium text-white">
                         {user?.fullname?.split(' ').map(name => name[0]).join('') || 'U'}
                       </span>
                     </div>
@@ -236,13 +236,13 @@ const renderDashboardNavbar = () => {
                       </div>
                       <div className="p-2">
                         <Link to="/profile" className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} ${themeClasses.text}`}>
-                          <User className="h-4 w-4" /><span>Profile</span>
+                          <User className="w-4 h-4" /><span>Profile</span>
                         </Link>
                         <Link to="/settings" className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} ${themeClasses.text}`}>
-                          <Settings className="h-4 w-4" /><span>Settings</span>
+                          <Settings className="w-4 h-4" /><span>Settings</span>
                         </Link>
                         <button onClick={handleLogout} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-500 ${isDarkMode ? 'hover:bg-red-900/20' : 'hover:bg-red-50'}`}>
-                          <LogOut className="h-4 w-4" /><span>Sign Out</span>
+                          <LogOut className="w-4 h-4" /><span>Sign Out</span>
                         </button>
                       </div>
                     </div>
@@ -261,7 +261,7 @@ const renderDashboardNavbar = () => {
 const renderRegularNavbar = () => {
   return (
     <div className={`${themeClasses.nav} w-full`}>
-      <div className="max-w-7xl mx-auto px-4 py-3">
+      <div className="px-4 py-3 mx-auto max-w-7xl">
         <div className="flex items-center justify-between w-full">
           {/* Logo */}
           <Link to="/" className="flex items-center">
@@ -269,7 +269,7 @@ const renderRegularNavbar = () => {
           </Link>
 
           {/* Center Menu */}
-          <div className="hidden lg:flex justify-center flex-1">
+          <div className="justify-center flex-1 hidden lg:flex">
             <ul className="flex items-center gap-16">
               {getNavigationItems().map((item) => (
                 <li key={item.to}>
@@ -277,7 +277,7 @@ const renderRegularNavbar = () => {
                     to={item.to} 
                     className={`flex items-center gap-2 ${themeClasses.textMuted} hover:text-blue-600`}
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="w-4 h-4" />
                     {item.text}
                   </Link>
                 </li>
@@ -291,7 +291,7 @@ const renderRegularNavbar = () => {
               onClick={() => setIsDarkMode(!isDarkMode)}
               className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
             >
-              {isDarkMode ? <Sun className="h-5 w-5 text-gray-300" /> : <Moon className="h-5 w-5 text-gray-600" />}
+              {isDarkMode ? <Sun className="w-5 h-5 text-gray-300" /> : <Moon className="w-5 h-5 text-gray-600" />}
             </button>
 
             {!isAuthenticated ? (
@@ -305,7 +305,7 @@ const renderRegularNavbar = () => {
                     onClick={() => navigate('/userdb')}
                     className={`flex items-center gap-2 px-6 py-2 rounded-full ${themeClasses.button}`}
                   >
-                    <LayoutDashboard className="h-4 w-4" /><span>Dashboard</span>
+                    <LayoutDashboard className="w-4 h-4" /><span>Dashboard</span>
                   </button>
                 )}
 
@@ -318,7 +318,7 @@ const renderRegularNavbar = () => {
                   >
                     <Bell className={`w-6 h-6 ${themeClasses.text}`} />
                     {unreadCount > 0 && (
-                      <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-bounce">
+                      <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs text-white bg-red-500 rounded-full animate-bounce">
                         {unreadCount}
                       </span>
                     )}
@@ -331,8 +331,8 @@ const renderRegularNavbar = () => {
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
                     className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600">
+                      <span className="text-sm font-medium text-white">
                         {user?.fullname?.split(' ').map(name => name[0]).join('') || 'U'}
                       </span>
                     </div>
@@ -346,13 +346,13 @@ const renderRegularNavbar = () => {
                       </div>
                       <div className="p-2">
                         <Link to="/profile" className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} ${themeClasses.text}`}>
-                          <User className="h-4 w-4" /><span>Profile</span>
+                          <User className="w-4 h-4" /><span>Profile</span>
                         </Link>
                         <Link to="/settings" className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} ${themeClasses.text}`}>
-                          <Settings className="h-4 w-4" /><span>Settings</span>
+                          <Settings className="w-4 h-4" /><span>Settings</span>
                         </Link>
                         <button onClick={handleLogout} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-500 ${isDarkMode ? 'hover:bg-red-900/20' : 'hover:bg-red-50'}`}>
-                          <LogOut className="h-4 w-4" /><span>Sign Out</span>
+                          <LogOut className="w-4 h-4" /><span>Sign Out</span>
                         </button>
                       </div>
                     </div>
