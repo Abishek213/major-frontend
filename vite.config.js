@@ -33,6 +33,8 @@ export default defineConfig({
       output: {
         sourcemapExcludeSources: false
       }
-    }
+    },
+    outDir: 'dist',
+    base: '/'   
   }
 })
