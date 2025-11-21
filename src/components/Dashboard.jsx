@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Routes, Route, Navigate } from 'react-router-dom';
-import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { clearAuth } from '@/utils/auth';
 import { useSidebar } from '@/context/SidebarContext';
@@ -13,7 +12,6 @@ import { adminDashboardConfig, organizerDashboardConfig, userDashboardConfig } f
 const Dashboard = () => {
   const { '*': currentPath } = useParams();
   const navigate = useNavigate();
-  const { isDarkMode } = useTheme();
   const { user } = useAuth();
   const { isSidebarOpen } = useSidebar();
   const [activeTab, setActiveTab] = useState('');
@@ -98,7 +96,7 @@ const Dashboard = () => {
           <Route 
             key={key}
             path={key}
-            element={<tabConfig.component isDarkMode={isDarkMode} user={user} />}
+            element={<tabConfig.component user={user} />}
           />
         ))}
         
@@ -107,7 +105,7 @@ const Dashboard = () => {
           <Route
             key={path}
             path={path}
-            element={<routeConfig.component isDarkMode={isDarkMode} user={user} />}
+            element={<routeConfig.component user={user} />}
           />
         ))}
 
@@ -128,7 +126,7 @@ const Dashboard = () => {
 
   return (
     <ErrorBoundary>
-      <main className={`flex min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <main className="flex min-h-screen bg-gray-50">
         <Sidebar
           user={user}
           onLogout={handleLogout}
@@ -145,7 +143,7 @@ const Dashboard = () => {
               duration-300 
               pt-20 
               ${isSidebarOpen ? 'ml-64' : 'ml-16'}
-              ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}
+              bg-gray-50
               px-6
             `}
           >

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../../utils/api';
 import { Ticket, Calendar, MapPin, Clock } from 'lucide-react';
 
-const Tickets = ({ isDarkMode, user }) => {
+const Tickets = ({ user }) => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,7 +35,7 @@ const Tickets = ({ isDarkMode, user }) => {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className={`space-y-4 ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+    <div className="space-y-4 text-gray-800">
       <h2 className="text-xl font-semibold mb-4">My Tickets</h2>
       {tickets.length === 0 ? (
         <p className="text-center text-gray-500">No tickets found</p>
@@ -44,10 +44,10 @@ const Tickets = ({ isDarkMode, user }) => {
           {tickets.map(ticket => (
             <div 
               key={ticket._id} 
-              className={`border rounded-lg p-4 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
+              className="border rounded-lg p-4 bg-white border-gray-200"
             >
               <div className="flex items-center justify-between mb-4">
-                <Ticket className={`w-8 h-8 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+                <Ticket className="w-8 h-8 text-purple-600" />
                 <span className={`px-2 py-1 rounded-full text-xs ${
                   getTicketStatus(ticket) === 'Upcoming' 
                     ? 'bg-green-100 text-green-800'
@@ -77,7 +77,7 @@ const Tickets = ({ isDarkMode, user }) => {
                 <div className="font-semibold">Ticket #: {ticket.ticketNumber}</div>
                 <button 
                   onClick={() => window.location.href = `/events/${ticket.event._id}`}
-                  className={`py-2 px-4 rounded-lg ${isDarkMode ? 'bg-purple-600 hover:bg-purple-500' : 'bg-purple-500 hover:bg-purple-600'} text-white text-sm`}
+                  className="py-2 px-4 rounded-lg bg-purple-500 hover:bg-purple-600 text-white text-sm"
                 >
                   Event Details
                 </button>

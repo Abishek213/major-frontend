@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import api from '../../../utils/api';
 import { getToken } from '../../../utils/auth';
 
-const MyEvents = ({ isDarkMode }) => {
+const MyEvents = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -72,9 +72,7 @@ const MyEvents = ({ isDarkMode }) => {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       
       {events.map((event) => (
-        <div key={event._id} className={`${
-          isDarkMode ? 'bg-gray-800 text-gray-100' : 'bg-white'
-        } rounded-lg shadow-md overflow-hidden`}> 
+        <div key={event._id} className="bg-white rounded-lg shadow-md overflow-hidden"> 
         
         <img
    src={event.image ? `/uploads/events/${event.image.split('/').pop()}` : "/default-event.jpg"}
@@ -84,15 +82,11 @@ const MyEvents = ({ isDarkMode }) => {
           
           <div className="p-4">
             <h3 className="text-xl font-semibold mb-2">{event.event_name}</h3>
-            <p className={`${
-              isDarkMode ? 'text-gray-300' : 'text-gray-600'
-            } mb-2 line-clamp-2`}>
+            <p className="text-gray-600 mb-2 line-clamp-2">
               {event.description}
             </p>
             
-            <div className={`space-y-2 text-sm ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-500'
-            }`}>
+            <div className="space-y-2 text-sm text-gray-500">
               <p>Date: {format(new Date(event.event_date), 'PPP')}</p>
               <p>Location: {event.location}</p>
               <p>Price: Rs.{event.price}</p>
@@ -125,9 +119,7 @@ const MyEvents = ({ isDarkMode }) => {
       ))}
       
       {events.length === 0 && (
-        <div className={`col-span-full text-center py-8 ${
-          isDarkMode ? 'text-gray-400' : 'text-gray-500'
-        }`}>
+        <div className="col-span-full text-center py-8 text-gray-500">
           No events found. Create your first event to get started!
         </div>
       )}

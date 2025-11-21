@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Bell, Moon, Shield, User, Mail, Lock } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
 
 const UserSettings = () => {
-  const { isDarkMode, toggleTheme } = useTheme();
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
     pushNotifications: true,
@@ -19,12 +17,12 @@ const UserSettings = () => {
   };
 
   return (
-    <div className={`min-h-screen pt-20 px-4 ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-800'}`}>
+    <div className="min-h-screen pt-20 px-4 bg-gray-50 text-gray-800">
       <div className="max-w-4xl mx-auto space-y-6">
         <h1 className="text-3xl font-bold">Settings</h1>
         
-        <div className={`rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm`}>
-          <div className="p-4 border-b border-inherit">
+        <div className="rounded-lg border bg-white border-gray-200 shadow-sm">
+          <div className="p-4 border-b border-gray-200">
             <h2 className="flex items-center gap-2 text-xl font-semibold">
               <User className="h-5 w-5" />
               Account Settings
@@ -37,10 +35,9 @@ const UserSettings = () => {
                 <span>Dark Mode</span>
               </div>
               <button 
-                onClick={toggleTheme}
-                className={`w-12 h-6 rounded-full relative ${isDarkMode ? 'bg-purple-600' : 'bg-gray-200'}`}
+                className="w-12 h-6 rounded-full relative bg-gray-200"
               >
-                <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all ${isDarkMode ? 'right-1' : 'left-1'}`} />
+                <div className="w-4 h-4 rounded-full bg-white absolute top-1 transition-all left-1" />
               </button>
             </div>
             
@@ -62,8 +59,8 @@ const UserSettings = () => {
           </div>
         </div>
 
-        <div className={`rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm`}>
-          <div className="p-4 border-b border-inherit">
+        <div className="rounded-lg border bg-white border-gray-200 shadow-sm">
+          <div className="p-4 border-b border-gray-200">
             <h2 className="flex items-center gap-2 text-xl font-semibold">
               <Bell className="h-5 w-5" />
               Notification Preferences
@@ -93,8 +90,8 @@ const UserSettings = () => {
           </div>
         </div>
 
-        <div className={`rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm`}>
-          <div className="p-4 border-b border-inherit">
+        <div className="rounded-lg border bg-white border-gray-200 shadow-sm">
+          <div className="p-4 border-b border-gray-200">
             <h2 className="flex items-center gap-2 text-xl font-semibold">
               <Shield className="h-5 w-5" />
               Privacy Settings

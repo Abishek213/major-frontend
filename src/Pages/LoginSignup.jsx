@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Phone  } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
 import api from "../utils/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogAction } from '../components/ui/dialog';
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
 
 const LoginSignup = () => {
-  const { isDarkMode } = useTheme();
   const [activeTab, setActiveTab] = useState('login');
   const [formData, setFormData] = useState({
     fullname: '',
@@ -186,7 +184,7 @@ const handleSignup = async () => {
   };
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-primary'} pt-20`}>
+    <div className="min-h-screen bg-primary pt-20">
       <div className="max-w-7xl mx-auto p-6 flex items-center justify-center">
         {/* Image Section */}
         <div className="hidden md:block md:w-1/2 p-2">
@@ -201,16 +199,14 @@ const handleSignup = async () => {
 
         {/* Form Section */}
         <div className="max-w-md mx-auto p-6">
-        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-2xl overflow-hidden`}>
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="flex">
             <button
               onClick={() => setActiveTab('login')}
               className={`flex-1 py-4 text-center font-semibold transition-colors ${
                 activeTab === 'login'
                   ? 'bg-purple-600 text-white'
-                  : isDarkMode 
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               Login
@@ -220,9 +216,7 @@ const handleSignup = async () => {
               className={`flex-1 py-4 text-center font-semibold transition-colors ${
                 activeTab === 'signup'
                   ? 'bg-purple-600 text-white'
-                  : isDarkMode 
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               Sign Up
@@ -230,7 +224,7 @@ const handleSignup = async () => {
           </div>
 
           <div className="p-8">
-            <h2 className={`text-2xl font-bold text-center mb-8 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h2 className="text-2xl font-bold text-center mb-8 text-gray-900">
               {activeTab === 'login' ? 'Welcome Back!' : 'Create Account'}
             </h2>
 
@@ -245,18 +239,14 @@ const handleSignup = async () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {activeTab === 'signup' && (
                 <div className="relative">
-                  <User className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     name="fullname"
                     placeholder="Full Name"
                     value={formData.fullname}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg ${
-                      isDarkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                        : 'border-gray-300 focus:ring-2 focus:ring-purple-500'
-                    } outline-none`}
+                    className="w-full pl-10 pr-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
                   />
                   {errors.fullname && (
                     <p className="text-red-500 text-xs mt-1">{errors.fullname}</p>

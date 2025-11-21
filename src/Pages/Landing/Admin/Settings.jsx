@@ -13,13 +13,13 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
-const Settings = ({ isDarkMode }) => {
+const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState('general');
   
   // Form states
   const [settings, setSettings] = useState({
-    siteName: 'EventA',
+    siteName: 'e-VENTA',
     siteUrl: 'https://eventa.com',
     adminEmail: 'admin@eventa.com',
     maxEventsPerUser: '10',
@@ -71,11 +71,7 @@ const Settings = ({ isDarkMode }) => {
               name="siteName"
               value={settings.siteName}
               onChange={handleInputChange}
-              className={`w-full p-2 rounded-lg border ${
-                isDarkMode 
-                  ? 'bg-gray-800 border-gray-700 text-white' 
-                  : 'bg-white border-gray-300'
-              }`}
+              className={`w-full p-2 rounded-lg border bg-white border-gray-300`}
             />
           </div>
           <div>
@@ -85,11 +81,7 @@ const Settings = ({ isDarkMode }) => {
               name="siteUrl"
               value={settings.siteUrl}
               onChange={handleInputChange}
-              className={`w-full p-2 rounded-lg border ${
-                isDarkMode 
-                  ? 'bg-gray-800 border-gray-700 text-white' 
-                  : 'bg-white border-gray-300'
-              }`}
+              className={`w-full p-2 rounded-lg border bg-white border-gray-300`}
             />
           </div>
           <div>
@@ -99,11 +91,7 @@ const Settings = ({ isDarkMode }) => {
               name="adminEmail"
               value={settings.adminEmail}
               onChange={handleInputChange}
-              className={`w-full p-2 rounded-lg border ${
-                isDarkMode 
-                  ? 'bg-gray-800 border-gray-700 text-white' 
-                  : 'bg-white border-gray-300'
-              }`}
+              className={`w-full p-2 rounded-lg border bg-white border-gray-300`}
             />
           </div>
         </div>
@@ -134,7 +122,7 @@ const Settings = ({ isDarkMode }) => {
                 after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
                 after:bg-white after:rounded-full after:h-5 after:w-5 
                 after:transition-all peer-checked:after:translate-x-full
-                ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}
+                bg-gray-300
               `}></div>
             </label>
           </div>
@@ -146,11 +134,7 @@ const Settings = ({ isDarkMode }) => {
               name="retentionDays"
               value={settings.retentionDays}
               onChange={handleInputChange}
-              className={`w-full p-2 rounded-lg border ${
-                isDarkMode 
-                  ? 'bg-gray-800 border-gray-700 text-white' 
-                  : 'bg-white border-gray-300'
-              }`}
+              className={`w-full p-2 rounded-lg border bg-white border-gray-300`}
             />
           </div>
         </div>
@@ -181,7 +165,7 @@ const Settings = ({ isDarkMode }) => {
                 after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
                 after:bg-white after:rounded-full after:h-5 after:w-5 
                 after:transition-all peer-checked:after:translate-x-full
-                ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}
+                bg-gray-300
               `}></div>
             </label>
           </div>
@@ -205,7 +189,7 @@ const Settings = ({ isDarkMode }) => {
                 after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
                 after:bg-white after:rounded-full after:h-5 after:w-5 
                 after:transition-all peer-checked:after:translate-x-full
-                ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}
+                bg-gray-300
               `}></div>
             </label>
           </div>
@@ -237,7 +221,7 @@ const Settings = ({ isDarkMode }) => {
                 after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
                 after:bg-white after:rounded-full after:h-5 after:w-5 
                 after:transition-all peer-checked:after:translate-x-full
-                ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}
+                bg-gray-300
               `}></div>
             </label>
           </div>
@@ -248,11 +232,7 @@ const Settings = ({ isDarkMode }) => {
               name="backupFrequency"
               value={settings.backupFrequency}
               onChange={handleInputChange}
-              className={`w-full p-2 rounded-lg border ${
-                isDarkMode 
-                  ? 'bg-gray-800 border-gray-700 text-white' 
-                  : 'bg-white border-gray-300'
-              }`}
+              className={`w-full p-2 rounded-lg border bg-white border-gray-300`}
             >
               <option value="hourly">Hourly</option>
               <option value="daily">Daily</option>
@@ -268,11 +248,7 @@ const Settings = ({ isDarkMode }) => {
               name="maxFileSize"
               value={settings.maxFileSize}
               onChange={handleInputChange}
-              className={`w-full p-2 rounded-lg border ${
-                isDarkMode 
-                  ? 'bg-gray-800 border-gray-700 text-white' 
-                  : 'bg-white border-gray-300'
-              }`}
+              className={`w-full p-2 rounded-lg border bg-white border-gray-300`}
             />
           </div>
         </div>
@@ -294,9 +270,7 @@ const Settings = ({ isDarkMode }) => {
                   w-full flex items-center gap-2 p-3 mb-2 rounded-lg transition-all
                   ${activeSection === section.id
                     ? 'bg-blue-600 text-white'
-                    : isDarkMode
-                      ? 'text-gray-300 hover:bg-gray-800'
-                      : 'text-gray-700 hover:bg-gray-100'
+                    : 'text-gray-700 hover:bg-gray-100'
                   }
                 `}
               >
@@ -309,9 +283,7 @@ const Settings = ({ isDarkMode }) => {
 
         {/* Settings Content */}
         <div className="col-span-3">
-          <div className={`p-6 rounded-xl ${
-            isDarkMode ? 'bg-gray-800' : 'bg-white'
-          } shadow`}>
+          <div className={`p-6 rounded-xl bg-white shadow`}>
             <form onSubmit={handleSubmit}>
               {sections.find(s => s.id === activeSection)?.content}
               

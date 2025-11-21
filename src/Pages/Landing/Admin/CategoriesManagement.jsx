@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
 import api from '../../../utils/api';
 
-const CategoriesManagement = ({ isDarkMode }) => {
+const CategoriesManagement = () => {
   const [categories, setCategories] = useState([]);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [parentCategory, setParentCategory] = useState('');
@@ -21,8 +21,6 @@ const CategoriesManagement = ({ isDarkMode }) => {
   const [editName, setEditName] = useState('');
   const [editParentCategory, setEditParentCategory] = useState('');
   const [expandedCategories, setExpandedCategories] = useState(new Set());
-
-  const componentClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
 
   useEffect(() => {
     fetchCategories();
@@ -92,7 +90,7 @@ const CategoriesManagement = ({ isDarkMode }) => {
 
     return (
       <>
-        <tr className={`border-b border-gray-700 ${!category.isActive ? 'opacity-50' : ''}`}>
+        <tr className={`border-b border-gray-200 ${!category.isActive ? 'opacity-50' : ''}`}>
           <td className="py-4">
             <div className="flex items-center" style={{ paddingLeft: `${indentation}px` }}>
               {hasChildren && (
@@ -128,9 +126,9 @@ const CategoriesManagement = ({ isDarkMode }) => {
                 onValueChange={setEditParentCategory}
               >
                 <SelectTrigger className="w-48">
-                <SelectValue>
-        {editParentCategory ? getCategoryNameById(editParentCategory) : "Parent Category"}
-      </SelectValue>
+                  <SelectValue>
+                    {editParentCategory ? getCategoryNameById(editParentCategory) : "Parent Category"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">None</SelectItem>
@@ -327,14 +325,12 @@ const CategoriesManagement = ({ isDarkMode }) => {
   return (
     <div className="space-y-6">
       {error && (
-        <div className={`p-4 border-l-4 rounded-md ${
-          isDarkMode ? 'bg-red-900/20 border-red-500 text-red-300' : 'bg-red-100 border-red-500 text-red-700'
-        }`}>
+        <div className={`p-4 border-l-4 rounded-md bg-red-100 border-red-500 text-red-700`}>
           <p>Error: {error}</p>
         </div>
       )}
 
-      <div className={`${componentClass} border rounded-xl`}>
+      <div className={`bg-white border border-gray-200 rounded-xl`}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -360,9 +356,9 @@ const CategoriesManagement = ({ isDarkMode }) => {
                   onValueChange={setParentCategory}
                 >
                   <SelectTrigger className="w-48">
-                  <SelectValue>
-        {parentCategory ? getCategoryNameById(parentCategory) : "Parent Category"}
-      </SelectValue>
+                    <SelectValue>
+                      {parentCategory ? getCategoryNameById(parentCategory) : "Parent Category"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">None</SelectItem>
@@ -388,7 +384,7 @@ const CategoriesManagement = ({ isDarkMode }) => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-700">
+                <tr className="border-b border-gray-200">
                   <th className="pb-3 text-left font-medium opacity-60">Name</th>
                   <th className="pb-3 text-left font-medium opacity-60">Parent Category</th>
                   <th className="pb-3 text-left font-medium opacity-60">Status</th>

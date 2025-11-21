@@ -21,7 +21,7 @@ const PAYMENT_METHODS = {
   }
 };
 
-const BookingForm = ({ event, onClose, isDarkMode, onSuccess }) => {
+const BookingForm = ({ event, onClose, onSuccess }) => {
   const [bookingState, setBookingState] = useState({
     seats: 1,
     paymentMethod: '',
@@ -34,13 +34,6 @@ const BookingForm = ({ event, onClose, isDarkMode, onSuccess }) => {
 
   const availableSeats = event.totalSlots - (event.attendees?.length || 0);
   const totalAmount = bookingState.seats * event.price;
-
-  const themeClasses = {
-    text: isDarkMode ? 'text-gray-100' : 'text-gray-800',
-    textMuted: isDarkMode ? 'text-gray-300' : 'text-gray-600',
-    card: isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200',
-    input: isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900',
-  };
 
   useEffect(() => {
     // Cleanup timeout on unmount
@@ -129,12 +122,12 @@ const BookingForm = ({ event, onClose, isDarkMode, onSuccess }) => {
     !bookingState.paymentMethod;
 
   return (
-    <Card className={`w-full max-w-md mx-auto shadow-lg ${themeClasses.card}`}>
+    <Card className="w-full max-w-md mx-auto shadow-lg bg-white border-gray-200">
       <CardHeader className="space-y-1">
-        <CardTitle className={`text-2xl font-bold ${themeClasses.text}`}>
+        <CardTitle className="text-2xl font-bold text-gray-800">
           Book Event
         </CardTitle>
-        <p className={`${themeClasses.textMuted}`}>
+        <p className="text-gray-600">
           {event.event_name}
         </p>
       </CardHeader>
@@ -154,7 +147,7 @@ const BookingForm = ({ event, onClose, isDarkMode, onSuccess }) => {
 
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="seats" className={themeClasses.text}>
+            <Label htmlFor="seats" className="text-gray-800">
               Number of Seats
             </Label>
             <div className="relative">
@@ -165,24 +158,24 @@ const BookingForm = ({ event, onClose, isDarkMode, onSuccess }) => {
                 max={availableSeats}
                 value={bookingState.seats}
                 onChange={(e) => handleInputChange('seats', Math.min(parseInt(e.target.value) || 1, availableSeats))}
-                className={themeClasses.input}
+                className="bg-white border-gray-300 text-gray-900"
                 aria-describedby="seats-available"
               />
             </div>
-            <p id="seats-available" className={`text-sm ${themeClasses.textMuted}`}>
+            <p id="seats-available" className="text-sm text-gray-600">
               Available seats: {availableSeats}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="payment" className={themeClasses.text}>
+            <Label htmlFor="payment" className="text-gray-800">
               Payment Method
             </Label>
             <Select
               value={bookingState.paymentMethod}
               onValueChange={(value) => handleInputChange('paymentMethod', value)}
             >
-              <SelectTrigger className={themeClasses.input}>
+              <SelectTrigger className="bg-white border-gray-300 text-gray-900">
                 <SelectValue placeholder="Select payment method" />
               </SelectTrigger>
               <SelectContent>
@@ -198,7 +191,7 @@ const BookingForm = ({ event, onClose, isDarkMode, onSuccess }) => {
           </div>
 
           <div className="space-y-2">
-            <Label className={themeClasses.text}>
+            <Label className="text-gray-800">
               Total Amount
             </Label>
             <p className="text-2xl font-bold text-purple-600">
