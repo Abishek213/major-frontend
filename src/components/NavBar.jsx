@@ -102,7 +102,7 @@ const NavBar = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
-    window.location.href = '/loginsignup';
+    navigate('/loginsignup');
   };
 
   const getNavigationItems = () => {
