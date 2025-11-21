@@ -6,7 +6,7 @@ import api from '../../../utils/api';
 import { getToken } from '../../../utils/auth';
 
 
-const Overview = ({ isDarkMode }) => {
+const Overview = () => {
   const [stats, setStats] = useState({
     totalEvents: 0,
     upcomingEvents: 0,

@@ -3,12 +3,11 @@ import api from '../../../utils/api';
 import { useNavigate } from 'react-router-dom';
 import websocketManager from '@/utils/websocketManager';
 
-const EventsManagement = ({ isDarkMode }) => {
+const EventsManagement = () => {
   const [pendingEvents, setPendingEvents] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const componentClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
 
   const fetchEvents = async () => {
     setIsLoading(true);
@@ -128,7 +127,7 @@ const EventsManagement = ({ isDarkMode }) => {
         </div>
       )}
       
-      <div className={`${componentClass} border rounded-xl`}>
+      <div className={`bg-white border border-gray-200 rounded-xl`}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -152,7 +151,7 @@ const EventsManagement = ({ isDarkMode }) => {
             {pendingEvents.length > 0 ? (
               <table className="w-full">
                 <thead>
-                  <tr className="text-left border-b border-gray-700">
+                  <tr className="text-left border-b border-gray-200">
                     <th className="pb-3 font-medium opacity-60">Event</th>
                     <th className="pb-3 font-medium opacity-60">Organizer</th>
                     <th className="pb-3 font-medium opacity-60">Date</th>
@@ -162,7 +161,7 @@ const EventsManagement = ({ isDarkMode }) => {
                 </thead>
                 <tbody>
                   {pendingEvents.map((event) => (
-                    <tr key={event._id} className="border-b border-gray-700">
+                    <tr key={event._id} className="border-b border-gray-200">
                       <td className="py-4">
                         <div>
                           <p className="font-medium">{event.event_name}</p>

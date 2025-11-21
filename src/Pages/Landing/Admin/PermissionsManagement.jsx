@@ -21,7 +21,7 @@ const AlertDescription = ({ children }) => (
   </div>
 );
 
-const PermissionsManagement = ({ isDarkMode, authToken }) => {
+const PermissionsManagement = ({ authToken }) => {
   const [permissions, setPermissions] = useState([]);
   const [rolePermissions, setRolePermissions] = useState([]);
   const [roles, setRoles] = useState(['Admin', 'Organizer', 'User']);
@@ -29,8 +29,6 @@ const PermissionsManagement = ({ isDarkMode, authToken }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
-
-  const componentClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
 
   const fetchPermissionsData = async () => {
     try {
@@ -160,7 +158,7 @@ const PermissionsManagement = ({ isDarkMode, authToken }) => {
         </Alert>
       )}
       
-      <div className={`${componentClass} border rounded-xl p-6`}>
+      <div className={`bg-white border border-gray-200 rounded-xl p-6`}>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-bold">Permissions Management</h3>
@@ -176,11 +174,7 @@ const PermissionsManagement = ({ isDarkMode, authToken }) => {
               value={newPermission}
               onChange={(e) => setNewPermission(e.target.value)}
               placeholder="Enter new permission name"
-              className={`flex-1 px-4 py-2 rounded-xl border ${
-                isDarkMode 
-                  ? 'bg-gray-700/30 border-gray-700 focus:border-indigo-500' 
-                  : 'bg-gray-100 border-gray-200 focus:border-indigo-500'
-              } focus:outline-none`}
+              className={`flex-1 px-4 py-2 rounded-xl border bg-gray-100 border-gray-200 focus:border-indigo-500 focus:outline-none`}
             />
             <button
               onClick={handleCreatePermission}
@@ -196,7 +190,7 @@ const PermissionsManagement = ({ isDarkMode, authToken }) => {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-700">
+              <tr className="border-b border-gray-200">
                 <th className="pb-3 text-left font-medium opacity-60">Permission</th>
                 {roles.map(role => (
                   <th key={role} className="pb-3 text-center font-medium opacity-60">{role}</th>
@@ -206,7 +200,7 @@ const PermissionsManagement = ({ isDarkMode, authToken }) => {
             </thead>
             <tbody>
               {permissions.map(permission => (
-                <tr key={permission._id} className="border-b border-gray-700">
+                <tr key={permission._id} className="border-b border-gray-200">
                   <td className="py-4">{permission.permissionName}</td>
                   {roles.map(role => {
                     const hasPermission = rolePermissions.some(
@@ -220,8 +214,6 @@ const PermissionsManagement = ({ isDarkMode, authToken }) => {
                           className={`p-2 rounded-lg transition-colors ${
                             hasPermission
                               ? 'bg-green-500/20 text-green-500'
-                              : isDarkMode
-                              ? 'bg-gray-700/30 hover:bg-gray-700/50'
                               : 'bg-gray-100 hover:bg-gray-200'
                           } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >

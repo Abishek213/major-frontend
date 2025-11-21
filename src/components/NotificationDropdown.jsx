@@ -4,7 +4,7 @@ import { useNotifications } from '@/context/NotificationContext';
 import { formatDistance } from 'date-fns';
 import { Bell, Filter, Check, Loader, Trash2 } from 'lucide-react';
 
-const NotificationDropdown = ({ isDarkMode }) => {
+const NotificationDropdown = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const observerTarget = useRef(null);
@@ -81,8 +81,8 @@ const NotificationDropdown = ({ isDarkMode }) => {
 
   const NotificationItem = ({ notification }) => (
     <div
-      className={`${themeClasses.item} ${
-        !notification.read ? 'bg-blue-50/10' : ''
+      className={`px-4 py-3 hover:bg-gray-50 border-b border-gray-200 last:border-0 cursor-pointer ${
+        !notification.read ? 'bg-blue-50' : ''
       } flex justify-between items-start`}
       onClick={() => {
         if (!notification.eventId || !notification.type) return;
@@ -90,12 +90,12 @@ const NotificationDropdown = ({ isDarkMode }) => {
       }}
     >
       <div className="flex-1">
-        <p className={`text-sm ${themeClasses.text} ${
+        <p className={`text-sm text-gray-800 ${
           !notification.read ? 'font-semibold' : ''
         }`}>
           {notification.message}
         </p>
-        <p className={`text-xs ${themeClasses.mutedText} mt-1`}>
+        <p className="text-xs text-gray-600 mt-1">
           {formatTimestamp(notification)}
         </p>
       </div>
@@ -110,7 +110,7 @@ const NotificationDropdown = ({ isDarkMode }) => {
             e.stopPropagation();
             deleteNotification(notification._id);
           }}
-          className={`p-1 rounded-full ${themeClasses.mutedText} hover:text-red-500`}
+          className="p-1 rounded-full text-gray-600 hover:text-red-500"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -124,8 +124,8 @@ const NotificationDropdown = ({ isDarkMode }) => {
         <button
           key={`filter-${filterType}`}
           onClick={() => handleFilterChange(filterType)}
-          className={`${themeClasses.filterButton} ${
-            filter === filterType ? themeClasses.activeFilter : ''
+          className={`px-3 py-1 rounded-full text-sm hover:bg-gray-100 ${
+            filter === filterType ? 'bg-blue-100 text-blue-600' : ''
           }`}
         >
           {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
@@ -139,22 +139,22 @@ const NotificationDropdown = ({ isDarkMode }) => {
       {notifications.length > 0 ? (
         <div key="notifications-container">
           <div key="notifications-list">
-          {notifications.map((notification) => (
-  <NotificationItem 
-    key={notification._id || `temp-${Date.now()}-${Math.random()}`}
-    notification={notification} 
-  />
-))}
+            {notifications.map((notification) => (
+              <NotificationItem 
+                key={notification._id || `temp-${Date.now()}-${Math.random()}`}
+                notification={notification} 
+              />
+            ))}
           </div>
           <div key="observer-target" ref={observerTarget} className="h-4" />
           {isLoading && (
             <div key="loading-indicator" className="p-4 text-center">
-              <Loader className="w-6 h-6 animate-spin mx-auto" />
+              <Loader className="w-6 h-6 animate-spin mx-auto text-gray-600" />
             </div>
           )}
         </div>
       ) : (
-        <div key="no-notifications" className={`p-4 text-center ${themeClasses.mutedText}`}>
+        <div key="no-notifications" className="p-4 text-center text-gray-600">
           No notifications
         </div>
       )}
@@ -163,41 +163,19 @@ const NotificationDropdown = ({ isDarkMode }) => {
 
   const handleFilterChange = (newFilter) => {
     setCurrentPage(1);
-    setFilter(newFilter); // Now uses context setFilter
+    setFilter(newFilter);
     fetchNotifications(1, newFilter);
-  };
-
-  const themeClasses = {
-    dropdown: `absolute right-0 mt-2 w-80 rounded-xl ${
-      isDarkMode ? 'bg-gray-900' : 'bg-white'
-    } shadow-lg border ${
-      isDarkMode ? 'border-gray-700' : 'border-gray-200'
-    } overflow-hidden`,
-    header: `p-4 border-b ${
-      isDarkMode ? 'border-gray-700' : 'border-gray-200'
-    } flex justify-between items-center`,
-    filterButton: `px-3 py-1 rounded-full text-sm ${
-      isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
-    }`,
-    activeFilter: 'bg-blue-100 text-blue-600',
-    item: `px-4 py-3 ${
-      isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'
-    } border-b ${
-      isDarkMode ? 'border-gray-700' : 'border-gray-200'
-    } last:border-0 cursor-pointer`,
-    text: isDarkMode ? 'text-gray-100' : 'text-gray-800',
-    mutedText: isDarkMode ? 'text-gray-400' : 'text-gray-600',
   };
 
   if (!isNotificationsOpen) return null;
 
   return (
-    <div className={themeClasses.dropdown}>
-      <div key="header" className={themeClasses.header}>
-        <h3 className={`font-semibold ${themeClasses.text}`}>Notifications</h3>
+    <div className="absolute right-0 mt-2 w-80 rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden">
+      <div key="header" className="p-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 className="font-semibold text-gray-800">Notifications</h3>
         <button
           onClick={markAllAsRead}
-          className={`${themeClasses.filterButton} flex items-center gap-1`}
+          className="px-3 py-1 rounded-full text-sm hover:bg-gray-100 flex items-center gap-1"
         >
           <Check className="w-4 h-4" />
           <span>Mark all read</span>
@@ -207,10 +185,10 @@ const NotificationDropdown = ({ isDarkMode }) => {
       <FilterButtons key="filter-buttons" />
       <NotificationsList key="notifications-list" />
       {error && (
-  <div className="p-2 text-red-500 text-sm text-center border-t border-red-200 bg-red-50">
-    Error: {error.message || 'Failed to process notification'}
-  </div>
-)}
+        <div className="p-2 text-red-500 text-sm text-center border-t border-red-200 bg-red-50">
+          Error: {error.message || 'Failed to process notification'}
+        </div>
+      )}
     </div>
   );
 };
