@@ -152,7 +152,7 @@ const renderDashboardNavbar = () => {
         <div className="flex items-center justify-between w-full">
           {/* Logo Left */}
           <Link to="/" className="flex items-center">
-            <img src='/images/eventA.png' alt="logo" className={`h-12 w-auto ${isDarkMode ? 'invert' : ''}`} />
+            <img src='/images/eventa.png' alt="logo" className={`h-12 w-auto ${isDarkMode ? 'invert' : ''}`} />
           </Link>
 
           {/* Center Navigation */}
