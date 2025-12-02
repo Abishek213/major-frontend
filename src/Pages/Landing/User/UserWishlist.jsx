@@ -10,25 +10,11 @@ import {
 } from 'lucide-react';
 import api from '../../../utils/api';
 
-const EnhancedWishlist = ({ isDarkMode }) => {
+const EnhancedWishlist = () => {
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-
-  const themeClasses = {
-    text: isDarkMode ? 'text-gray-100' : 'text-gray-800',
-    textMuted: isDarkMode ? 'text-gray-300' : 'text-gray-600',
-    card: isDarkMode 
-      ? 'bg-gray-800/50 border-gray-700' 
-      : 'bg-white/50 border-gray-200',
-    hover: isDarkMode
-      ? 'hover:bg-gray-700/50'
-      : 'hover:bg-gray-50/50',
-    layout: isDarkMode 
-      ? 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100' 
-      : 'bg-gradient-to-br from-blue-50 to-white text-gray-800'
-  };
 
   useEffect(() => {
     fetchWishlist();
@@ -88,7 +74,7 @@ const EnhancedWishlist = ({ isDarkMode }) => {
 
   if (loading) {
     return (
-      <div className={`flex justify-center items-center min-h-[400px] ${themeClasses.layout}`}>
+      <div className="flex justify-center items-center min-h-[400px] bg-gradient-to-br from-blue-50 to-white text-gray-800">
         Loading...
       </div>
     );
@@ -105,13 +91,13 @@ const EnhancedWishlist = ({ isDarkMode }) => {
 
   if (wishlistItems.length === 0) {
     return (
-      <Card className={`max-w-4xl mx-auto mt-8 ${themeClasses.card}`}>
+      <Card className="max-w-4xl mx-auto mt-8 bg-white/50 border-gray-200">
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Heart className="h-16 w-16 text-gray-400 mb-4" />
-          <h3 className={`text-xl font-semibold mb-2 ${themeClasses.text}`}>
+          <h3 className="text-xl font-semibold mb-2 text-gray-800">
             Your wishlist is empty
           </h3>
-          <p className={`${themeClasses.textMuted} mb-4 text-center`}>
+          <p className="text-gray-600 mb-4 text-center">
             Browse events and add them to your wishlist to keep track of events you're interested in.
           </p>
           <Button
@@ -126,11 +112,11 @@ const EnhancedWishlist = ({ isDarkMode }) => {
   }
 
   return (
-    <div className={`min-h-screen ${themeClasses.layout}`}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white text-gray-800">
       <div className="max-w-6xl mx-auto p-4">
-        <Card className={`mb-6 ${themeClasses.card}`}>
+        <Card className="mb-6 bg-white/50 border-gray-200">
           <CardHeader>
-            <CardTitle className={`flex items-center gap-2 ${themeClasses.text}`}>
+            <CardTitle className="flex items-center gap-2 text-gray-800">
               <Heart className="h-6 w-6" />
               My Wishlist
             </CardTitle>
@@ -141,7 +127,7 @@ const EnhancedWishlist = ({ isDarkMode }) => {
           {wishlistItems.map((event) => (
             <Card 
               key={event._id} 
-              className={`${themeClasses.card} ${themeClasses.hover} transition-all hover:shadow-xl overflow-hidden rounded-xl`}
+              className="bg-white/50 border-gray-200 hover:bg-gray-50/50 transition-all hover:shadow-xl overflow-hidden rounded-xl"
             >
               <figure className="relative">
                 <img
@@ -175,8 +161,8 @@ const EnhancedWishlist = ({ isDarkMode }) => {
               <CardContent className="p-6">
                 <header className="flex items-center justify-between mb-3">
                   <span className="flex items-center space-x-2">
-                    <Calendar className={`h-4 w-4 ${themeClasses.textMuted}`} />
-                    <span className={`text-sm ${themeClasses.textMuted}`}>
+                    <Calendar className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm text-gray-600">
                       {new Date(event.event_date).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',
@@ -185,28 +171,28 @@ const EnhancedWishlist = ({ isDarkMode }) => {
                     </span>
                   </span>
                   <span className="flex items-center space-x-1">
-                    <Users className={`h-4 w-4 ${themeClasses.textMuted}`} />
-                    <span className={`text-sm ${themeClasses.textMuted}`}>
+                    <Users className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm text-gray-600">
                       {event.attendees?.length || 0}/{event.totalSlots}
                     </span>
                   </span>
                 </header>
 
-                <h3 className={`text-lg font-semibold ${themeClasses.text} mb-2`}>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
                   {event.event_name}
                 </h3>
 
                 <div className="space-y-2">
                   <span className="flex items-center space-x-2">
-                    <MapPin className={`h-4 w-4 ${themeClasses.textMuted}`} />
-                    <span className={`text-sm ${themeClasses.textMuted}`}>
+                    <MapPin className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm text-gray-600">
                       {event.location}
                     </span>
                   </span>
 
                   <span className="flex items-center space-x-2">
-                    <Clock className={`h-4 w-4 ${themeClasses.textMuted}`} />
-                    <span className={`text-sm ${themeClasses.textMuted}`}>
+                    <Clock className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm text-gray-600">
                       {event.time}
                     </span>
                   </span>
@@ -249,7 +235,7 @@ const EnhancedWishlist = ({ isDarkMode }) => {
                 </button>
 
                 {event.registrationDeadline && (
-                  <p className={`text-xs ${themeClasses.textMuted} mt-3 text-center`}>
+                  <p className="text-xs text-gray-600 mt-3 text-center">
                     Registration closes on {new Date(event.registrationDeadline).toLocaleDateString()}
                   </p>
                 )}

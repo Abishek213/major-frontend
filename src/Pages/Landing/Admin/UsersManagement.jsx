@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Users } from 'lucide-react';
 import api from "../../../utils/api";
 
-const UsersManagement = ({ isDarkMode }) => {
+const UsersManagement = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
-  const componentClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -50,7 +48,7 @@ const UsersManagement = ({ isDarkMode }) => {
   }
 
   return (
-    <div className={`${componentClass} border rounded-xl`}>
+    <div className={`bg-white border border-gray-200 rounded-xl`}>
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -71,7 +69,7 @@ const UsersManagement = ({ isDarkMode }) => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-700">
+                  <tr className="border-b border-gray-200">
                     <th className="px-4 py-3 text-left font-medium opacity-60">Full Name</th>
                     <th className="px-4 py-3 text-left font-medium opacity-60">Email</th>
                     <th className="px-4 py-3 text-left font-medium opacity-60">Joined Date</th>
@@ -79,7 +77,7 @@ const UsersManagement = ({ isDarkMode }) => {
                 </thead>
                 <tbody>
                   {users.map((user) => (
-                    <tr key={user._id} className="border-b border-gray-700 hover:bg-gray-700/30">
+                    <tr key={user._id} className="border-b border-gray-200 hover:bg-gray-100">
                       <td className="px-4 py-3">{user.fullname}</td>
                       <td className="px-4 py-3">{user.email}</td>
                       <td className="px-4 py-3">

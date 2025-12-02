@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.jsx';
 import { Button } from "@/components/ui/button.jsx";
 import api from '../../../utils/api';
 
-const EventDetails = ({ isDarkMode }) => {
+const EventDetails = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,17 +21,6 @@ const EventDetails = ({ isDarkMode }) => {
   const [addedToCalendar, setAddedToCalendar] = useState(false);
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
-
-  const themeClasses = {
-    text: isDarkMode ? 'text-gray-100' : 'text-gray-800',
-    textMuted: isDarkMode ? 'text-gray-300' : 'text-gray-600',
-    card: isDarkMode 
-      ? 'bg-gray-800/50 border-gray-700' 
-      : 'bg-white/50 border-gray-200',
-    similarEventBox: isDarkMode
-      ? 'bg-gray-800/30 hover:bg-gray-800/50 border-gray-700'
-      : 'bg-white/30 hover:bg-white/50 border-gray-200'
-  };
 
   const fetchWishlistStatus = async (eventId) => {
     try {
@@ -194,7 +183,7 @@ const EventDetails = ({ isDarkMode }) => {
   };
 
   if (loading) return (
-    <div className={`flex justify-center items-center h-screen ${themeClasses.layout}`}>
+    <div className="flex justify-center items-center h-screen">
       Loading event details...
     </div>
   );
@@ -214,15 +203,15 @@ const EventDetails = ({ isDarkMode }) => {
   return (
     <div className="max-w-6xl mx-auto p-4">
       <Button
-  onClick={handleBack}
-  variant="ghost"
-  className={`mb-4 flex items-center gap-2 ${themeClasses.text} hover:bg-gray-100 dark:hover:bg-gray-800`}
->
-  <ArrowLeft className="h-4 w-4" />
-  {location.state?.source === 'wishlist' ? 'Back to Wishlist' : 'Back to Events'}
-</Button>
+        onClick={handleBack}
+        variant="ghost"
+        className="mb-4 flex items-center gap-2 text-gray-800 hover:bg-gray-100"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        {location.state?.source === 'wishlist' ? 'Back to Wishlist' : 'Back to Events'}
+      </Button>
 
-      <Card className={`${themeClasses.card}`}>
+      <Card className="bg-white/50 border-gray-200">
         <div className="relative">
           <img
             src={event.image ? `/uploads/events/${event.image.split('/').pop()}` : "/default-event.jpg"}
@@ -257,13 +246,13 @@ const EventDetails = ({ isDarkMode }) => {
         </div>
 
         <CardHeader>
-          <CardTitle className={`text-3xl font-bold ${themeClasses.text}`}>
+          <CardTitle className="text-3xl font-bold text-gray-800">
             {event.event_name}
           </CardTitle>
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <p className={`text-lg ${themeClasses.text}`}>
+          <p className="text-lg text-gray-800">
             {event.description}
           </p>
 
@@ -299,38 +288,38 @@ const EventDetails = ({ isDarkMode }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className={`flex items-center space-x-2 ${themeClasses.text}`}>
+            <div className="flex items-center space-x-2 text-gray-800">
               <Calendar className="h-5 w-5" />
               <span>Event Date: {formatDate(event.event_date)}</span>
             </div>
 
-            <div className={`flex items-center space-x-2 ${themeClasses.text}`}>
+            <div className="flex items-center space-x-2 text-gray-800">
               <CalendarCheck className="h-5 w-5" />
               <span>Registration Deadline: {formatDate(event.registrationDeadline)}</span>
             </div>
 
-            <div className={`flex items-center space-x-2 ${themeClasses.text}`}>
+            <div className="flex items-center space-x-2 text-gray-800">
               <Clock className="h-5 w-5" />
               <span>Time: {event.time}</span>
             </div>
 
-            <div className={`flex items-center space-x-2 ${themeClasses.text}`}>
+            <div className="flex items-center space-x-2 text-gray-800">
               <MapPin className="h-5 w-5" />
               <span>Location: {event.location}</span>
             </div>
 
-            <div className={`flex items-center space-x-2 ${themeClasses.text}`}>
+            <div className="flex items-center space-x-2 text-gray-800">
               <span>Rs. {event.price}</span>
             </div>
 
-            <div className={`flex items-center space-x-2 ${themeClasses.text}`}>
+            <div className="flex items-center space-x-2 text-gray-800">
               <Users className="h-5 w-5" />
               <span>Capacity: {event.attendees.length}/{event.totalSlots}</span>
             </div>
           </div>
 
           <div className="space-y-2">
-            <div className={`flex items-center space-x-2 ${themeClasses.text}`}>
+            <div className="flex items-center space-x-2 text-gray-800">
               <Tag className="h-5 w-5" />
               <span>Category: {event.category?.categoryName}</span>
             </div>
@@ -346,7 +335,7 @@ const EventDetails = ({ isDarkMode }) => {
             )}
           </div>
 
-          <div className={`flex items-center space-x-2 ${themeClasses.text}`}>
+          <div className="flex items-center space-x-2 text-gray-800">
             <User className="h-5 w-5" />
             <span>Organized by: {event.org_ID?.fullname}</span>
           </div>
@@ -381,19 +370,19 @@ const EventDetails = ({ isDarkMode }) => {
 
           {similarEvents.length > 0 && (
             <div className="mt-8">
-              <h3 className={`text-xl font-semibold mb-4 ${themeClasses.text}`}>
+              <h3 className="text-xl font-semibold mb-4 text-gray-800">
                 Similar Events
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {similarEvents.map((similarEvent) => (
                   <div 
                     key={similarEvent._id} 
-                    className={`p-4 rounded-lg border transition-colors duration-200 ${themeClasses.similarEventBox}`}
+                    className="p-4 rounded-lg border transition-colors duration-200 bg-white/30 hover:bg-white/50 border-gray-200"
                   >
-                    <h4 className={`font-semibold ${themeClasses.text}`}>
+                    <h4 className="font-semibold text-gray-800">
                       {similarEvent.event_name}
                     </h4>
-                    <p className={`mt-2 ${themeClasses.textMuted}`}>
+                    <p className="mt-2 text-gray-600">
                       {formatDate(similarEvent.event_date)}
                     </p>
                     <Button

@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
-import { useTheme } from '@/context/ThemeContext';
 import { useSidebar } from '@/context/SidebarContext';
 import { 
   adminDashboardConfig, 
@@ -12,7 +11,6 @@ import {
 const Sidebar = ({ user }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDarkMode } = useTheme();
   const { isSidebarOpen, setIsSidebarOpen } = useSidebar();
   
   // Determine which configuration to use based on user role
@@ -42,24 +40,22 @@ const Sidebar = ({ user }) => {
     <div className={`
       fixed top-0 left-0 h-screen transition-all duration-300 z-50
       ${isSidebarOpen ? "w-64" : "w-16"}
-      ${isDarkMode 
-        ? 'bg-gray-900 border-r border-gray-800 text-gray-100' 
-        : 'bg-white border-r border-gray-200 text-gray-800'}
+      bg-white border-r border-gray-200 text-gray-800
     `}>
       <div className={`
         flex items-center justify-between p-6
-        ${isDarkMode ? 'border-b border-gray-800' : 'border-b border-gray-200'}
+        border-b border-gray-200
       `}>
         <h1 className={`
           text-2xl font-semibold transition-all
           ${isSidebarOpen ? "block" : "hidden"}
-          ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}
+          text-gray-800
         `}>
           event<span className="text-blue-400">A</span>
         </h1>
         <Menu 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-          className={`cursor-pointer ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}
+          className={`cursor-pointer text-gray-800`}
         />
       </div>
 
@@ -90,9 +86,7 @@ const Sidebar = ({ user }) => {
                 transition-all duration-200
                 ${isActive
                   ? "bg-blue-500 text-white" 
-                  : isDarkMode 
-                    ? "text-gray-300 hover:bg-gray-800" 
-                    : "text-gray-700 hover:bg-gray-100"}
+                  : "text-gray-700 hover:bg-gray-100"}
               `}
               onClick={() => handleTabClick(tab.path)}
             >

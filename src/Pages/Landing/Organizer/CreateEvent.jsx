@@ -53,7 +53,7 @@ const organizeCategories = (categories) => {
     }));
 };
 
-const CreateEvent = ({ isDarkMode }) => {
+const CreateEvent = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [organizedCategories, setOrganizedCategories] = useState([]);
@@ -318,22 +318,22 @@ const CreateEvent = ({ isDarkMode }) => {
     return <div className="flex justify-center items-center min-h-screen">
       <div className="text-center">
         <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Loading...</p>
+        <p className='text-gray-600'>Loading...</p>
       </div>
     </div>;
   }
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-200`}>
+    <div className="min-h-screen bg-gray-50 transition-colors duration-200">
       {/* Header with Create Button */}
-      <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b sticky top-0 z-10`}>
+      <div className="bg-white border-gray-200 border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <h1 className="text-3xl font-bold text-gray-900">
                 Event Management
               </h1>
-              <p className={`mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              <p className="mt-1 text-gray-600">
                 Create and manage your events with ease
               </p>
             </div>
@@ -351,15 +351,15 @@ const CreateEvent = ({ isDarkMode }) => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Hero Section */}
-        <div className={`${isDarkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100'} rounded-2xl p-8 mb-8`}>
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-8 mb-8">
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 text-white rounded-full mb-4">
               <Zap className="w-8 h-8" />
             </div>
-            <h2 className={`text-2xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h2 className="text-2xl font-bold mb-3 text-gray-900">
               Create Amazing Events
             </h2>
-            <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} max-w-2xl mx-auto`}>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Bring your ideas to life and connect with your audience. Our platform makes it easy to create, 
               manage, and promote events that leave lasting impressions.
             </p>
@@ -368,12 +368,12 @@ const CreateEvent = ({ isDarkMode }) => {
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Event Creation Guide */}
-          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6`}>
+          <div className="bg-white rounded-2xl shadow-xl p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                 <Lightbulb className="w-5 h-5 text-white" />
               </div>
-              <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <h3 className="text-xl font-semibold text-gray-900">
                 How to Create Great Events
               </h3>
             </div>
@@ -382,15 +382,15 @@ const CreateEvent = ({ isDarkMode }) => {
               {guideSteps.map((step, index) => (
                 <div key={index} className="flex gap-4">
                   <div className="flex-shrink-0">
-                    <div className={`w-12 h-12 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} flex items-center justify-center`}>
+                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
                       {step.icon}
                     </div>
                   </div>
                   <div>
-                    <h4 className={`font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <h4 className="font-semibold mb-1 text-gray-900">
                       {step.title}
                     </h4>
-                    <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <p className="text-sm text-gray-600">
                       {step.description}
                     </p>
                   </div>
@@ -400,12 +400,12 @@ const CreateEvent = ({ isDarkMode }) => {
           </div>
 
           {/* Tips and Best Practices */}
-          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6`}>
+          <div className="bg-white rounded-2xl shadow-xl p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-600 rounded-full flex items-center justify-center">
                 <Star className="w-5 h-5 text-white" />
               </div>
-              <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <h3 className="text-xl font-semibold text-gray-900">
                 Pro Tips for Success
               </h3>
             </div>
@@ -414,7 +414,7 @@ const CreateEvent = ({ isDarkMode }) => {
               {tips.map((tip, index) => (
                 <div key={index} className="flex items-start gap-3">
                   <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className="text-sm text-gray-600">
                     {tip}
                   </p>
                 </div>
@@ -423,19 +423,19 @@ const CreateEvent = ({ isDarkMode }) => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 gap-4 mt-8">
-              <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4 text-center`}>
-                <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-gray-900">
                   500+
                 </div>
-                <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className="text-xs text-gray-600">
                   Events Created
                 </div>
               </div>
-              <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4 text-center`}>
-                <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-gray-900">
                   10K+
                 </div>
-                <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className="text-xs text-gray-600">
                   Attendees Reached
                 </div>
               </div>
@@ -447,14 +447,14 @@ const CreateEvent = ({ isDarkMode }) => {
       {/* Create Event Form Overlay */}
       {showCreateForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden`}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className={`${isDarkMode ? 'border-gray-700' : 'border-gray-200'} border-b px-6 py-4 flex items-center justify-between`}>
+            <div className="border-gray-200 border-b px-6 py-4 flex items-center justify-between">
               <div>
-                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <h2 className="text-2xl font-bold text-gray-900">
                   Create New Event
                 </h2>
-                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <p className="text-sm text-gray-600">
                   Fill in the details to create your event
                 </p>
               </div>
@@ -463,7 +463,7 @@ const CreateEvent = ({ isDarkMode }) => {
                   setShowCreateForm(false);
                   setError("");
                 }}
-                className={`p-2 rounded-lg hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'text-gray-600'} transition-colors`}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -483,40 +483,32 @@ const CreateEvent = ({ isDarkMode }) => {
                   {/* Basic Details Section */}
                   <div className="space-y-4">
                     <div>
-                      <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
                         Event Name
                       </label>
                       <input
                         name="event_name"
                         type="text"
-                        className={`w-full px-4 py-3 rounded-lg border ${
-                          isDarkMode 
-                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                            : 'bg-gray-50 border-gray-200 placeholder-gray-500'
-                        } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                        className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                         required
                         placeholder="Enter a compelling event name"
                       />
                     </div>
 
                     <div>
-                      <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
                         Category
                       </label>
                       <div className="relative">
                         <select
                           name="category"
-                          className={`w-full px-4 py-3 rounded-lg border appearance-none ${
-                            isDarkMode 
-                              ? 'bg-gray-700 border-gray-600 text-white' 
-                              : 'bg-gray-50 border-gray-200'
-                          } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                          className="w-full px-4 py-3 rounded-lg border appearance-none bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                           required
                         >
                           <option value="">Select Category</option>
                           {organizedCategories.map(category => renderCategoryOptions(category))}
                         </select>
-                        <div className={`absolute inset-y-0 right-0 flex items-center px-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} pointer-events-none`}>
+                        <div className="absolute inset-y-0 right-0 flex items-center px-2 text-gray-500 pointer-events-none">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                           </svg>
@@ -529,7 +521,7 @@ const CreateEvent = ({ isDarkMode }) => {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
                             <span>Event Date</span>
@@ -538,16 +530,12 @@ const CreateEvent = ({ isDarkMode }) => {
                         <input
                           name="event_date"
                           type="date"
-                          className={`w-full px-4 py-3 rounded-lg border ${
-                            isDarkMode 
-                              ? 'bg-gray-700 border-gray-600 text-white' 
-                              : 'bg-gray-50 border-gray-200'
-                          } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                          className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                           required
                         />
                       </div>
                       <div>
-                        <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4" />
                             <span>Time</span>
@@ -556,28 +544,20 @@ const CreateEvent = ({ isDarkMode }) => {
                         <input
                           name="time"
                           type="time"
-                          className={`w-full px-4 py-3 rounded-lg border ${
-                            isDarkMode 
-                              ? 'bg-gray-700 border-gray-600 text-white' 
-                              : 'bg-gray-50 border-gray-200'
-                          } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                          className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                           required
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
                         Registration Deadline
                       </label>
                       <input
                         name="registrationDeadline"
                         type="date"
-                        className={`w-full px-4 py-3 rounded-lg border ${
-                          isDarkMode 
-                            ? 'bg-gray-700 border-gray-600 text-white' 
-                            : 'bg-gray-50 border-gray-200'
-                        } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                        className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                         required
                       />
                     </div>
@@ -587,7 +567,7 @@ const CreateEvent = ({ isDarkMode }) => {
                 {/* Location and Details Section */}
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
-                    <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
                         <span>Location</span>
@@ -596,18 +576,14 @@ const CreateEvent = ({ isDarkMode }) => {
                     <input
                       name="location"
                       type="text"
-                      className={`w-full px-4 py-3 rounded-lg border ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-gray-50 border-gray-200 placeholder-gray-500'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                      className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       required
                       placeholder="Enter venue location"
                     />
                   </div>
 
                   <div>
-                    <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
                       <div className="flex items-center gap-2">
                         <Tags className="w-4 h-4" />
                         <span>Tags</span>
@@ -616,11 +592,7 @@ const CreateEvent = ({ isDarkMode }) => {
                     <input
                       name="tags"
                       type="text"
-                      className={`w-full px-4 py-3 rounded-lg border ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-gray-50 border-gray-200 placeholder-gray-500'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                      className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       placeholder="Separate tags with commas"
                     />
                   </div>
@@ -629,7 +601,7 @@ const CreateEvent = ({ isDarkMode }) => {
                 {/* Capacity and Price Section */}
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
-                    <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
                       <div className="flex items-center gap-2">
                         <Users className="w-4 h-4" />
                         <span>Total Slots</span>
@@ -638,11 +610,7 @@ const CreateEvent = ({ isDarkMode }) => {
                     <input
                       name="totalSlots"
                       type="number"
-                      className={`w-full px-4 py-3 rounded-lg border ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-gray-50 border-gray-200 placeholder-gray-500'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                      className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       required
                       min="1"
                       placeholder="Enter capacity"
@@ -650,7 +618,7 @@ const CreateEvent = ({ isDarkMode }) => {
                   </div>
 
                   <div>
-                    <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4" />
                         <span>Price (Rs)</span>
@@ -659,11 +627,7 @@ const CreateEvent = ({ isDarkMode }) => {
                     <input
                       name="price"
                       type="number"
-                      className={`w-full px-4 py-3 rounded-lg border ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-gray-50 border-gray-200 placeholder-gray-500'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                      className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       required
                       min="0"
                       step="0.01"
@@ -674,7 +638,7 @@ const CreateEvent = ({ isDarkMode }) => {
 
                 {/* Image Upload */}
                 <div>
-                  <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <label className="block mb-2 text-sm font-medium text-gray-700">
                     <div className="flex items-center gap-2">
                       <Camera className="w-4 h-4" />
                       <span>Event Image</span>
@@ -684,17 +648,13 @@ const CreateEvent = ({ isDarkMode }) => {
                     name="eventImage"
                     type="file"
                     accept="image/*"
-                    className={`w-full px-4 py-3 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white file:bg-gray-600 file:border-0 file:text-white' 
-                        : 'bg-gray-50 border-gray-200 file:bg-blue-50 file:border-0 file:text-blue-700'
-                    } file:mr-4 file:py-2 file:px-4 file:rounded-md file:text-sm file:font-medium hover:file:bg-blue-100 transition-colors`}
+                    className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 file:bg-blue-50 file:border-0 file:text-blue-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:text-sm file:font-medium hover:file:bg-blue-100 transition-colors"
                   />
                 </div>
 
                 {/* Description Section */}
                 <div>
-                  <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <label className="block mb-2 text-sm font-medium text-gray-700">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4" />
                       <span>Description</span>
@@ -702,11 +662,7 @@ const CreateEvent = ({ isDarkMode }) => {
                   </label>
                   <textarea
                     name="description"
-                    className={`w-full px-4 py-3 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                        : 'bg-gray-50 border-gray-200 placeholder-gray-500'
-                    } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                    className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     rows="4"
                     required
                     placeholder="Describe your event in detail..."
@@ -721,26 +677,14 @@ const CreateEvent = ({ isDarkMode }) => {
                       setShowCreateForm(false);
                       setError("");
                     }}
-                    className={`flex-1 py-3 px-4 rounded-lg font-medium border ${
-                      isDarkMode 
-                        ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                    } transition-colors`}
+                    className="flex-1 py-3 px-4 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`
-                      flex-1 py-3 px-4 rounded-lg font-medium
-                      bg-gradient-to-r from-blue-500 to-blue-600
-                      text-white shadow-lg
-                      hover:from-blue-600 hover:to-blue-700
-                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                      disabled:opacity-50 disabled:cursor-not-allowed
-                      transition-all duration-200
-                    `}
+                    className="flex-1 py-3 px-4 rounded-lg font-medium bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center gap-2">

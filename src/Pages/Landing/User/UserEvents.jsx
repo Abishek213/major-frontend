@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import UserBooking from '@/components/BookingForm';
 import api from '../../../utils/api';
 
-const UserEvents = ({ isDarkMode, user }) => {
+const UserEvents = ({ user }) => {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
@@ -17,29 +17,6 @@ const UserEvents = ({ isDarkMode, user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedParentCategory, setSelectedParentCategory] = useState('all');
   const [selectedChildCategory, setSelectedChildCategory] = useState('all');
-
-  const themeClasses = {
-    layout: isDarkMode 
-      ? 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100' 
-      : 'bg-gradient-to-br from-blue-50 to-white text-gray-800',
-    text: isDarkMode ? 'text-gray-100' : 'text-gray-800',
-    textMuted: isDarkMode ? 'text-gray-300' : 'text-gray-600',
-    card: isDarkMode 
-      ? 'bg-gray-800/50 border-gray-700' 
-      : 'bg-white/50 border-gray-200',
-    header: isDarkMode 
-      ? 'bg-gray-900/95 border-gray-700' 
-      : 'bg-white/95 border-gray-200',
-    input: isDarkMode
-      ? 'bg-gray-800 text-gray-100 placeholder-gray-400 border-gray-700'
-      : 'bg-gray-50 text-gray-900 placeholder-gray-500 border-gray-200',
-    button: isDarkMode
-      ? 'bg-gray-800 text-gray-100 hover:bg-gray-700'
-      : 'bg-gray-100 text-gray-900 hover:bg-gray-200',
-    badge: isDarkMode
-      ? 'bg-gray-700 text-gray-100'
-      : 'bg-gray-200 text-gray-800'
-  };
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -149,13 +126,13 @@ const UserEvents = ({ isDarkMode, user }) => {
   };
 
   if (loading) return (
-    <div className={`flex justify-center items-center h-screen ${themeClasses.layout}`}>
+    <div className="flex justify-center items-center h-screen">
       Loading events...
     </div>
   );
 
   if (error) return (
-    <div className={`p-4 ${themeClasses.text} bg-red-500/10`}>
+    <div className="p-4 text-gray-800 bg-red-500/10">
       Error: {error}
     </div>
   );
@@ -163,7 +140,7 @@ const UserEvents = ({ isDarkMode, user }) => {
   return (
     <>
       {/* Header Section */}
-      <div className={`sticky top-0 z-10 ${themeClasses.header} border-b shadow-sm`}>
+      <div className="sticky top-0 z-10 bg-white/95 border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3">
           {/* Search Form */}
           <form onSubmit={handleSearch} className="flex gap-2">
@@ -173,7 +150,7 @@ const UserEvents = ({ isDarkMode, user }) => {
                 placeholder="Search events by name, description, location, or tags..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2 rounded-lg border ${themeClasses.input}`}
+                className="w-full pl-10 pr-4 py-2 rounded-lg border bg-gray-50 text-gray-900 placeholder-gray-500 border-gray-200"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
@@ -191,7 +168,7 @@ const UserEvents = ({ isDarkMode, user }) => {
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap
                   ${selectedParentCategory === 'all'
                     ? 'bg-purple-600 text-white'
-                    : `${themeClasses.button}`
+                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                   }`}
               >
                 All Categories
@@ -203,7 +180,7 @@ const UserEvents = ({ isDarkMode, user }) => {
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap
                     ${selectedParentCategory === category._id
                       ? 'bg-purple-600 text-white'
-                      : `${themeClasses.button}`
+                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                     }`}
                 >
                   {category.categoryName}
@@ -219,7 +196,7 @@ const UserEvents = ({ isDarkMode, user }) => {
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap
                     ${selectedChildCategory === 'all'
                       ? 'bg-purple-400 text-white'
-                      : `${themeClasses.button}`
+                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                     }`}
                 >
                   All {categories.find(cat => cat._id === selectedParentCategory)?.categoryName} Events
@@ -233,7 +210,7 @@ const UserEvents = ({ isDarkMode, user }) => {
                       className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap
                         ${selectedChildCategory === child._id
                           ? 'bg-purple-400 text-white'
-                          : `${themeClasses.button}`
+                          : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                         }`}
                     >
                       {child.categoryName}
@@ -246,10 +223,10 @@ const UserEvents = ({ isDarkMode, user }) => {
       </div>
 
       {/* Events Grid */}
-      <main className={`min-h-screen p-6 ${themeClasses.layout}`}>
+      <main className="min-h-screen p-6 bg-gradient-to-br from-blue-50 to-white text-gray-800">
         <div className="max-w-7xl mx-auto">
           {filteredEvents.length === 0 ? (
-            <div className={`text-center py-12 ${themeClasses.text}`}>
+            <div className="text-center py-12 text-gray-800">
               No events found matching your criteria.
             </div>
           ) : (
@@ -257,7 +234,7 @@ const UserEvents = ({ isDarkMode, user }) => {
               {filteredEvents.map(event => (
                 <Card
                   key={event._id}
-                  className={`overflow-hidden rounded-xl shadow-lg transition-all hover:shadow-xl ${themeClasses.card}`}
+                  className="overflow-hidden rounded-xl shadow-lg transition-all hover:shadow-xl bg-white/50 border-gray-200"
                   onClick={() => handleViewDetails(event)}
                 >
                   <figure className="relative">
@@ -274,8 +251,8 @@ const UserEvents = ({ isDarkMode, user }) => {
                   <CardContent className="p-6">
                     <header className="flex items-center justify-between mb-3">
                       <span className="flex items-center space-x-2">
-                        <Calendar className={`h-4 w-4 ${themeClasses.textMuted}`} />
-                        <span className={`text-sm ${themeClasses.textMuted}`}>
+                        <Calendar className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm text-gray-600">
                           {new Date(event.date).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'short',
@@ -284,20 +261,20 @@ const UserEvents = ({ isDarkMode, user }) => {
                         </span>
                       </span>
                       <span className="flex items-center space-x-1">
-                        <Users className={`h-4 w-4 ${themeClasses.textMuted}`} />
-                        <span className={`text-sm ${themeClasses.textMuted}`}>
+                        <Users className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm text-gray-600">
                           {event.attendees?.length || 0}/{event.totalSlots}
                         </span>
                       </span>
                     </header>
                     
-                    <h3 className={`text-lg font-semibold ${themeClasses.text} mb-2`}>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
                       {event.event_name}
                     </h3>
                     
                     <span className="flex items-center space-x-2">
-                      <MapPin className={`h-4 w-4 ${themeClasses.textMuted}`} />
-                      <span className={`text-sm ${themeClasses.textMuted}`}>
+                      <MapPin className="h-4 w-4 text-gray-600" />
+                      <span className="text-sm text-gray-600">
                         {event.location}
                       </span>
                     </span>
@@ -317,10 +294,10 @@ const UserEvents = ({ isDarkMode, user }) => {
                     <div className="flex flex-wrap gap-1 mb-4">
                       {event.category && (
                         <>
-                          <span className={`px-2 py-1 rounded-full text-xs ${themeClasses.badge}`}>
+                          <span className="px-2 py-1 rounded-full text-xs bg-gray-200 text-gray-800">
                             {event.category.parentCategory?.categoryName}
                           </span>
-                          <span className={`px-2 py-1 rounded-full text-xs ${themeClasses.badge}`}>
+                          <span className="px-2 py-1 rounded-full text-xs bg-gray-200 text-gray-800">
                             {event.category.categoryName}
                           </span>
                         </>
@@ -374,7 +351,7 @@ const UserEvents = ({ isDarkMode, user }) => {
                     </div>
 
                     {event.registrationDeadline && (
-                      <p className={`text-xs ${themeClasses.textMuted} mt-3 text-center`}>
+                      <p className="text-xs text-gray-600 mt-3 text-center">
                         Registration closes on {new Date(event.registrationDeadline).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
@@ -405,7 +382,6 @@ const UserEvents = ({ isDarkMode, user }) => {
           >
             <UserBooking 
               event={selectedEvent}
-              isDarkMode={isDarkMode}
               onClose={() => {
                 setShowBookingForm(false);
                 setSelectedEvent(null);
@@ -434,7 +410,7 @@ const UserEvents = ({ isDarkMode, user }) => {
       {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className={`text-xl ${themeClasses.text}`}>
+          <div className="text-xl text-gray-800">
             Loading events...
           </div>
         </div>
@@ -450,5 +426,4 @@ const UserEvents = ({ isDarkMode, user }) => {
   );
 };
 
-export default UserEvents;
-                          
+export default UserEvents;  
