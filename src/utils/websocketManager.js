@@ -76,10 +76,7 @@ class WebSocketManager {
           }
         }
 
-// Change this to YOUR Render backend domain
-const backendBase = "https://major-backend-17y8.onrender.com";
-
-const wsUrl = `${backendBase.replace("https", "wss")}/notifications/ws?token=${token}`;
+        const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:4001/notifications/ws?token=${token}`;
         
         this.cleanup(); 
         this.ws = new WebSocket(wsUrl);
