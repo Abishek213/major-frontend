@@ -197,21 +197,6 @@ const About = () => {
           </div>
         </div>
       </div>
-
-      {/* CTA Section */}
-      <div className="bg-gradient-to-r from-primary to-blue-800 py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">Ready to Create Your Event?</h2>
-          <p className="text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of successful event organizers on e-VENTA
-          </p>
-          <Link to="/LoginSignup">
-            <button className="px-8 py-3 bg-white rounded-full font-semibold text-blue-600 hover:bg-blue-50 transition-colors inline-flex items-center gap-2">
-              Get Started Now <ArrowRight className="w-5 h-5" />
-            </button>
-          </Link>
-        </div>
-      </div>
     </div>
   );
 };

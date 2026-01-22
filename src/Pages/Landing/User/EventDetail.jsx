@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Calendar, MapPin, Clock, Users, Tag, User, CalendarCheck, Share2, XCircle, 
-  Calendar as CalendarIcon, ArrowLeft, Check, Heart 
+  Calendar as CalendarIcon, ArrowLeft, Check, Heart, TrendingUp, AlertTriangle,
+  RefreshCw, Eye, ChevronRight, Sparkles, Bookmark
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.jsx';
-import { Button } from "@/components/ui/button.jsx";
 import api from '../../../utils/api';
 
 const EventDetails = () => {
@@ -114,6 +112,13 @@ const EventDetails = () => {
     });
   };
 
+  const formatTime = (dateString) => {
+    return new Date(dateString).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const handleRegistration = async () => {
     try {
       await api.safePost(`/events/${event._id}/register`);
@@ -182,18 +187,38 @@ const EventDetails = () => {
     }
   };
 
-  if (loading) return (
-    <div className="flex justify-center items-center h-screen">
-      Loading event details...
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="space-y-8 p-4 md:p-6">
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+          <div className="p-6 md:p-8">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <RefreshCw className="w-12 h-12 text-indigo-500 animate-spin mx-auto mb-4" />
+                <p className="text-lg font-medium text-gray-700">Loading event details...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  if (error) return (
-    <Alert variant="destructive" className="m-4">
-      <AlertTitle>Error</AlertTitle>
-      <AlertDescription>{error}</AlertDescription>
-    </Alert>
-  );
+  if (error) {
+    return (
+      <div className="space-y-8 p-4 md:p-6">
+        <div className="relative p-5 pl-14 bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 rounded-lg shadow-sm animate-fade-in">
+          <div className="absolute left-5 top-5">
+            <AlertTriangle className="w-6 h-6 text-red-500" />
+          </div>
+          <div className="pr-10">
+            <h4 className="font-bold text-red-800 mb-1">Error</h4>
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!event) return null;
 
@@ -201,204 +226,367 @@ const EventDetails = () => {
   const isPastDeadline = new Date(event.registrationDeadline) < new Date();
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <Button
+    <div className="space-y-8 p-4 md:p-6">
+      {/* Back Button */}
+      <button
         onClick={handleBack}
-        variant="ghost"
-        className="mb-4 flex items-center gap-2 text-gray-800 hover:bg-gray-100"
+        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-md hover:shadow-lg"
       >
-        <ArrowLeft className="h-4 w-4" />
+        <ArrowLeft className="h-5 w-5" />
         {location.state?.source === 'wishlist' ? 'Back to Wishlist' : 'Back to Events'}
-      </Button>
+      </button>
 
-      <Card className="bg-white/50 border-gray-200">
-        <div className="relative">
+      {/* Main Event Container */}
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+        {/* Event Hero Image */}
+        <div className="relative h-96">
           <img
             src={event.image ? `/uploads/events/${event.image.split('/').pop()}` : "/default-event.jpg"}
             alt={event.event_name}
-            className="w-full h-80 object-cover"
+            className="w-full h-full object-cover"
           />
-          <div className="absolute top-4 right-4 flex space-x-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`rounded-full p-2 ${
-                isInWishlist 
-                  ? 'bg-red-500 hover:bg-red-600 text-white'
-                  : 'bg-white/80 hover:bg-white text-gray-700'
-              } ${wishlistLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          
+          <div className="absolute top-6 right-6 flex flex-col items-end gap-3">
+            <button
               onClick={handleWishlist}
               disabled={wishlistLoading}
+              className={`group p-3 rounded-xl backdrop-blur-sm transition-all duration-300 ${
+                isInWishlist 
+                  ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-lg'
+                  : 'bg-white/90 hover:bg-white text-gray-700 hover:shadow-lg'
+              } ${wishlistLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
             >
-              <Heart
-                className={`h-6 w-6 ${isInWishlist ? 'fill-current' : ''}`}
-              />
-            </Button>
-            <span className={`px-4 py-2 rounded-full ${
-              event.status === 'upcoming' ? 'bg-green-500' :
-              event.status === 'ongoing' ? 'bg-blue-500' :
-              event.status === 'completed' ? 'bg-gray-500' :
-              'bg-red-500'
+              {wishlistLoading ? (
+                <RefreshCw className="h-6 w-6 animate-spin" />
+              ) : (
+                <Heart className={`h-6 w-6 ${isInWishlist ? 'fill-current' : ''}`} />
+              )}
+            </button>
+            
+            <span className={`px-4 py-2 rounded-full text-sm font-medium shadow-lg backdrop-blur-sm ${
+              event.status === 'upcoming' ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
+              event.status === 'ongoing' ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
+              event.status === 'completed' ? 'bg-gradient-to-r from-gray-500 to-gray-700' :
+              'bg-gradient-to-r from-rose-500 to-pink-500'
             } text-white`}>
               {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
             </span>
           </div>
+          
+          <div className="absolute bottom-6 left-6 right-6 text-white">
+            <h1 className="text-4xl font-bold mb-3">{event.event_name}</h1>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                <span>{formatDate(event.event_date)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                <span>{event.location}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold text-gray-800">
-            {event.event_name}
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          <p className="text-lg text-gray-800">
-            {event.description}
-          </p>
-
-          <div className="flex flex-wrap gap-4">
-            <Button
-              onClick={handleShare}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Share2 className="h-4 w-4" />
-              Share Event
-            </Button>
-
-            <Button
-              onClick={handleAddToCalendar}
-              variant={addedToCalendar ? "success" : "outline"}
-              className={`flex items-center gap-2 ${
-                addedToCalendar ? 'bg-green-500 hover:bg-green-600 text-white border-green-500' : ''
-              }`}
-            >
-              {addedToCalendar ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  Added to Calendar
-                </>
-              ) : (
-                <>
-                  <CalendarIcon className="h-4 w-4" />
-                  Add to Calendar
-                </>
-              )}
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center space-x-2 text-gray-800">
-              <Calendar className="h-5 w-5" />
-              <span>Event Date: {formatDate(event.event_date)}</span>
-            </div>
-
-            <div className="flex items-center space-x-2 text-gray-800">
-              <CalendarCheck className="h-5 w-5" />
-              <span>Registration Deadline: {formatDate(event.registrationDeadline)}</span>
-            </div>
-
-            <div className="flex items-center space-x-2 text-gray-800">
-              <Clock className="h-5 w-5" />
-              <span>Time: {event.time}</span>
-            </div>
-
-            <div className="flex items-center space-x-2 text-gray-800">
-              <MapPin className="h-5 w-5" />
-              <span>Location: {event.location}</span>
-            </div>
-
-            <div className="flex items-center space-x-2 text-gray-800">
-              <span>Rs. {event.price}</span>
-            </div>
-
-            <div className="flex items-center space-x-2 text-gray-800">
-              <Users className="h-5 w-5" />
-              <span>Capacity: {event.attendees.length}/{event.totalSlots}</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2 text-gray-800">
-              <Tag className="h-5 w-5" />
-              <span>Category: {event.category?.categoryName}</span>
-            </div>
-            
-            {event.tags && event.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {event.tags.map((tag, index) => (
-                  <span key={index} className="px-3 py-1 bg-purple-500 text-white rounded-full text-sm">
-                    {tag}
-                  </span>
-                ))}
+        <div className="p-6 md:p-8">
+          {/* Event Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <TrendingUp className="w-8 h-8 text-indigo-300" />
               </div>
-            )}
-          </div>
+              <h3 className="text-3xl font-bold text-gray-800 mb-1">{event.attendees.length}/{event.totalSlots}</h3>
+              <p className="text-gray-600 font-medium">Attendees</p>
+              <div className="mt-3 h-2 bg-indigo-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
+                  style={{ width: `${(event.attendees.length / event.totalSlots) * 100}%` }}
+                ></div>
+              </div>
+            </div>
 
-          <div className="flex items-center space-x-2 text-gray-800">
-            <User className="h-5 w-5" />
-            <span>Organized by: {event.org_ID?.fullname}</span>
-          </div>
+            <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
+                  <Tag className="w-6 h-6 text-white" />
+                </div>
+                <Sparkles className="w-8 h-8 text-emerald-300" />
+              </div>
+              <h3 className="text-3xl font-bold text-gray-800 mb-1">Rs. {event.price}</h3>
+              <p className="text-gray-600 font-medium">Ticket Price</p>
+              <div className="mt-3 h-2 bg-emerald-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-500"
+                  style={{ width: '100%' }}
+                ></div>
+              </div>
+            </div>
 
-          <div className="mt-6">
-            {isRegistered ? (
-              <Button
-                onClick={handleCancelRegistration}
-                className="w-full py-3 bg-red-500 hover:bg-red-600 text-white"
-              >
-                <XCircle className="mr-2 h-4 w-4" />
-                Cancel Registration
-              </Button>
-            ) : (
-              <Button
-                onClick={handleRegistration}
-                disabled={isEventFull || isPastDeadline}
-                className={`w-full py-3 ${
-                  isEventFull || isPastDeadline 
-                    ? 'bg-gray-500 cursor-not-allowed' 
-                    : 'bg-purple-500 hover:bg-purple-600'
-                } text-white`}
-              >
-                {isEventFull 
-                  ? 'Event Full' 
-                  : isPastDeadline 
-                    ? 'Registration Closed' 
-                    : 'Register for Event'}
-              </Button>
-            )}
-          </div>
-
-          {similarEvents.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-xl font-semibold mb-4 text-gray-800">
-                Similar Events
+            <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
+                <CalendarCheck className="w-8 h-8 text-amber-300" />
+              </div>
+              <h3 className="text-3xl font-bold text-gray-800 mb-1">
+                {new Date(event.event_date) > new Date() ? 'Upcoming' : 'Past'}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <p className="text-gray-600 font-medium">Event Status</p>
+              <div className="mt-3 h-2 bg-amber-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full transition-all duration-500"
+                  style={{ width: '100%' }}
+                ></div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-white border border-purple-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <User className="w-6 h-6 text-white" />
+                </div>
+                <Bookmark className="w-8 h-8 text-purple-300" />
+              </div>
+              <h3 className="text-3xl font-bold text-gray-800 mb-1">
+                {isRegistered ? 'Yes' : 'No'}
+              </h3>
+              <p className="text-gray-600 font-medium">Registered</p>
+              <div className="mt-3 h-2 bg-purple-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
+                  style={{ width: isRegistered ? '100%' : '0%' }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Event Description */}
+          <div className="mb-10">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-indigo-600" />
+              About This Event
+            </h2>
+            <p className="text-lg text-gray-700 leading-relaxed bg-gradient-to-r from-gray-50 to-white p-6 rounded-xl border border-gray-200">
+              {event.description}
+            </p>
+          </div>
+
+          {/* Event Details */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+            <div className="space-y-6">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-indigo-600" />
+                Event Details
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-800">Event Date</p>
+                    <p className="text-gray-600">{formatDate(event.event_date)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
+                    <CalendarCheck className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-800">Registration Deadline</p>
+                    <p className="text-gray-600">{formatDate(event.registrationDeadline)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-yellow-100 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-800">Time</p>
+                    <p className="text-gray-600">{formatTime(event.event_date)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-rose-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-800">Location</p>
+                    <p className="text-gray-600">{event.location}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <Tag className="w-5 h-5 text-indigo-600" />
+                Category & Tags
+              </h3>
+              
+              <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
+                    <Tag className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Category</p>
+                    <p className="font-bold text-gray-800 text-lg">{event.category?.categoryName}</p>
+                  </div>
+                </div>
+
+                {event.tags && event.tags.length > 0 && (
+                  <>
+                    <p className="text-sm font-medium text-gray-700 mb-3">Tags</p>
+                    <div className="flex flex-wrap gap-2">
+                      {event.tags.map((tag, index) => (
+                        <span 
+                          key={index} 
+                          className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-sm font-medium shadow-md"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                    <User className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Organized by</p>
+                    <p className="font-bold text-gray-800 text-lg">{event.org_ID?.fullname}</p>
+                    <p className="text-sm text-gray-600">{event.org_ID?.email}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-6 mb-10">
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={handleShare}
+                className="group px-6 py-3 rounded-xl font-medium flex items-center gap-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+              >
+                <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                Share Event
+              </button>
+
+              <button
+                onClick={handleAddToCalendar}
+                className={`group px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all duration-300 hover:scale-105 ${
+                  addedToCalendar
+                    ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg'
+                    : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-md hover:shadow-lg'
+                }`}
+              >
+                {addedToCalendar ? (
+                  <>
+                    <Check className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    Added to Calendar
+                  </>
+                ) : (
+                  <>
+                    <CalendarIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    Add to Calendar
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="pt-6 border-t border-gray-200">
+              {isRegistered ? (
+                <button
+                  onClick={handleCancelRegistration}
+                  className="w-full py-4 rounded-xl font-medium flex items-center justify-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                >
+                  <XCircle className="w-5 h-5" />
+                  Cancel Registration
+                </button>
+              ) : (
+                <button
+                  onClick={handleRegistration}
+                  disabled={isEventFull || isPastDeadline}
+                  className={`w-full py-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 ${
+                    isEventFull || isPastDeadline
+                      ? 'bg-gradient-to-r from-gray-300 to-gray-400 text-gray-500 cursor-not-allowed' 
+                      : 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105'
+                  }`}
+                >
+                  {isEventFull 
+                    ? 'Event Full' 
+                    : isPastDeadline 
+                      ? 'Registration Closed' 
+                      : 'Register for Event'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Similar Events */}
+          {similarEvents.length > 0 && (
+            <div className="border-t border-gray-200 pt-8">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-indigo-600" />
+                Similar Events You Might Like
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {similarEvents.map((similarEvent) => (
                   <div 
                     key={similarEvent._id} 
-                    className="p-4 rounded-lg border transition-colors duration-200 bg-white/30 hover:bg-white/50 border-gray-200"
+                    className="group bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden"
                   >
-                    <h4 className="font-semibold text-gray-800">
-                      {similarEvent.event_name}
-                    </h4>
-                    <p className="mt-2 text-gray-600">
-                      {formatDate(similarEvent.event_date)}
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h4 className="font-bold text-gray-800 group-hover:text-indigo-700 transition-colors">
+                          {similarEvent.event_name}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-600">
+                            {formatDate(similarEvent.event_date)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
+                        <Tag className="w-5 h-5 text-indigo-600" />
+                      </div>
+                    </div>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                      {similarEvent.description}
                     </p>
-                    <Button
-                      variant="link"
-                      onClick={() => navigate(`/userdb/events/${similarEvent._id}`)}
-                      className="mt-2 pl-0"
-                    >
-                      View Details
-                    </Button>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-gray-800">Rs. {similarEvent.price}</span>
+                      <button
+                        onClick={() => navigate(`/userdb/events/${similarEvent._id}`)}
+                        className="group/view px-4 py-2 rounded-lg font-medium flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 hover:from-indigo-200 hover:to-purple-200 transition-all duration-300"
+                      >
+                        View Details
+                        <ChevronRight className="w-4 h-4 group-hover/view:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

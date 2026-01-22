@@ -1,6 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
+import { 
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle, 
+  Users, 
+  MapPin, 
+  Calendar, 
+  DollarSign, 
+  FileText, 
+  MessageSquare,
+  Phone,
+  TrendingUp,
+  Sparkles,
+  Plus,
+  ChevronRight,
+  RefreshCw,
+  UserCircle,
+  Clock,
+  Award
+} from 'lucide-react';
 
 const InterestedOrganizers = () => {
   const [eventRequests, setEventRequests] = useState([]);
@@ -32,15 +52,15 @@ const InterestedOrganizers = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        alert('Organizer selected successfully, and status updated to deal_done.');
         const updatedResponse = await api.safeGet("/eventrequest/event-requests-for-user");
         setEventRequests(updatedResponse.data.eventRequests);
+        setError(null);
       } else {
-        alert(`Error: ${response.data.message || 'Failed to select organizer'}`);
+        setError(`Error: ${response.data.message || 'Failed to select organizer'}`);
       }
     } catch (error) {
       console.error('Error selecting organizer:', error);
-      alert(error.message || 'An error occurred while selecting the organizer.');
+      setError(error.message || 'An error occurred while selecting the organizer.');
     }
   };
 
@@ -50,14 +70,14 @@ const InterestedOrganizers = () => {
 
   const getStatusBadge = (status) => {
     const statusClasses = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      approved: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800',
-      deal_done: 'bg-blue-100 text-blue-800'
+      pending: 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border border-amber-200',
+      approved: 'bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200',
+      rejected: 'bg-gradient-to-r from-rose-100 to-pink-100 text-rose-800 border border-rose-200',
+      deal_done: 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border border-blue-200'
     };
     
     return (
-      <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusClasses[status] || 'bg-gray-100 text-gray-800'}`}>
+      <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${statusClasses[status] || 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-200'}`}>
         {status?.replace('_', ' ').toUpperCase()}
       </span>
     );
@@ -65,24 +85,31 @@ const InterestedOrganizers = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="text-gray-600 text-lg">Loading your event requests...</p>
+      <div className="space-y-8 p-4 md:p-6">
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+          <div className="p-6 md:p-8">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <RefreshCw className="w-12 h-12 text-indigo-500 animate-spin mx-auto mb-4" />
+                <p className="text-lg font-medium text-gray-700">Loading your event requests...</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error && !eventRequests.length) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-4">
-          <div className="flex items-center">
-            <svg className="w-6 h-6 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-red-700 font-medium">{error}</p>
+      <div className="space-y-8 p-4 md:p-6">
+        <div className="relative p-5 pl-14 bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 rounded-lg shadow-sm animate-fade-in">
+          <div className="absolute left-5 top-5">
+            <AlertTriangle className="w-6 h-6 text-red-500" />
+          </div>
+          <div className="pr-10">
+            <h4 className="font-bold text-red-800 mb-1">Error</h4>
+            <p className="text-sm text-red-600">{error}</p>
           </div>
         </div>
       </div>
@@ -91,65 +118,49 @@ const InterestedOrganizers = () => {
 
   if (!eventRequests || eventRequests.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center py-16">
-            <div className="mb-8">
-              <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4l6 6m0-6l-6 6" />
-                </svg>
+      <div className="space-y-8 p-4 md:p-6">
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+          <div className="p-6 md:p-8">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  Event Requests Dashboard
+                </h1>
+                <p className="text-gray-600">
+                  Connect with organizers for your perfect event
+                </p>
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">No Event Requests Found</h3>
-              <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                You haven't created any event requests yet. Start planning your perfect event today!
-              </p>
+              
               <button
                 onClick={handleCreateEventRequest}
-                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                className="mt-4 md:mt-0 px-6 py-3 rounded-xl font-medium flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
               >
-                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
+                <Plus className="w-5 h-5" />
                 Create New Event Request
               </button>
             </div>
-            
-            <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-lg border border-gray-200">
-              <h4 className="text-2xl font-bold text-gray-900 mb-6">Why create an event request?</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-600">Connect with experienced event organizers</p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-600">Get multiple proposals and budgets</p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-600">Choose the best fit for your event</p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-600">Save time on event planning</p>
-                </div>
+
+            {/* Empty State */}
+            <div className="py-16 text-center">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <Users className="w-12 h-12 text-indigo-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-700 mb-2">No Event Requests Found</h3>
+              <p className="text-gray-500 mb-6">
+                You haven't created any event requests yet. Start planning your perfect event today!
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={handleCreateEventRequest}
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 font-medium hover:from-indigo-200 hover:to-purple-200 transition-all duration-300 flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create New Event Request
+                </button>
               </div>
             </div>
           </div>
@@ -159,179 +170,217 @@ const InterestedOrganizers = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-8 p-4 md:p-6">
+      {/* Error Alert */}
+      {error && (
+        <div className="relative p-5 pl-14 bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 rounded-lg shadow-sm animate-fade-in">
+          <div className="absolute left-5 top-5">
+            <AlertTriangle className="w-6 h-6 text-red-500" />
+          </div>
+          <div className="pr-10">
+            <h4 className="font-bold text-red-800 mb-1">Action Required</h4>
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+          <button 
+            onClick={() => setError(null)} 
+            className="absolute right-4 top-4 p-1 rounded-full hover:bg-red-100 transition-colors"
+          >
+            <XCircle className="w-5 h-5 text-red-500" />
+          </button>
+        </div>
+      )}
+
+      {/* Main Dashboard */}
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+        <div className="p-6 md:p-8">
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Event Requests</h1>
-              <p className="text-gray-600 mt-1">Manage your event requests and connect with organizers</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                Event Requests Dashboard
+              </h1>
+              <p className="text-gray-600">
+                Manage your event requests and connect with organizers
+              </p>
             </div>
+            
             <button
               onClick={handleCreateEventRequest}
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+              className="mt-4 md:mt-0 px-6 py-3 rounded-xl font-medium flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+              <Plus className="w-5 h-5" />
               New Event Request
             </button>
           </div>
-        </div>
 
-        {/* Event Requests */}
-        <div className="space-y-8">
-          {eventRequests.map((event) => (
-            <div key={event.eventId} className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
-              {/* Event Header */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <h2 className="text-2xl font-bold text-gray-900">{event.eventType} Event</h2>
-                  {getStatusBadge(event.status)}
-                </div>
-              </div>
-
-              {/* Event Details */}
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <p className="font-semibold text-gray-700">Venue</p>
-                    </div>
-                    <p className="text-gray-900 font-medium">{event.venue}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4l6 6m0-6l-6 6" />
-                      </svg>
-                      <p className="font-semibold text-gray-700">Date</p>
-                    </div>
-                    <p className="text-gray-900 font-medium">{new Date(event.date).toLocaleDateString()}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                      </svg>
-                      <p className="font-semibold text-gray-700">Budget</p>
-                    </div>
-                    <p className="text-2xl font-bold text-green-600">${event.budget}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                      <p className="font-semibold text-gray-700">Organizers</p>
-                    </div>
-                    <p className="text-2xl font-bold text-blue-600">{event.organizers.length}</p>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="mb-6">
-                  <h3 className="font-semibold text-gray-700 mb-2 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Description
-                  </h3>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-gray-900 leading-relaxed">{event.description}</p>
-                  </div>
-                </div>
-
-                {/* Organizers Section */}
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-4 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Interested Organizers ({event.organizers.length})
-                  </h3>
-                  
-                  {event.organizers.length === 0 ? (
-                    <div className="bg-gray-50 rounded-xl p-8 text-center">
-                      <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
+          {/* Event Requests List */}
+          <div className="space-y-8">
+            {eventRequests.map((event) => (
+              <div key={event.eventId} className="border border-gray-200 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+                {/* Event Header */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200 p-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center shadow-sm">
+                        <FileText className="w-7 h-7 text-indigo-600" />
                       </div>
-                      <p className="text-gray-600">No organizers have accepted for this event yet.</p>
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-800">{event.eventType} Event</h2>
+                        <p className="text-sm text-gray-600 mt-1">Request ID: {event.eventId}</p>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {event.organizers.map((organizer, index) => (
-                        <div key={index} className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6 border border-gray-200 hover:shadow-md transition-all duration-200">
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                              </div>
-                              <div>
-                                <h4 className="font-bold text-gray-900 text-lg">{organizer.fullname}</h4>
-                                {getStatusBadge(organizer.status)}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-3 mb-4">
-                            <div className="flex items-center space-x-2">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                              </svg>
-                              <span className="text-gray-700">{organizer.contact}</span>
-                            </div>
-                            
-                            <div className="flex items-center space-x-2">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                              </svg>
-                              <span className="text-gray-700">Proposed Budget: </span>
-                              <span className="font-bold text-green-600">${organizer.proposedBudget}</span>
-                            </div>
-                            
-                            <div className="flex items-center space-x-2">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4l6 6m0-6l-6 6" />
-                              </svg>
-                              <span className="text-gray-700">Response Date: {new Date(organizer.responseDate).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-white rounded-lg p-4 mb-4">
-                            <p className="text-sm text-gray-600 mb-1">Message:</p>
-                            <p className="text-gray-900">{organizer.message}</p>
-                          </div>
-                          
-                          <button
-                            onClick={() => handleSelectOrganizer(event.eventId, organizer.organizerId)}
-                            className="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
-                          >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            Select Organizer
-                          </button>
+                    <div className="flex items-center gap-3">
+                      {getStatusBadge(event.status)}
+                      <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl">
+                        <Users className="w-4 h-4 text-gray-600" />
+                        <span className="font-medium text-gray-800">{event.organizers.length} Organizers</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Event Details */}
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                        <MapPin className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Venue</p>
+                        <p className="font-bold text-gray-800">{event.venue}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
+                        <Calendar className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Date</p>
+                        <p className="font-bold text-gray-800">{new Date(event.date).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-yellow-100 flex items-center justify-center">
+                        <DollarSign className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Budget</p>
+                        <p className="font-bold text-gray-800 text-xl">${event.budget}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center">
+                        <MessageSquare className="w-5 h-5 text-rose-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Organizers</p>
+                        <p className="font-bold text-gray-800 text-xl">{event.organizers.length}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="mb-8">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-indigo-600" />
+                      Event Description
+                    </h3>
+                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-6">
+                      <p className="text-gray-700 leading-relaxed">{event.description}</p>
+                    </div>
+                  </div>
+
+                  {/* Organizers Section */}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-indigo-600" />
+                      Interested Organizers ({event.organizers.length})
+                    </h3>
+                    
+                    {event.organizers.length === 0 ? (
+                      <div className="py-12 text-center bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center mx-auto mb-6">
+                          <Users className="w-10 h-10 text-gray-400" />
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        <p className="text-gray-600 font-medium">No organizers have accepted for this event yet.</p>
+                        <p className="text-sm text-gray-500 mt-2">Check back later or update your request details.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {event.organizers.map((organizer, index) => (
+                          <div key={index} className="group bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105">
+                            <div className="flex items-start justify-between mb-6">
+                              <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
+                                  <UserCircle className="w-7 h-7 text-indigo-600" />
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-gray-800 text-lg">{organizer.fullname}</h4>
+                                  <div className="mt-2">{getStatusBadge(organizer.status)}</div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-4 mb-6">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                                  <Phone className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-600">Contact</p>
+                                  <p className="font-medium text-gray-800">{organizer.contact}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
+                                  <DollarSign className="w-4 h-4 text-emerald-600" />
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-600">Proposed Budget</p>
+                                  <p className="font-bold text-gray-800 text-xl">${organizer.proposedBudget}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-100 to-yellow-100 flex items-center justify-center">
+                                  <Calendar className="w-4 h-4 text-amber-600" />
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-600">Response Date</p>
+                                  <p className="font-medium text-gray-800">{new Date(organizer.responseDate).toLocaleDateString()}</p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-4 mb-6">
+                              <p className="text-sm font-medium text-gray-600 mb-2">Organizer's Message</p>
+                              <p className="text-gray-800">{organizer.message}</p>
+                            </div>
+                            
+                            <button
+                              onClick={() => handleSelectOrganizer(event.eventId, organizer.organizerId)}
+                              className="group/select w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+                            >
+                              <CheckCircle className="w-5 h-5 group-hover/select:scale-110 transition-transform" />
+                              Select This Organizer
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>

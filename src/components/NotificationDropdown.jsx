@@ -2,12 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/context/NotificationContext';
 import { formatDistance } from 'date-fns';
-import { Bell, Filter, Check, Loader, Trash2 } from 'lucide-react';
+import {
+  Bell, Check, Loader, 
+  X, Settings, Clock,
+  AlertCircle, Calendar,
+  Eye, EyeOff
+} from 'lucide-react';
 
 const NotificationDropdown = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
+  const [showSettings, setShowSettings] = useState(false);
   const observerTarget = useRef(null);
+  const dropdownRef = useRef(null); // Ref for the dropdown container
   const userRole = localStorage.getItem('role');
 
   const {
@@ -21,27 +28,69 @@ const NotificationDropdown = () => {
     fetchNotifications,
     isLoading,
     error,
-    pagination
+    pagination,
+    unreadCount,
+    toggleNotifications // We'll need this from context to close the dropdown
   } = useNotifications();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // If dropdown is open and click is outside of dropdown
+      if (isNotificationsOpen && 
+          dropdownRef.current && 
+          !dropdownRef.current.contains(event.target) &&
+          // Also check if we're not clicking on the notification bell button itself
+          !event.target.closest('.notifications-dropdown')) {
+        toggleNotifications(); // Close the dropdown
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNotificationsOpen, toggleNotifications]);
+
+  const getNotificationIcon = (type) => {
+    const iconMap = {
+      event: Calendar,
+      default: Bell
+    };
+    const Icon = iconMap[type] || iconMap.default;
+    return <Icon className="w-4 h-4" />;
+  };
+
+  const getNotificationColor = (type) => {
+    const colorMap = {
+      event: 'text-purple-600 bg-purple-100',
+      default: 'text-gray-600 bg-gray-100'
+    };
+    return colorMap[type] || colorMap.default;
+  };
 
   const formatTimestamp = (notification) => {
     try {
       const timestamp = notification.createdAt || notification.timestamp || notification.created_at;
-      
-      if (!timestamp) {
-        return 'Just now';
-      }
+      if (!timestamp) return 'Just now';
 
       const date = new Date(timestamp);
-      
-      if (isNaN(date.getTime())) {
-        console.warn('Invalid timestamp for notification:', notification);
-        return 'Recently';
-      }
+      if (isNaN(date.getTime())) return 'Recently';
 
-      return formatDistance(date, new Date(), { addSuffix: true });
+      const timeAgo = formatDistance(date, new Date(), { addSuffix: true });
+      const exactTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      return (
+        <div className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          <span title={date.toLocaleString()}>{timeAgo}</span>
+          <span className="text-xs opacity-75">({exactTime})</span>
+        </div>
+      );
     } catch (error) {
-      console.warn('Error formatting timestamp:', error);
       return 'Recently';
     }
   };
@@ -49,12 +98,8 @@ const NotificationDropdown = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && 
-            !isLoading && 
-            pagination?.totalPages && 
-            currentPage < pagination.totalPages) {
-          fetchNotifications(currentPage + 1, filter)
-            .then(() => setCurrentPage(prev => prev + 1));
+        if (entry.isIntersecting && !isLoading && pagination?.totalPages && currentPage < pagination.totalPages) {
+          fetchNotifications(currentPage + 1, filter).then(() => setCurrentPage(prev => prev + 1));
         }
       },
       { threshold: 0.5 }
@@ -66,12 +111,9 @@ const NotificationDropdown = () => {
 
   const handleNotificationClick = async (notification) => {
     try {
-      // Prevent API call for temporary notifications
       if (!notification._id.startsWith('temp-')) {
         await markAsRead(notification._id);
       }
-  
-      // Existing navigation logic
       const path = navigationMap[userRole]?.[notification.type];
       if (path) navigate(path, { state: { highlightId: notification.eventId } });
     } catch (error) {
@@ -79,83 +121,174 @@ const NotificationDropdown = () => {
     }
   };
 
-  const NotificationItem = ({ notification }) => (
-    <div
-      className={`px-4 py-3 hover:bg-gray-50 border-b border-gray-200 last:border-0 cursor-pointer ${
-        !notification.read ? 'bg-blue-50' : ''
-      } flex justify-between items-start`}
-      onClick={() => {
-        if (!notification.eventId || !notification.type) return;
-        handleNotificationClick(notification);
-      }}
-    >
-      <div className="flex-1">
-        <p className={`text-sm text-gray-800 ${
-          !notification.read ? 'font-semibold' : ''
-        }`}>
-          {notification.message}
-        </p>
-        <p className="text-xs text-gray-600 mt-1">
-          {formatTimestamp(notification)}
-        </p>
+  const NotificationItem = ({ notification }) => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    return (
+      <div
+        className={`px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0 cursor-pointer transition-all duration-200 ${
+          !notification.read ? 'bg-blue-50' : ''
+        }`}
+        onClick={() => notification.eventId && notification.type && handleNotificationClick(notification)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="flex items-start gap-3">
+          <div className={`p-2 rounded-lg ${getNotificationColor(notification.type || 'default')}`}>
+            {getNotificationIcon(notification.type || 'default')}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <p className={`text-sm text-gray-800 line-clamp-2 ${
+                !notification.read ? 'font-semibold' : ''
+              }`}>
+                {notification.message}
+              </p>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {!notification.read && (
+                  <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                )}
+                {isHovered && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteNotification(notification._id);
+                    }}
+                    className="p-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    title="Delete notification"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <div className="text-xs text-gray-600">
+                {formatTimestamp(notification)}
+              </div>
+              {isHovered && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      markAsRead(notification._id);
+                    }}
+                    className="p-1 rounded text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                    title="Mark as read"
+                  >
+                    <Eye className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="flex items-center gap-2"> 
-        {!notification.read && (
-          <span 
-            className="w-2 h-2 bg-blue-500 rounded-full" 
-          /> 
-        )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            deleteNotification(notification._id);
-          }}
-          className="p-1 rounded-full text-gray-600 hover:text-red-500"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+    );
+  };
+
+  const FilterButtons = () => (
+    <div className="p-3 border-b border-gray-200 bg-gray-50">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">FILTERS</h4>
+        <span className="text-xs text-gray-500">
+          {unreadCount > 0 ? `${unreadCount} unread` : 'All read'}
+        </span>
+      </div>
+      <div className="flex gap-1 overflow-x-auto pb-1">
+        {[
+          { id: 'all', label: 'All', icon: Bell },
+          { id: 'unread', label: 'Unread', icon: EyeOff }
+        ].map((filterItem) => {
+          const Icon = filterItem.icon;
+          return (
+            <button
+              key={`filter-${filterItem.id}`}
+              onClick={() => handleFilterChange(filterItem.id)}
+              className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
+                filter === filterItem.id 
+                  ? 'bg-white shadow-sm border border-gray-300 text-blue-600' 
+                  : 'hover:bg-white hover:shadow-sm text-gray-600'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{filterItem.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 
-  const FilterButtons = () => (
-    <div className="p-2 border-b border-gray-200 flex gap-2 overflow-x-auto">
-      {['all', 'event', 'system', 'profile', 'unread'].map((filterType) => (
+  const SettingsPanel = () => (
+    <div className="absolute inset-0 bg-white z-10">
+      <div className="p-4 border-b border-gray-200 flex items-center gap-3">
         <button
-          key={`filter-${filterType}`}
-          onClick={() => handleFilterChange(filterType)}
-          className={`px-3 py-1 rounded-full text-sm hover:bg-gray-100 ${
-            filter === filterType ? 'bg-blue-100 text-blue-600' : ''
-          }`}
+          onClick={() => setShowSettings(false)}
+          className="p-2 rounded-full hover:bg-gray-100"
         >
-          {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+          <X className="w-4 h-4" />
         </button>
-      ))}
+        <h3 className="font-semibold text-gray-800">Notification Settings</h3>
+      </div>
+      <div className="p-4">
+        <div className="text-center py-8 text-gray-500">
+          Notification settings will be available soon.
+        </div>
+        <div className="pt-4 border-t border-gray-200">
+          <button
+            onClick={() => {
+              markAllAsRead();
+              setShowSettings(false);
+            }}
+            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Mark All as Read
+          </button>
+        </div>
+      </div>
     </div>
   );
 
   const NotificationsList = () => (
     <div className="max-h-96 overflow-y-auto">
       {notifications.length > 0 ? (
-        <div key="notifications-container">
-          <div key="notifications-list">
+        <>
+          <div className="divide-y divide-gray-100">
             {notifications.map((notification) => (
-              <NotificationItem 
+              <NotificationItem
                 key={notification._id || `temp-${Date.now()}-${Math.random()}`}
-                notification={notification} 
+                notification={notification}
               />
             ))}
           </div>
-          <div key="observer-target" ref={observerTarget} className="h-4" />
-          {isLoading && (
-            <div key="loading-indicator" className="p-4 text-center">
-              <Loader className="w-6 h-6 animate-spin mx-auto text-gray-600" />
-            </div>
-          )}
-        </div>
+          <div ref={observerTarget} className="h-8 flex items-center justify-center">
+            {isLoading ? (
+              <div className="py-4">
+                <Loader className="w-5 h-5 animate-spin mx-auto text-gray-400" />
+              </div>
+            ) : currentPage < pagination?.totalPages ? (
+              <div className="py-2 text-xs text-gray-500">
+                Scroll to load more...
+              </div>
+            ) : (
+              <div className="py-4 text-xs text-gray-500 text-center">
+                You've reached the end
+              </div>
+            )}
+          </div>
+        </>
       ) : (
-        <div key="no-notifications" className="p-4 text-center text-gray-600">
-          No notifications
+        <div className="flex flex-col items-center justify-center p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <Bell className="w-8 h-8 text-gray-400" />
+          </div>
+          <p className="text-gray-600 font-medium">No notifications yet</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {filter === 'unread' 
+              ? 'All notifications are read' 
+              : 'Your notifications will appear here'}
+          </p>
         </div>
       )}
     </div>
@@ -170,23 +303,63 @@ const NotificationDropdown = () => {
   if (!isNotificationsOpen) return null;
 
   return (
-    <div className="absolute right-0 mt-2 w-80 rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden">
-      <div key="header" className="p-4 border-b border-gray-200 flex justify-between items-center">
-        <h3 className="font-semibold text-gray-800">Notifications</h3>
-        <button
-          onClick={markAllAsRead}
-          className="px-3 py-1 rounded-full text-sm hover:bg-gray-100 flex items-center gap-1"
-        >
-          <Check className="w-4 h-4" />
-          <span>Mark all read</span>
-        </button>
+    <div 
+      ref={dropdownRef} // Attach the ref here
+      className="absolute right-0 mt-2 w-96 rounded-lg bg-white shadow-xl border border-gray-200 overflow-hidden z-50"
+    >
+      <div className="p-4 border-b border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-600">
+              <Bell className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-800">Notifications</h3>
+              <p className="text-xs text-gray-600">
+                {notifications.length} total • {unreadCount} unread
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="p-2 rounded-full hover:bg-gray-200 text-gray-600"
+              title="Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <button
+              onClick={markAllAsRead}
+              disabled={unreadCount === 0}
+              className={`px-3 py-2 rounded-lg flex items-center gap-1 text-sm ${
+                unreadCount > 0 
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              <Check className="w-4 h-4" />
+              <span>Mark All Read</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <FilterButtons key="filter-buttons" />
-      <NotificationsList key="notifications-list" />
+      {showSettings ? (
+        <SettingsPanel />
+      ) : (
+        <>
+          <FilterButtons />
+          <NotificationsList />
+        </>
+      )}
+
       {error && (
-        <div className="p-2 text-red-500 text-sm text-center border-t border-red-200 bg-red-50">
-          Error: {error.message || 'Failed to process notification'}
+        <div className="p-3 bg-red-50 border-t border-red-200 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-500" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-red-700">Error</p>
+            <p className="text-xs text-red-600">{error.message || 'Failed to load notifications'}</p>
+          </div>
         </div>
       )}
     </div>

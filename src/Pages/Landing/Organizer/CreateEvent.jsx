@@ -18,7 +18,11 @@ import {
   Star,
   Lightbulb,
   Target,
-  Zap
+  Zap,
+  Sparkles,
+  TrendingUp,
+  Activity,
+  ArrowRight
 } from 'lucide-react';
 import { 
   Dialog,
@@ -315,128 +319,116 @@ const CreateEvent = () => {
   ];
 
   if (loading && (!categories.length || !userData)) {
-    return <div className="flex justify-center items-center min-h-screen">
-      <div className="text-center">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className='text-gray-600'>Loading...</p>
+    return <div className="space-y-8 p-4 md:p-6">
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+        <div className="p-6 md:p-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-lg font-medium text-gray-700">Loading...</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 transition-colors duration-200">
-      {/* Header with Create Button */}
-      <div className="bg-white border-gray-200 border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+    <div className="space-y-8 p-4 md:p-6">
+      {/* Main Dashboard Container */}
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+        <div className="p-6 md:p-8">
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Event Management
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+                  <Activity className="w-6 h-6 text-white" />
+                </div>
+                Create New Event
               </h1>
-              <p className="mt-1 text-gray-600">
-                Create and manage your events with ease
+              <p className="text-gray-600">
+                Design and launch your perfect event with our intuitive creation tools
               </p>
             </div>
+            
             <button
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+              className="mt-4 md:mt-0 px-5 py-3 rounded-xl font-medium flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
             >
               <Plus className="w-5 h-5" />
               Create Event
             </button>
           </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-8 mb-8">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 text-white rounded-full mb-4">
-              <Zap className="w-8 h-8" />
-            </div>
-            <h2 className="text-2xl font-bold mb-3 text-gray-900">
-              Create Amazing Events
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Bring your ideas to life and connect with your audience. Our platform makes it easy to create, 
-              manage, and promote events that leave lasting impressions.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Event Creation Guide */}
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <Lightbulb className="w-5 h-5 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900">
-                How to Create Great Events
-              </h3>
-            </div>
-            
-            <div className="space-y-6">
-              {guideSteps.map((step, index) => (
-                <div key={index} className="flex gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                      {step.icon}
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Event Creation Guide */}
+            <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+              <div className="p-6 md:p-8">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                        <Lightbulb className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800">How to Create Great Events</h3>
+                        <p className="text-sm text-gray-600 mt-1">Follow these steps for success</p>
+                      </div>
                     </div>
                   </div>
+                </div>
+                
+                <div className="space-y-6">
+                  {guideSteps.map((step, index) => (
+                    <div key={index} className="flex gap-4">
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-200 flex items-center justify-center shadow-md">
+                          {step.icon}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-1 text-gray-800">
+                          {step.title}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {step.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Tips and Best Practices */}
+            <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+              <div className="p-6 md:p-8">
+                <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h4 className="font-semibold mb-1 text-gray-900">
-                      {step.title}
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {step.description}
-                    </p>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-lg">
+                        <Star className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800">Pro Tips for Success</h3>
+                        <p className="text-sm text-gray-600 mt-1">Expert advice for your events</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Tips and Best Practices */}
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-600 rounded-full flex items-center justify-center">
-                <Star className="w-5 h-5 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900">
-                Pro Tips for Success
-              </h3>
-            </div>
-            
-            <div className="space-y-4">
-              {tips.map((tip, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                  <p className="text-sm text-gray-600">
-                    {tip}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 gap-4 mt-8">
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-gray-900">
-                  500+
-                </div>
-                <div className="text-xs text-gray-600">
-                  Events Created
-                </div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-gray-900">
-                  10K+
-                </div>
-                <div className="text-xs text-gray-600">
-                  Attendees Reached
+                
+                <div className="space-y-4 mb-8">
+                  {tips.map((tip, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center mt-0.5">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {tip}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -449,9 +441,9 @@ const CreateEvent = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="border-gray-200 border-b px-6 py-4 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-gray-50 to-white border-gray-200 border-b px-6 py-4 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-bold text-gray-800">
                   Create New Event
                 </h2>
                 <p className="text-sm text-gray-600">
@@ -473,9 +465,14 @@ const CreateEvent = () => {
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
               <form onSubmit={handleCreateEvent} className="space-y-6">
                 {error && (
-                  <div className="flex items-center gap-2 p-4 text-red-700 rounded-lg bg-red-50">
-                    <AlertCircle className="w-5 h-5" />
-                    <span>{error}</span>
+                  <div className="relative p-5 pl-14 bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 rounded-lg shadow-sm">
+                    <div className="absolute left-5 top-5">
+                      <AlertCircle className="w-6 h-6 text-red-500" />
+                    </div>
+                    <div className="pr-10">
+                      <h4 className="font-bold text-red-800 mb-1">Error Creating Event</h4>
+                      <p className="text-sm text-red-600">{error}</p>
+                    </div>
                   </div>
                 )}
 
@@ -489,7 +486,7 @@ const CreateEvent = () => {
                       <input
                         name="event_name"
                         type="text"
-                        className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                         required
                         placeholder="Enter a compelling event name"
                       />
@@ -502,7 +499,7 @@ const CreateEvent = () => {
                       <div className="relative">
                         <select
                           name="category"
-                          className="w-full px-4 py-3 rounded-lg border appearance-none bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                          className="w-full px-4 py-3 rounded-xl border appearance-none bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                           required
                         >
                           <option value="">Select Category</option>
@@ -530,7 +527,7 @@ const CreateEvent = () => {
                         <input
                           name="event_date"
                           type="date"
-                          className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                          className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                           required
                         />
                       </div>
@@ -544,7 +541,7 @@ const CreateEvent = () => {
                         <input
                           name="time"
                           type="time"
-                          className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                          className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                           required
                         />
                       </div>
@@ -557,7 +554,7 @@ const CreateEvent = () => {
                       <input
                         name="registrationDeadline"
                         type="date"
-                        className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                         required
                       />
                     </div>
@@ -576,7 +573,7 @@ const CreateEvent = () => {
                     <input
                       name="location"
                       type="text"
-                      className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       required
                       placeholder="Enter venue location"
                     />
@@ -592,7 +589,7 @@ const CreateEvent = () => {
                     <input
                       name="tags"
                       type="text"
-                      className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       placeholder="Separate tags with commas"
                     />
                   </div>
@@ -610,7 +607,7 @@ const CreateEvent = () => {
                     <input
                       name="totalSlots"
                       type="number"
-                      className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       required
                       min="1"
                       placeholder="Enter capacity"
@@ -627,7 +624,7 @@ const CreateEvent = () => {
                     <input
                       name="price"
                       type="number"
-                      className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       required
                       min="0"
                       step="0.01"
@@ -648,7 +645,7 @@ const CreateEvent = () => {
                     name="eventImage"
                     type="file"
                     accept="image/*"
-                    className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 file:bg-blue-50 file:border-0 file:text-blue-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:text-sm file:font-medium hover:file:bg-blue-100 transition-colors"
+                    className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 file:bg-gradient-to-r file:from-blue-50 file:to-indigo-50 file:border-0 file:text-blue-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:text-sm file:font-medium hover:file:from-blue-100 hover:file:to-indigo-100 transition-colors"
                   />
                 </div>
 
@@ -662,7 +659,7 @@ const CreateEvent = () => {
                   </label>
                   <textarea
                     name="description"
-                    className="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     rows="4"
                     required
                     placeholder="Describe your event in detail..."
@@ -677,14 +674,14 @@ const CreateEvent = () => {
                       setShowCreateForm(false);
                       setError("");
                     }}
-                    className="flex-1 py-3 px-4 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-3 px-4 rounded-xl font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 py-3 px-4 rounded-lg font-medium bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    className="flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center gap-2">

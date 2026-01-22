@@ -1,140 +1,233 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Mail, Phone, MessageSquare, Send, MapPin } from 'lucide-react';
-import emailjs from '@emailjs/browser';
-import { motion } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
+import {
+  Search,
+  User,
+  FileText,
+  DollarSign,
+  Ticket,
+  UserCircle,
+  ClipboardList,
+  MessageSquare,
+  X,
+  Send,
+} from 'lucide-react';
 
+// Chat Component
+function AskQuestionChat({ isOpen, onClose }) {
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([
+    { from: 'bot', text: 'Hi! How can we help you today?' },
+  ]);
 
-const Contact = () => {
-  const form = useRef();
-  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-  const sendEmail = (e) => {
-    e.preventDefault();
-    setLoading(true);
+  if (!isOpen) return null;
 
-    emailjs.sendForm('service_5zu8wap', 'template_z89ddug', form.current, 'CynZIU6EnK4YuPEpF')
-      .then(() => {
-        alert('Email sent successfully!');
-        form.current.reset();
-      })
-      .catch((error) => {
-        console.error('FAILED...', error.text);
-        alert('Failed to send email. Please try again.');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+  const handleSend = () => {
+    if (!message.trim()) return;
+
+    setMessages((prev) => [
+      ...prev,
+      { from: 'user', text: message },
+      { from: 'bot', text: 'Thanks for your question. Our team will respond shortly.' },
+    ]);
+
+    setMessage('');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 text-gray-900 pt-16">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-primary to-blue-800 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Get in Touch</h1>
-          <p className="text-blue-100 max-w-2xl mx-auto text-lg">
-            Have questions about e-VENTA? We are here to help and would love to hear from you.
-          </p>
-        </div>
+    <div className="fixed bottom-24 right-6 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between bg-blue-600 text-white px-4 py-3 rounded-t-lg">
+        <h3 className="font-medium text-sm">Ask a Question</h3>
+        <button type="button" onClick={onClose}>
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
-      {/* Contact Form and Image Section */}
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Contact Form */}
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900">Send us a Message</h2>
-            <form ref={form} onSubmit={sendEmail} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">Your Name</label>
-                <input
-                  type="text"
-                  name="from_name"
-                  required
-                  className="w-full px-4 py-3 rounded-lg border bg-white text-gray-900"
-                  placeholder="John Doe"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">Email Address</label>
-                <input
-                  type="email"
-                  name="from_email"
-                  required
-                  className="w-full px-4 py-3 rounded-lg border bg-white text-gray-900"
-                  placeholder="john@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">Message</label>
-                <textarea
-                  name="message"
-                  rows={4}
-                  required
-                  className="w-full px-4 py-3 rounded-lg border bg-white text-gray-900"
-                  placeholder="How can we help you?"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
-                disabled={loading}
-              >
-                {loading ? 'Sending...' : 'Send Message'}
-                <Send className="w-5 h-5" />
-              </button>
-            </form>
+      {/* Messages */}
+      <div className="h-64 overflow-y-auto p-4 space-y-3 text-sm flex-1">
+        {messages.map((msg, index) => (
+          <div
+            key={index}
+            className={`max-w-[80%] px-3 py-2 rounded-lg break-words ${
+              msg.from === 'user'
+                ? 'ml-auto bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-800'
+            }`}
+          >
+            {msg.text}
           </div>
-
-          {/* 3D Motion Image */}
-          <div className="w-full h-full flex justify-center items-center">
-            <motion.img
-              src='/images/contactimage.avif'// Changed to absolute path
-              alt="3D Motion Image"
-              className="rounded-2xl shadow-xl w-full max-w-sm"
-              initial={{ scale: 1, rotateY: 0 }}
-              animate={{ scale: 1.05, rotateY: 10 }}
-              transition={{ repeat: Infinity, repeatType: "reverse", duration: 3 }}
-            />
-          </div>
-        </div>
+        ))}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Contact Information Section */}
-      <div className="bg-gray-50 py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">Contact Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Email */}
-            <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-              <Mail className="w-12 h-12 mx-auto mb-4 text-blue-600" />
-              <h3 className="text-xl font-bold mb-2 text-gray-900">Email</h3>
-              <p className="text-gray-600">
-              eventa2025@gmail.com</p>
-            </div>
-
-            {/* Phone */}
-            <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-              <Phone className="w-12 h-12 mx-auto mb-4 text-blue-600" />
-              <h3 className="text-xl font-bold mb-2 text-gray-900">Phone</h3>
-              <p className="text-gray-600">+1 (123) 456-7890</p>
-            </div>
-
-            {/* Address */}
-            <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-              <MapPin className="w-12 h-12 mx-auto mb-4 text-blue-600" />
-              <h3 className="text-xl font-bold mb-2 text-gray-900">Address</h3>
-              <p className="text-gray-600">123 Event Street, Kathmandu, Nepal 4001</p>
-            </div>
-          </div>
-        </div>
+      {/* Input */}
+      <div className="flex items-center gap-2 p-3 border-t">
+        <input
+          type="text"
+          placeholder="Type your question..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+        />
+        <button
+          type="button"
+          onClick={handleSend}
+          className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded"
+        >
+          <Send className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
-};
+}
 
-export default Contact;
+// Main Contact Page
+export default function Contact() {
+  const [activeTab, setActiveTab] = useState('attending');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  const featuredArticlesAttending = [
+    { title: 'Find your tickets', icon: FileText },
+    { title: 'Request a refund', icon: FileText },
+    { title: 'Contact the event organizer', icon: FileText },
+    { title: 'What is this charge from e-VENTA?', icon: FileText },
+    { title: 'Transfer tickets to someone else', icon: FileText },
+    { title: 'Edit your order information', icon: FileText },
+  ];
+
+  const featuredArticlesOrganizing = [
+    { title: 'Create your first event', icon: FileText },
+    { title: 'Set up ticket types', icon: FileText },
+    { title: 'Manage attendees', icon: FileText },
+    { title: 'Payout and billing', icon: FileText },
+    { title: 'Promote your event', icon: FileText },
+    { title: 'Event analytics', icon: FileText },
+  ];
+
+  const browseTopics = [
+    { title: 'Buy and register', icon: DollarSign },
+    { title: 'Your tickets', icon: Ticket },
+    { title: 'Your account', icon: UserCircle },
+    { title: 'Terms and policies', icon: ClipboardList },
+  ];
+
+  const featuredArticles =
+    activeTab === 'attending'
+      ? featuredArticlesAttending
+      : featuredArticlesOrganizing;
+
+  return (
+    <div className="min-h-screen bg-white pt-24">
+      {/* Hero Section */}
+      <div className="pb-8 px-4">
+        <h1 className="text-4xl md:text-5xl font-bold text-center text-[#1e0a3c] mb-8">
+          How can we help?
+        </h1>
+
+        {/* Search Bar */}
+        <div className="max-w-2xl mx-auto mb-8">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search help articles"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-600"
+            />
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="max-w-2xl mx-auto">
+          <div className="flex justify-center gap-8 border-b border-gray-200">
+            <button
+              type="button"
+              onClick={() => setActiveTab('attending')}
+              className={`pb-4 px-2 text-sm font-medium ${
+                activeTab === 'attending'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Attending an event
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('organizing')}
+              className={`pb-4 px-2 text-sm font-medium ${
+                activeTab === 'organizing'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Organizing an event
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Featured Articles */}
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <h2 className="text-xl font-bold text-[#1e0a3c] mb-6">Featured articles</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {featuredArticles.map((article) => (
+            <button
+              key={article.title}
+              type="button"
+              className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-blue-600"
+            >
+              <article.icon className="w-6 h-6 text-blue-600" />
+              <span className="font-medium text-[#1e0a3c]">{article.title}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Browse by Topic */}
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <h2 className="text-xl font-bold text-[#1e0a3c] mb-6">Browse by topic</h2>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {browseTopics.map((topic) => (
+            <button
+              key={topic.title}
+              type="button"
+              className="flex flex-col items-center gap-3 p-6 border border-gray-200 rounded-lg hover:border-blue-600"
+            >
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <topic.icon className="w-6 h-6 text-blue-600" />
+              </div>
+              <span className="text-sm font-medium text-center">{topic.title}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+    
+
+      {/* Floating Ask Button */}
+      <button
+        type="button"
+        onClick={() => setIsChatOpen(true)}
+        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg flex items-center gap-2 shadow-lg z-[9999]"
+      >
+        <MessageSquare className="w-5 h-5" />
+        Ask a question
+      </button>
+
+      {/* Chat Component */}
+      <AskQuestionChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+    </div>
+  );
+}

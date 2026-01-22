@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
-import { Camera, Calendar, MapPin, Clock, Edit2, X } from "lucide-react";
+import { Camera, Calendar, MapPin, Clock, Edit2, X, User, Save, Loader2 } from "lucide-react";
 
 const UserProfile = () => {
+  const navigate = useNavigate();
   const [userData, setUserData] = useState({
     fullname: '',
     email: '',
     contactNo: '',
     role: '',
-    profileImage: null
+    profileImage: null,
+    bio: ''
   });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,6 +26,9 @@ const UserProfile = () => {
   const [pastEvents, setPastEvents] = useState([]);
   const [wishlistEvents, setWishlistEvents] = useState([]);
   const [organizedEvents, setOrganizedEvents] = useState([]);
+  
+  // Store original data to reset if user cancels edit
+  const [originalData, setOriginalData] = useState({});
 
   useEffect(() => {
     fetchUserData();
@@ -35,7 +41,10 @@ const UserProfile = () => {
       const response = await axios.get('http://localhost:4001/api/v1/users/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUserData(response.data.user);
+      const user = response.data.user;
+      setUserData(user);
+      // Store original data for cancel functionality
+      setOriginalData(user);
     } catch (error) {
       setMessage({ type: 'error', content: 'Failed to fetch user data' });
     }
@@ -68,6 +77,18 @@ const UserProfile = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Validate file size
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', content: 'Image size should be less than 5MB' });
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', content: 'Please select an image file' });
+      return;
+    }
+
     const formData = new FormData();
     formData.append('image', file);
 
@@ -85,7 +106,8 @@ const UserProfile = () => {
         }
       );
       setUserData(prev => ({ ...prev, profileImage: response.data.imageUrl }));
-      setMessage({ type: 'success', content: 'Profile image updated successfully' });
+      setOriginalData(prev => ({ ...prev, profileImage: response.data.imageUrl }));
+      setMessage({ type: 'success', content: 'Profile image updated successfully!' });
     } catch (error) {
       setMessage({ type: 'error', content: error.response?.data?.message || 'Failed to upload image' });
     } finally {
@@ -93,7 +115,43 @@ const UserProfile = () => {
     }
   };
 
+  const startEditing = () => {
+    // Store current data as original when starting edit
+    setOriginalData({ ...userData });
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    // Reset to original data
+    setUserData({ ...originalData });
+    setIsEditing(false);
+    setMessage({ type: '', content: '' });
+  };
+
   const handleProfileUpdate = async () => {
+    // Validation
+    if (!userData.fullname.trim()) {
+      setMessage({ type: 'error', content: 'Full name is required' });
+      return;
+    }
+
+    if (userData.contactNo && !/^\d{10}$/.test(userData.contactNo)) {
+      setMessage({ type: 'error', content: 'Please enter a valid 10-digit contact number' });
+      return;
+    }
+
+    // Check if there are actual changes
+    const hasChanges = 
+      userData.fullname !== originalData.fullname ||
+      userData.contactNo !== originalData.contactNo ||
+      userData.bio !== originalData.bio;
+
+    if (!hasChanges) {
+      setMessage({ type: 'info', content: 'No changes to save' });
+      setIsEditing(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -102,12 +160,22 @@ const UserProfile = () => {
         {
           fullname: userData.fullname,
           contactNo: userData.contactNo,
+          bio: userData.bio
         },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setMessage({ type: 'success', content: 'Profile updated successfully' });
+      setMessage({ type: 'success', content: 'Profile updated successfully!' });
+      
+      // Update original data with new changes
+      setOriginalData({
+        ...originalData,
+        fullname: userData.fullname,
+        contactNo: userData.contactNo,
+        bio: userData.bio
+      });
+      
       setIsEditing(false);
     } catch (error) {
       setMessage({ type: 'error', content: error.response?.data?.message || 'Failed to update profile' });
@@ -133,7 +201,10 @@ const UserProfile = () => {
           setWishlistEvents(prev => prev.filter(event => event._id !== eventId));
           break;
         case 'edit':
-          // Navigate to edit event page or open modal
+          navigate(`/events/edit/${eventId}`);
+          break;
+        case 'manage':
+          navigate(`/events/manage/${eventId}`);
           break;
       }
       setMessage({ type: 'success', content: `Event ${action} successful` });
@@ -143,7 +214,7 @@ const UserProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-4 md:p-16">
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
         {/* Profile Header Card */}
         <Card className="border-none shadow-lg">
@@ -151,36 +222,83 @@ const UserProfile = () => {
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="relative group">
                 <Avatar className="h-32 w-32 ring-4 ring-white shadow-xl">
-                  <AvatarImage src={userData.profileImage || "/default-avatar.png"} 
-                             className="object-cover" />
+                  <AvatarImage 
+                    src={userData.profileImage || "/default-avatar.png"} 
+                    className="object-cover" 
+                    alt="Profile"
+                  />
                   <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                    {userData.fullname?.charAt(0)}
+                    {userData.fullname?.charAt(0) || <User className="h-12 w-12" />}
                   </AvatarFallback>
                 </Avatar>
-                <label htmlFor="profile-image" 
-                       className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg 
-                                cursor-pointer transform transition-transform hover:scale-110">
-                  <Camera className="h-5 w-5 text-gray-600" />
-                  <input type="file" id="profile-image" className="hidden" 
-                         accept="image/*" onChange={handleImageUpload} />
+                <label 
+                  htmlFor="profile-image" 
+                  className={`absolute bottom-0 right-0 p-2 rounded-full shadow-lg cursor-pointer transition-all
+                    ${loading ? 'bg-gray-100' : 'bg-white hover:bg-gray-50 hover:scale-110'}`}
+                >
+                  {loading ? (
+                    <Loader2 className="h-5 w-5 text-gray-600 animate-spin" />
+                  ) : (
+                    <Camera className="h-5 w-5 text-gray-600" />
+                  )}
+                  <input 
+                    type="file" 
+                    id="profile-image" 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleImageUpload}
+                    disabled={loading}
+                  />
                 </label>
               </div>
               
               <div className="flex-1 text-center md:text-left">
-                <h1 className="text-3xl font-bold bg-clip-text text-transparent 
-                             bg-gradient-to-r from-blue-600 to-purple-600">
-                  {userData.fullname}
-                </h1>
-                <p className="text-gray-600 mt-1">{userData.role}</p>
-                <div className="mt-4 flex flex-col md:flex-row gap-4">
-                  <Button onClick={() => setIsEditing(!isEditing)}
-                          className="bg-gradient-to-r from-blue-600 to-purple-600 
-                                   hover:from-blue-700 hover:to-purple-700">
-                    {isEditing ? 'Cancel Edit' : 'Edit Profile'}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h1 className="text-3xl font-bold bg-clip-text text-transparent 
+                                 bg-gradient-to-r from-blue-600 to-purple-600">
+                      {userData.fullname || 'User Profile'}
+                    </h1>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="inline-block px-3 py-1 text-sm font-semibold 
+                                     rounded-full bg-gradient-to-r from-blue-100 to-purple-100 
+                                     text-blue-700">
+                        {userData.role || 'User'}
+                      </span>
+                      {userData.role === 'Organizer' && (
+                        <span className="text-sm text-gray-500">Verified Organizer</span>
+                      )}
+                    </div>
+                    {userData.bio && (
+                      <p className="mt-2 text-gray-600 max-w-2xl">{userData.bio}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Button 
+                    onClick={isEditing ? cancelEditing : startEditing}
+                    disabled={loading}
+                    className={`transition-all duration-200 ${isEditing ? 
+                      'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700' : 
+                      'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'}`}
+                  >
+                    {loading && isEditing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : isEditing ? (
+                      <>
+                        <X className="h-4 w-4 mr-2" />
+                        Cancel Edit
+                      </>
+                    ) : (
+                      <>
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        Edit Profile
+                      </>
+                    )}
                   </Button>
-                  {userData.role === 'Organizer' && (
-                    <Button variant="outline">Create Event</Button>
-                  )}
                 </div>
               </div>
             </div>
@@ -192,18 +310,27 @@ const UserProfile = () => {
           {/* Profile Information */}
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="text-xl font-semibold">Profile Details</CardTitle>
+              <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Profile Details
+                {isEditing && (
+                  <span className="text-sm font-normal text-blue-600 animate-pulse">
+                    (Editing...)
+                  </span>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Full Name</label>
+                  <label className="text-sm font-medium text-gray-600">Full Name *</label>
                   <Input
                     name="fullname"
                     value={userData.fullname}
                     onChange={handleChange}
-                    disabled={!isEditing}
-                    className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                    disabled={!isEditing || loading}
+                    className={`transition-all ${isEditing ? 'border-blue-300 ring-1 ring-blue-100' : 'border-gray-200'}`}
+                    placeholder="Enter your full name"
                   />
                 </div>
                 <div className="space-y-2">
@@ -221,19 +348,52 @@ const UserProfile = () => {
                     name="contactNo"
                     value={userData.contactNo}
                     onChange={handleChange}
-                    disabled={!isEditing}
-                    className="border-gray-200 focus:ring-2 focus:ring-blue-500"
+                    disabled={!isEditing || loading}
+                    className={`transition-all ${isEditing ? 'border-blue-300 ring-1 ring-blue-100' : 'border-gray-200'}`}
+                    placeholder="10-digit number (optional)"
                   />
+                  {isEditing && (
+                    <p className="text-xs text-gray-500">Optional - 10 digits only</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-600">Bio</label>
+                  <textarea
+                    name="bio"
+                    value={userData.bio || ''}
+                    onChange={handleChange}
+                    disabled={!isEditing || loading}
+                    className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all
+                      ${isEditing ? 'border-blue-300 ring-1 ring-blue-100' : 'border-gray-200'}`}
+                    placeholder="Tell us about yourself... (optional)"
+                    rows="3"
+                  />
+                  {isEditing && (
+                    <p className="text-xs text-gray-500">Optional - Brief description about yourself</p>
+                  )}
                 </div>
                 {isEditing && (
-                  <Button 
-                    onClick={handleProfileUpdate}
-                    disabled={loading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 
-                             hover:from-blue-700 hover:to-purple-700"
-                  >
-                    Save Changes
-                  </Button>
+                  <div className="pt-4 border-t">
+                    <Button 
+                      type="button"
+                      onClick={handleProfileUpdate}
+                      disabled={loading}
+                      className="w-full bg-gradient-to-r from-green-500 to-emerald-600 
+                               hover:from-green-600 hover:to-emerald-700"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving Changes...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )}
               </form>
             </CardContent>
@@ -257,23 +417,39 @@ const UserProfile = () => {
                     {(tabValue === 'booked' ? bookedEvents :
                       tabValue === 'wishlist' ? wishlistEvents :
                       tabValue === 'past' ? pastEvents :
-                      organizedEvents).map(event => (
-                      <EventCard
-                        key={event._id}
-                        event={event}
-                        onAction={id => handleEventAction(id, 
-                          tabValue === 'booked' ? 'cancel' :
-                          tabValue === 'wishlist' ? 'removeWishlist' :
-                          tabValue === 'organized' ? 'edit' : null
-                        )}
-                        actionLabel={
-                          tabValue === 'booked' ? 'Cancel Booking' :
-                          tabValue === 'wishlist' ? 'Remove' :
-                          tabValue === 'organized' ? 'Edit Event' : null
-                        }
-                        showAction={tabValue !== 'past'}
-                      />
-                    ))}
+                      organizedEvents).length === 0 ? (
+                      <Card className="text-center py-8">
+                        <CardContent>
+                          <p className="text-gray-500">
+                            {tabValue === 'booked' && 'No upcoming events booked'}
+                            {tabValue === 'wishlist' && 'No events in wishlist'}
+                            {tabValue === 'past' && 'No past events'}
+                            {tabValue === 'organized' && 'No organized events yet'}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      (tabValue === 'booked' ? bookedEvents :
+                        tabValue === 'wishlist' ? wishlistEvents :
+                        tabValue === 'past' ? pastEvents :
+                        organizedEvents).map(event => (
+                        <EventCard
+                          key={event._id}
+                          event={event}
+                          onAction={(id, action) => handleEventAction(id, 
+                            tabValue === 'booked' ? 'cancel' :
+                            tabValue === 'wishlist' ? 'removeWishlist' :
+                            tabValue === 'organized' ? 'manage' : null
+                          )}
+                          actionLabel={
+                            tabValue === 'booked' ? 'Cancel Booking' :
+                            tabValue === 'wishlist' ? 'Remove from Wishlist' :
+                            tabValue === 'organized' ? 'Manage Event' : null
+                          }
+                          showAction={tabValue !== 'past'}
+                        />
+                      ))
+                    )}
                   </div>
                 </TabsContent>
               ))}
@@ -283,13 +459,14 @@ const UserProfile = () => {
 
         {/* Notification Alert */}
         {message.content && (
-          <Alert className={`fixed bottom-4 right-4 max-w-md transform transition-transform
-                            ${message.type === 'error' ? 'bg-red-50 border-red-200' : 
-                                                       'bg-green-50 border-green-200'}`}>
+          <Alert className={`fixed bottom-4 right-4 max-w-md animate-in slide-in-from-bottom-5
+                            ${message.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 
+                             message.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+                             'bg-blue-50 border-blue-200 text-blue-800'}`}>
             <AlertDescription className="flex items-center justify-between">
               <span>{message.content}</span>
               <button onClick={() => setMessage({ type: '', content: '' })}
-                      className="ml-4 text-gray-400 hover:text-gray-600">
+                      className="ml-4 text-gray-400 hover:text-gray-600 transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </AlertDescription>
@@ -319,16 +496,33 @@ const EventCard = ({ event, onAction, actionLabel, showAction = true }) => (
               <MapPin className="h-4 w-4" />
               <span>{event.location}</span>
             </div>
+            {event.price > 0 && (
+              <div className="text-green-600 font-semibold">
+                ${parseFloat(event.price).toFixed(2)}
+              </div>
+            )}
           </div>
         </div>
         {showAction && (
           <div className="flex items-center">
             <Button
-              onClick={() => onAction(event._id)}
-              variant={actionLabel.toLowerCase().includes('cancel') ? 'destructive' : 'secondary'}
-              className="w-full md:w-auto"
+              onClick={() => onAction(event._id, 
+                actionLabel === 'Cancel Booking' ? 'cancel' :
+                actionLabel === 'Remove from Wishlist' ? 'removeWishlist' :
+                'manage'
+              )}
+              variant={
+                actionLabel === 'Cancel Booking' ? 'destructive' :
+                actionLabel === 'Manage Event' ? 'default' :
+                'secondary'
+              }
+              className={`w-full md:w-auto transition-all ${
+                actionLabel === 'Manage Event' ? 
+                'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' :
+                ''
+              }`}
             >
-              {actionLabel === 'Edit Event' ? <Edit2 className="h-4 w-4 mr-2" /> : null}
+              {actionLabel === 'Manage Event' && <Edit2 className="h-4 w-4 mr-2" />}
               {actionLabel}
             </Button>
           </div>

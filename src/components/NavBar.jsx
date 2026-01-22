@@ -7,11 +7,14 @@ import { useNotifications } from '@/context/NotificationContext';
 import ConnectionStatus from '@/components/ConnectionStatus';
 import websocketManager from '@/utils/websocketManager';
 import { jwtDecode } from "jwt-decode";
-import { 
-  Bell, User, LogOut, Settings, 
+import {
+  Bell, User, LogOut, Settings,
   Plus, Menu, Home, Phone, Info,
   LayoutDashboard, Calendar, HelpCircle
 } from 'lucide-react';
+
+// Import auth functions
+import { getUserRole, getDashboardUrl } from '@/utils/auth';
 
 const NavBar = () => {
   const [sticky, setSticky] = useState(false);
@@ -20,20 +23,19 @@ const NavBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isSidebarOpen } = useSidebar();
-  const { toggleNotifications, unreadCount } = useNotifications();  
+  const { toggleNotifications, unreadCount } = useNotifications();
   const [isConnected, setIsConnected] = useState(true);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const maxReconnectAttempts = 3;
 
   const isAuthenticated = localStorage.getItem('token');
-  const userRole = localStorage.getItem('role');
+  const userRole = getUserRole(); // Use imported function
 
   const themeClasses = {
-    nav: `fixed top-0 z-40 transition-all duration-300 ${
-      sticky 
-        ? 'bg-white/95' 
-        : 'bg-white'
-    } border-b border-gray-200 backdrop-blur-lg`,
+    nav: `fixed top-0 z-40 transition-all duration-300 ${sticky
+      ? 'bg-white/95'
+      : 'bg-white'
+      } border-b border-gray-200 backdrop-blur-lg`,
     text: 'text-gray-800',
     textMuted: 'text-gray-600',
     button: `bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transition-all duration-300`,
@@ -61,7 +63,7 @@ const NavBar = () => {
     const notificationHandler = (data) => {
       console.log('Received notification response:', data);
     };
-    
+
     return () => {
       websocketManager.off('notification', notificationHandler);
     };
@@ -82,7 +84,7 @@ const NavBar = () => {
       setIsConnected(true);
       setReconnectAttempts(0);
     };
-    
+
     const handleOffline = () => {
       setIsConnected(false);
       if (reconnectAttempts < maxReconnectAttempts) {
@@ -106,56 +108,82 @@ const NavBar = () => {
   };
 
   const getNavigationItems = () => {
-    if (!isAuthenticated || (isAuthenticated && userRole === 'User')) {
-      const commonItems = [
-        { to: "/", icon: Home, text: "Home" }
-      ];
-  
-      if (!isAuthenticated) {
-        commonItems.push(
-          { to: "/event", icon: Calendar, text: "Events" },
-          { to: "/contact", icon: Phone, text: "Contact" },
-          { to: "/about", icon: Info, text: "About" }
-        );
-      } else {
-        commonItems.push(
-          { to: "/contact", icon: Phone, text: "Contact" }
-        );
-      }
-  
-      return commonItems;
+    // Common items for everyone
+    const commonItems = [];
+
+    // Show Home menu only for:
+    // 1. Non-authenticated users
+    // 2. Organizers
+    // 3. Admins
+    // NOT for Users (role === 'User')
+    if (!isAuthenticated || (userRole && userRole !== 'User')) {
+      commonItems.push({ to: "/", icon: Home, text: "Home" });
     }
-    return [];
+
+    // Contact page for everyone
+    commonItems.push({ to: "/contact", icon: Phone, text: "Contact" });
+
+    // About page only for non-authenticated users
+    if (!isAuthenticated) {
+      commonItems.push({ to: "/about", icon: Info, text: "About" });
+    }
+
+    return commonItems;
   };
 
   const isDashboardPage = () => {
-    const dashboardPaths = ['/admindb', '/orgdb', '/userdb'];
+    const dashboardPaths = ['/admindb', '/orgdb', '/userdb']; // Use /orgdb instead of /organizerdb
     return dashboardPaths.some(path => location.pathname.startsWith(path));
   };
 
-const renderDashboardNavbar = () => {
-  return (
-    <div 
-      className={`${themeClasses.nav} right-0 transition-all duration-300`}
-      style={{
-        width: isSidebarOpen ? 'calc(100% - 16rem)' : 'calc(100% - 4rem)',
-        marginLeft: isSidebarOpen ? '16rem' : '4rem',
-      }}
-    >
-      <div className="px-4 py-4 mx-auto max-w-7xl">
-        <div className="flex items-center justify-between w-full">
-          {/* Logo Left */}
-          <Link to="/" className="flex items-center">
-            <img src='/images/eventa.png' alt="logo" className={`h-12 w-auto ${isDarkMode ? 'invert' : ''}`} />
-          </Link>
+  const handleDashboardNavigation = () => {
+    if (!userRole) return;
+    
+    console.log('Dashboard navigation clicked for role:', userRole);
+    console.log('Current path:', location.pathname);
+    
+    // Use the getDashboardUrl function from auth.js
+    const dashboardUrl = getDashboardUrl();
+    console.log('Dashboard URL from auth.js:', dashboardUrl);
+    
+    if (dashboardUrl) {
+      // Check if we're already in the dashboard
+      const isInDashboard = location.pathname.startsWith(dashboardUrl);
+      
+      if (isInDashboard) {
+        // If we're already in the dashboard, navigate to the overview
+        // For organizer, navigate to overview page
+        if (userRole === 'Organizer') {
+          navigate('/orgdb/overview');
+        } else {
+          navigate(dashboardUrl);
+        }
+      } else {
+        // If we're not in the dashboard, navigate to it
+        navigate(dashboardUrl);
+      }
+    }
+  };
 
+  const renderDashboardNavbar = () => {
+    return (
+      <div
+        className={`${themeClasses.nav} right-0 transition-all duration-300`}
+        style={{
+          width: isSidebarOpen ? 'calc(100% - 16rem)' : 'calc(100% - 4rem)',
+          marginLeft: isSidebarOpen ? '16rem' : '4rem',
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between w-full">
             {/* Center Navigation */}
             <div className="justify-center flex-1 hidden lg:flex">
               <ul className="flex items-center gap-6">
+                {/* Regular navigation items */}
                 {getNavigationItems().map((item) => (
                   <li key={item.to}>
-                    <Link 
-                      to={item.to} 
+                    <Link
+                      to={item.to}
                       className={`flex items-center gap-2 ${themeClasses.textMuted} hover:text-blue-600`}
                     >
                       <item.icon className="w-4 h-4" />
@@ -163,10 +191,42 @@ const renderDashboardNavbar = () => {
                     </Link>
                   </li>
                 ))}
+
+                {/* Dashboard menu item in center for authenticated users */}
+                {isAuthenticated && userRole && (
+                  <li>
+                    <button
+                      onClick={handleDashboardNavigation}
+                      className={`flex items-center gap-2 ${themeClasses.textMuted} hover:text-blue-600`}
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      <span>Dashboard</span>
+                    </button>
+                  </li>
+                )}
+
+                {/* Notifications menu item in center for authenticated users */}
+                {isAuthenticated && (
+                  <li className="relative notifications-dropdown">
+                    <button
+                      onClick={toggleNotifications}
+                      className="flex items-center gap-2 text-gray-600 hover:text-blue-600 relative"
+                    >
+                      <Bell className="h-4 w-4" />
+                      <span>Notifications</span>
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </button>
+                    <NotificationDropdown />
+                  </li>
+                )}
               </ul>
             </div>
 
-            {/* Right Section */}
+            {/* Right Section - Only Profile Dropdown remains */}
             <div className="flex items-center gap-4">
               {!isAuthenticated ? (
                 <Link to="/loginsignup" className={`px-6 py-2 rounded-full ${themeClasses.button}`}>
@@ -174,32 +234,6 @@ const renderDashboardNavbar = () => {
                 </Link>
               ) : (
                 <div className="flex items-center gap-4">
-                  {userRole?.toLowerCase() === 'user' && (
-                    <button
-                      onClick={() => navigate('/userdb')}
-                      className={`flex items-center gap-2 px-6 py-2 rounded-full ${themeClasses.button}`}
-                    >
-                      <LayoutDashboard className="w-4 h-4" />
-                      <span>Dashboard</span>
-                    </button>
-                  )}
-
-                  {/* Notifications */}
-                  <div className="relative notifications-dropdown">
-                    <button
-                      onClick={toggleNotifications}
-                      className="relative p-2 rounded-full hover:bg-gray-100"
-                    >
-                      <Bell className="w-6 h-6 text-gray-800" />
-                      {unreadCount > 0 && (
-                        <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs text-white bg-red-500 rounded-full animate-bounce">
-                          {unreadCount}
-                        </span>
-                      )}
-                    </button>
-                    <NotificationDropdown />
-                  </div>
-
                   {/* Profile Dropdown */}
                   <div className="relative profile-dropdown">
                     <button
@@ -254,8 +288,9 @@ const renderDashboardNavbar = () => {
             </Link>
 
             {/* Center Menu */}
-            <div className="justify-center flex-1 hidden lg:flex">
-              <ul className="flex items-center gap-16">
+            <div className="hidden lg:flex justify-center flex-1">
+              <ul className="flex items-center gap-8">
+                {/* Regular navigation items */}
                 {getNavigationItems().map((item) => (
                   <li key={item.to}>
                     <Link 
@@ -267,41 +302,50 @@ const renderDashboardNavbar = () => {
                     </Link>
                   </li>
                 ))}
+
+                {/* Dashboard menu item in center for authenticated users */}
+                {isAuthenticated && userRole && (
+                  <li>
+                    <button
+                      onClick={handleDashboardNavigation}
+                      className={`flex items-center gap-2 ${themeClasses.textMuted} hover:text-blue-600`}
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      <span>Dashboard</span>
+                    </button>
+                  </li>
+                )}
+
+                {/* Notifications menu item in center for authenticated users */}
+                {isAuthenticated && (
+                  <li className="relative notifications-dropdown">
+                    <button
+                      onClick={toggleNotifications}
+                      className="flex items-center gap-2 text-gray-600 hover:text-blue-600 relative"
+                    >
+                      <Bell className="h-4 w-4" />
+                      <span>Notifications</span>
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </button>
+                    <NotificationDropdown />
+                  </li>
+                )}
               </ul>
             </div>
 
-            {/* Right Side (Login/Profile) */}
+            {/* Right Side - Only Profile/Login remains */}
             <div className="flex items-center gap-4">
               {!isAuthenticated ? (
                 <Link to="/loginsignup" className={`px-6 py-2 rounded-full ${themeClasses.button}`}>
                   Login
                 </Link>
               ) : (
-                <div className="flex items-center gap-4">
-                  {userRole?.toLowerCase() === 'user' && (
-                    <button
-                      onClick={() => navigate('/userdb')}
-                      className={`flex items-center gap-2 px-6 py-2 rounded-full ${themeClasses.button}`}
-                    >
-                      <LayoutDashboard className="w-4 h-4" /><span>Dashboard</span>
-                    </button>
-                  )}
-
-                  <div className="relative notifications-dropdown">
-                    <button
-                      onClick={toggleNotifications}
-                      className="relative p-2 rounded-full hover:bg-gray-100"
-                    >
-                      <Bell className="w-6 h-6 text-gray-800" />
-                      {unreadCount > 0 && (
-                        <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs text-white bg-red-500 rounded-full animate-bounce">
-                          {unreadCount}
-                        </span>
-                      )}
-                    </button>
-                    <NotificationDropdown />
-                  </div>
-
+                <>
+                  {/* Profile Dropdown */}
                   <div className="relative profile-dropdown">
                     <button
                       onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -334,7 +378,7 @@ const renderDashboardNavbar = () => {
                       </div>
                     )}
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>

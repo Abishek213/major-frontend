@@ -78,12 +78,6 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Footer Bottom */}
-        <div className="mt-12 pt-6 border-t border-gray-700 text-center">
-          <p className="text-gray-400">
-            Copyright © {new Date().getFullYear()} - All rights reserved
-          </p>
-        </div>
       </footer>
     </div>
   );
