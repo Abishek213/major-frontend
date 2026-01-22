@@ -3,6 +3,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import api from "../utils/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogAction } from '../components/ui/dialog';
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
+import { useNavigate } from 'react-router-dom'; // Added import
 
 const LoginSignup = () => {
   const [isLogin, setIsLogin] = useState(true); // true for login, false for signup
@@ -50,13 +51,13 @@ const LoginSignup = () => {
   const redirectBasedOnRole = (role) => {
     switch (role) {
       case 'Admin':
-        window.location.href = '/admindb';
+        navigate('/admindb'); // Fixed: using navigate instead of window.location.href
         break;
       case 'Organizer':
-        window.location.href = '/orgdb';
+        navigate('/orgdb'); // Fixed: using navigate instead of window.location.href
         break;
       case 'User':
-        window.location.href = '/userdb';
+        navigate('/userdb'); // Fixed: using navigate instead of window.location.href
         break;
       default:
         setError('Invalid user role');

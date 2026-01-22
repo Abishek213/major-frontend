@@ -104,7 +104,7 @@ const NavBar = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
-    window.location.href = '/loginsignup';
+    navigate('/loginsignup');
   };
 
   const getNavigationItems = () => {
@@ -177,7 +177,7 @@ const NavBar = () => {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between w-full">
             {/* Center Navigation */}
-            <div className="hidden lg:flex justify-center flex-1">
+            <div className="justify-center flex-1 hidden lg:flex">
               <ul className="flex items-center gap-6">
                 {/* Regular navigation items */}
                 {getNavigationItems().map((item) => (
@@ -186,7 +186,7 @@ const NavBar = () => {
                       to={item.to}
                       className={`flex items-center gap-2 ${themeClasses.textMuted} hover:text-blue-600`}
                     >
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className="w-4 h-4" />
                       {item.text}
                     </Link>
                   </li>
@@ -199,7 +199,7 @@ const NavBar = () => {
                       onClick={handleDashboardNavigation}
                       className={`flex items-center gap-2 ${themeClasses.textMuted} hover:text-blue-600`}
                     >
-                      <LayoutDashboard className="h-4 w-4" />
+                      <LayoutDashboard className="w-4 h-4" />
                       <span>Dashboard</span>
                     </button>
                   </li>
@@ -240,8 +240,8 @@ const NavBar = () => {
                       onClick={() => setIsProfileOpen(!isProfileOpen)}
                       className="p-2 rounded-lg hover:bg-gray-100"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600">
+                        <span className="text-sm font-medium text-white">
                           {user?.fullname?.split(' ').map(name => name[0]).join('') || 'U'}
                         </span>
                       </div>
@@ -254,14 +254,14 @@ const NavBar = () => {
                           <p className="text-sm text-gray-600">{user?.email || 'user@example.com'}</p>
                         </div>
                         <div className="p-2">
-                          <Link to="/profile" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-800">
-                            <User className="h-4 w-4" /><span>Profile</span>
+                          <Link to="/profile" className="flex items-center gap-2 px-3 py-2 text-gray-800 rounded-lg hover:bg-gray-100">
+                            <User className="w-4 h-4" /><span>Profile</span>
                           </Link>
-                          <Link to="/settings" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-800">
-                            <Settings className="h-4 w-4" /><span>Settings</span>
+                          <Link to="/settings" className="flex items-center gap-2 px-3 py-2 text-gray-800 rounded-lg hover:bg-gray-100">
+                            <Settings className="w-4 h-4" /><span>Settings</span>
                           </Link>
-                          <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-500 hover:bg-red-50">
-                            <LogOut className="h-4 w-4" /><span>Sign Out</span>
+                          <button onClick={handleLogout} className="flex items-center w-full gap-2 px-3 py-2 text-red-500 rounded-lg hover:bg-red-50">
+                            <LogOut className="w-4 h-4" /><span>Sign Out</span>
                           </button>
                         </div>
                       </div>
@@ -280,11 +280,11 @@ const NavBar = () => {
   const renderRegularNavbar = () => {
     return (
       <div className={`${themeClasses.nav} w-full`}>
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="px-4 py-3 mx-auto max-w-7xl">
           <div className="flex items-center justify-between w-full">
             {/* Logo */}
             <Link to="/" className="flex items-center">
-              <img src='/images/eventa.png' alt="logo" className="h-16 w-auto" />
+              <img src='/images/eventa.png' alt="logo" className="w-auto h-16" />
             </Link>
 
             {/* Center Menu */}
@@ -297,7 +297,7 @@ const NavBar = () => {
                       to={item.to} 
                       className={`flex items-center gap-2 ${themeClasses.textMuted} hover:text-blue-600`}
                     >
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className="w-4 h-4" />
                       {item.text}
                     </Link>
                   </li>
@@ -351,8 +351,8 @@ const NavBar = () => {
                       onClick={() => setIsProfileOpen(!isProfileOpen)}
                       className="p-2 rounded-lg hover:bg-gray-100"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600">
+                        <span className="text-sm font-medium text-white">
                           {user?.fullname?.split(' ').map(name => name[0]).join('') || 'U'}
                         </span>
                       </div>
@@ -365,14 +365,14 @@ const NavBar = () => {
                           <p className="text-sm text-gray-600">{user?.email || 'user@example.com'}</p>
                         </div>
                         <div className="p-2">
-                          <Link to="/profile" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-800">
-                            <User className="h-4 w-4" /><span>Profile</span>
+                          <Link to="/profile" className="flex items-center gap-2 px-3 py-2 text-gray-800 rounded-lg hover:bg-gray-100">
+                            <User className="w-4 h-4" /><span>Profile</span>
                           </Link>
-                          <Link to="/settings" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-800">
-                            <Settings className="h-4 w-4" /><span>Settings</span>
+                          <Link to="/settings" className="flex items-center gap-2 px-3 py-2 text-gray-800 rounded-lg hover:bg-gray-100">
+                            <Settings className="w-4 h-4" /><span>Settings</span>
                           </Link>
-                          <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-500 hover:bg-red-50">
-                            <LogOut className="h-4 w-4" /><span>Sign Out</span>
+                          <button onClick={handleLogout} className="flex items-center w-full gap-2 px-3 py-2 text-red-500 rounded-lg hover:bg-red-50">
+                            <LogOut className="w-4 h-4" /><span>Sign Out</span>
                           </button>
                         </div>
                       </div>
