@@ -42,34 +42,19 @@ const Sidebar = ({ user }) => {
       ${isSidebarOpen ? "w-64" : "w-16"}
       bg-white border-r border-gray-200 text-gray-800
     `}>
-      <div className={`
+     <div className={`
         flex items-center justify-between p-6
         border-b border-gray-200
       `}>
-        <h1 className={`
-          text-2xl font-semibold transition-all
+        {/* Logo Image */}
+        <div className={`
+          transition-all
           ${isSidebarOpen ? "block" : "hidden"}
-          text-gray-800
+          h-8 flex items-center
         `}>
-          event<span className="text-blue-400">A</span>
-        </h1>
-        <Menu 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-          className={`cursor-pointer text-gray-800`}
-        />
-      </div>
-
-      {/* User profile section */}
-      <div className="p-4">
-        <div className="flex items-center p-3 bg-gray-700/30 rounded-xl">
-          <div className="flex items-center justify-center w-10 h-10 font-bold text-white rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-500">
-            {user?.fullname?.split(' ').map(name => name[0]).join('') || user?.role?.[0]?.toUpperCase()}
-          </div>
-          <div className={`ml-3 ${isSidebarOpen ? "block" : "hidden"}`}>
-            <p className="font-medium">{user?.fullname || user?.role}</p>
-            <p className="text-sm opacity-60">{user?.email || `${user?.role?.toLowerCase()}@eventa.com`}</p>
-          </div>
+         <img src='/images/eventa.png' alt="logo" className="h-12 w-auto" />
         </div>
+  
       </div>
 
       {/* Navigation tabs */}

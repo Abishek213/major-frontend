@@ -17,7 +17,7 @@ const UserSettings = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 px-4 bg-gray-50 text-gray-800">
+    <div className="min-h-screen pt-28 px-4 bg-gray-50 text-gray-800">
       <div className="max-w-4xl mx-auto space-y-6">
         <h1 className="text-3xl font-bold">Settings</h1>
         

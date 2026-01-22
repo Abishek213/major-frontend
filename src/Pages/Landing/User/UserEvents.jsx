@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, Search } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import UserBooking from '@/components/BookingForm';
+import { Calendar, MapPin, Users, Search, TrendingUp, Sparkles, Filter, Tag, AlertTriangle, RefreshCw, ChevronRight, DollarSign, Clock, Eye } from 'lucide-react';
 import api from '../../../utils/api';
 
 const UserEvents = ({ user }) => {
@@ -12,11 +10,10 @@ const UserEvents = ({ user }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedParentCategory, setSelectedParentCategory] = useState('all');
   const [selectedChildCategory, setSelectedChildCategory] = useState('all');
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -24,7 +21,6 @@ const UserEvents = ({ user }) => {
         setLoading(true);
         let eventsEndpoint = '/events';
         
-        // Add category filter to API call if a category is selected
         if (selectedParentCategory !== 'all') {
           eventsEndpoint += `?parentCategory=${selectedParentCategory}`;
           if (selectedChildCategory !== 'all') {
@@ -37,7 +33,6 @@ const UserEvents = ({ user }) => {
           api.get('/categories')
         ]);
         
-        // Process events data
         const processedEvents = eventsResponse.data.map(event => ({
           ...event,
           status: determineEventStatus(event.event_date)
@@ -46,7 +41,6 @@ const UserEvents = ({ user }) => {
         setEvents(processedEvents);
         setFilteredEvents(processedEvents);
         
-        // Process categories data
         const parentCategories = categoriesResponse.data.filter(cat => !cat.parentCategory);
         const categoriesWithChildren = parentCategories.map(parent => ({
           ...parent,
@@ -58,7 +52,7 @@ const UserEvents = ({ user }) => {
         setCategories(categoriesWithChildren);
         setError(null);
       } catch (err) {
-        setError(err.response?.data?.message || err.message || 'Failed to fetch data');
+        setError(err.response?.data?.message || err.message || 'Failed to fetch events');
       } finally {
         setLoading(false);
       }
@@ -77,7 +71,6 @@ const UserEvents = ({ user }) => {
   };
 
   useEffect(() => {
-    // Filter events based on search term
     let filtered = [...events];
     
     if (searchTerm) {
@@ -92,16 +85,35 @@ const UserEvents = ({ user }) => {
       );
     }
     
+    // Filter by status tab
+    if (activeTab !== 'all') {
+      filtered = filtered.filter(event => event.status === activeTab);
+    }
+    
     setFilteredEvents(filtered);
-  }, [searchTerm, events]);
+  }, [searchTerm, events, activeTab]);
 
   const handleParentCategoryChange = (categoryId) => {
     setSelectedParentCategory(categoryId);
     setSelectedChildCategory('all');
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
+  const refreshEvents = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/events');
+      const processedEvents = response.data.map(event => ({
+        ...event,
+        status: determineEventStatus(event.event_date)
+      }));
+      setEvents(processedEvents);
+      setFilteredEvents(processedEvents);
+      setError(null);
+    } catch (err) {
+      setError('Failed to refresh events');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleViewDetails = (event) => {
@@ -119,311 +131,443 @@ const UserEvents = ({ user }) => {
     });
   };
 
-  const handleBooking = (event, e) => {
-    e.stopPropagation();
-    setSelectedEvent(event);
-    setShowBookingForm(true);
+  const getStats = () => {
+    const upcoming = events.filter(e => e.status === 'upcoming').length;
+    const ongoing = events.filter(e => e.status === 'ongoing').length;
+    const completed = events.filter(e => e.status === 'completed').length;
+    
+    return { upcoming, ongoing, completed, total: events.length };
   };
 
-  if (loading) return (
-    <div className="flex justify-center items-center h-screen">
-      Loading events...
-    </div>
-  );
+  const stats = getStats();
 
-  if (error) return (
-    <div className="p-4 text-gray-800 bg-red-500/10">
-      Error: {error}
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="space-y-8 p-4 md:p-6">
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+          <div className="p-6 md:p-8">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <RefreshCw className="w-12 h-12 text-indigo-500 animate-spin mx-auto mb-4" />
+                <p className="text-lg font-medium text-gray-700">Loading events...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !events.length) {
+    return (
+      <div className="space-y-8 p-4 md:p-6">
+        <div className="relative p-5 pl-14 bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 rounded-lg shadow-sm animate-fade-in">
+          <div className="absolute left-5 top-5">
+            <AlertTriangle className="w-6 h-6 text-red-500" />
+          </div>
+          <div className="pr-10">
+            <h4 className="font-bold text-red-800 mb-1">Error</h4>
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      {/* Header Section */}
-      <div className="sticky top-0 z-10 bg-white/95 border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          {/* Search Form */}
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="Search events by name, description, location, or tags..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border bg-gray-50 text-gray-900 placeholder-gray-500 border-gray-200"
-              />
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+    <div className="space-y-8 p-4 md:p-6">
+      {/* Main Dashboard Container */}
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+        <div className="p-6 md:p-8">
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+                  <Calendar className="w-6 h-6 text-white" />
+                </div>
+                Events Dashboard
+              </h1>
+              <p className="text-gray-600">
+                Discover and explore amazing events around you
+              </p>
             </div>
-          </form>
+            
+            <button 
+              onClick={refreshEvents}
+              disabled={loading}
+              className={`mt-4 md:mt-0 px-5 py-3 rounded-xl font-medium flex items-center gap-2 transition-all duration-300 ${
+                loading 
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105'
+              }`}
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-5 h-5" />
+                  Refresh Events
+                </>
+              )}
+            </button>
+          </div>
 
-          {/* Categories Navigation */}
-          <div className="mt-4 space-y-3">
-            {/* Parent Categories */}
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              <button
-                onClick={() => {
-                  setSelectedParentCategory('all');
-                  setSelectedChildCategory('all');
-                }}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap
-                  ${selectedParentCategory === 'all'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                  }`}
-              >
-                All Categories
-              </button>
-              {categories.map((category) => (
-                <button
-                  key={category._id}
-                  onClick={() => handleParentCategoryChange(category._id)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap
-                    ${selectedParentCategory === category._id
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    }`}
-                >
-                  {category.categoryName}
-                </button>
-              ))}
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-white" />
+                </div>
+                <TrendingUp className="w-8 h-8 text-indigo-300" />
+              </div>
+              <h3 className="text-3xl font-bold text-gray-800 mb-1">{stats.total}</h3>
+              <p className="text-gray-600 font-medium">Total Events</p>
+              <div className="mt-3 h-2 bg-indigo-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
+                  style={{ width: '100%' }}
+                ></div>
+              </div>
             </div>
 
-            {/* Child Categories */}
-            {selectedParentCategory !== 'all' && (
-              <div className="flex gap-2 overflow-x-auto pl-4">
-                <button
-                  onClick={() => setSelectedChildCategory('all')}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap
-                    ${selectedChildCategory === 'all'
-                      ? 'bg-purple-400 text-white'
-                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    }`}
-                >
-                  All {categories.find(cat => cat._id === selectedParentCategory)?.categoryName} Events
-                </button>
-                {categories
-                  .find(cat => cat._id === selectedParentCategory)
-                  ?.children.map((child) => (
+            <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <TrendingUp className="w-8 h-8 text-emerald-300" />
+              </div>
+              <h3 className="text-3xl font-bold text-gray-800 mb-1">{stats.upcoming}</h3>
+              <p className="text-gray-600 font-medium">Upcoming Events</p>
+              <div className="mt-3 h-2 bg-emerald-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-500"
+                  style={{ width: stats.total > 0 ? `${(stats.upcoming / stats.total) * 100}%` : '0%' }}
+                ></div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
+                <TrendingUp className="w-8 h-8 text-blue-300" />
+              </div>
+              <h3 className="text-3xl font-bold text-gray-800 mb-1">{stats.ongoing}</h3>
+              <p className="text-gray-600 font-medium">Ongoing Events</p>
+              <div className="mt-3 h-2 bg-blue-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-500"
+                  style={{ width: stats.total > 0 ? `${(stats.ongoing / stats.total) * 100}%` : '0%' }}
+                ></div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-gray-500 to-gray-700 flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-white" />
+                </div>
+                <TrendingUp className="w-8 h-8 text-gray-300" />
+              </div>
+              <h3 className="text-3xl font-bold text-gray-800 mb-1">{stats.completed}</h3>
+              <p className="text-gray-600 font-medium">Past Events</p>
+              <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-gray-500 to-gray-700 rounded-full transition-all duration-500"
+                  style={{ width: stats.total > 0 ? `${(stats.completed / stats.total) * 100}%` : '0%' }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Filters Section */}
+          <div className="space-y-6 mb-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-indigo-600" />
+                  Discover Events
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {filteredEvents.length} events found
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                {/* Status Tabs */}
+                <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                  {['all', 'upcoming', 'ongoing', 'completed'].map((tab) => (
                     <button
-                      key={child._id}
-                      onClick={() => setSelectedChildCategory(child._id)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap
-                        ${selectedChildCategory === child._id
-                          ? 'bg-purple-400 text-white'
-                          : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                        }`}
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                        activeTab === tab
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md'
+                          : 'text-gray-700 hover:bg-gray-200'
+                      }`}
                     >
-                      {child.categoryName}
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
                     </button>
                   ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Search and Categories */}
+            <div className="space-y-6">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search events by name, description, location, or tags..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                />
+              </div>
+
+              {/* Categories Navigation */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-gray-800 flex items-center gap-2">
+                  <Tag className="w-5 h-5 text-indigo-600" />
+                  Categories
+                </h3>
+                
+                {/* Parent Categories */}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedParentCategory('all');
+                      setSelectedChildCategory('all');
+                    }}
+                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
+                      selectedParentCategory === 'all'
+                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
+                        : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300'
+                    }`}
+                  >
+                    All Categories
+                  </button>
+                  {categories.map((category) => (
+                    <button
+                      key={category._id}
+                      onClick={() => handleParentCategoryChange(category._id)}
+                      className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
+                        selectedParentCategory === category._id
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
+                          : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300'
+                      }`}
+                    >
+                      {category.categoryName}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Child Categories */}
+                {selectedParentCategory !== 'all' && categories.find(cat => cat._id === selectedParentCategory)?.children?.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pl-4">
+                    <button
+                      onClick={() => setSelectedChildCategory('all')}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 ${
+                        selectedChildCategory === 'all'
+                          ? 'bg-gradient-to-r from-indigo-400 to-purple-400 text-white shadow-md'
+                          : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300'
+                      }`}
+                    >
+                      All {categories.find(cat => cat._id === selectedParentCategory)?.categoryName} Events
+                    </button>
+                    {categories
+                      .find(cat => cat._id === selectedParentCategory)
+                      ?.children.map((child) => (
+                        <button
+                          key={child._id}
+                          onClick={() => setSelectedChildCategory(child._id)}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 ${
+                            selectedChildCategory === child._id
+                              ? 'bg-gradient-to-r from-indigo-400 to-purple-400 text-white shadow-md'
+                              : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300'
+                          }`}
+                        >
+                          {child.categoryName}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Events Grid */}
+          <div className="space-y-6">
+            {filteredEvents.length === 0 ? (
+              <div className="py-16 text-center border border-gray-200 rounded-xl">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-6 shadow-inner">
+                  <Calendar className="w-12 h-12 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-700 mb-2">No Events Found</h3>
+                <p className="text-gray-500 mb-6">
+                  {searchTerm 
+                    ? `No events matching "${searchTerm}". Try a different search term.`
+                    : 'No events match your selected filters. Try adjusting your criteria.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedParentCategory('all');
+                    setSelectedChildCategory('all');
+                    setActiveTab('all');
+                  }}
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 font-medium hover:from-indigo-200 hover:to-purple-200 transition-all duration-300 flex items-center gap-2 mx-auto"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Clear All Filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredEvents.map(event => {
+                  const isEventFull = event.attendees?.length >= event.totalSlots;
+                  const status = determineEventStatus(event.event_date);
+                  
+                  return (
+                    <div 
+                      key={event._id} 
+                      className="group bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                    >
+                      {/* Event Image */}
+                      <div className="relative h-48 overflow-hidden">
+                        <img
+                          src={event.image ? `/uploads/events/${event.image.split('/').pop()}` : "/default-event.jpg"}
+                          alt={event.event_name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <div className="absolute top-4 right-4">
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            status === 'upcoming' ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
+                            status === 'ongoing' ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
+                            'bg-gradient-to-r from-gray-500 to-gray-700'
+                          } text-white shadow-lg`}>
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                          </span>
+                        </div>
+                        <div className="absolute bottom-4 left-4">
+                          <span className="px-3 py-1.5 rounded-lg bg-white/20 backdrop-blur-sm text-white font-medium shadow-lg">
+                            Rs. {event.price}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Event Content */}
+                      <div className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">
+                              {new Date(event.event_date).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">
+                              {event.attendees?.length || 0}/{event.totalSlots}
+                            </span>
+                          </div>
+                        </div>
+
+                        <h3 className="font-bold text-gray-800 group-hover:text-indigo-700 transition-colors text-lg mb-3 line-clamp-2">
+                          {event.event_name}
+                        </h3>
+
+                        <div className="flex items-center gap-2 mb-4">
+                          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <span className="text-sm text-gray-600 line-clamp-1">
+                            {event.location}
+                          </span>
+                        </div>
+
+                        {/* Category Badges */}
+                        {event.category && (
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            <span className="px-3 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700">
+                              {event.category.categoryName}
+                            </span>
+                            {event.category.parentCategory && (
+                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700">
+                                {event.category.parentCategory.categoryName}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Tags */}
+                        {event.tags && event.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-6">
+                            {event.tags.slice(0, 3).map((tag, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-0.5 text-xs rounded-full bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                            {event.tags.length > 3 && (
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700">
+                                +{event.tags.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex gap-3 pt-4 border-t border-gray-200">
+                          <button
+                            onClick={() => handleViewDetails(event)}
+                            className="group/view flex-1 py-3 rounded-xl font-medium flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                          >
+                            <Eye className="w-5 h-5 group-hover/view:scale-110 transition-transform" />
+                            View Details
+                            <ChevronRight className="w-4 h-4 group-hover/view:translate-x-1 transition-transform" />
+                          </button>
+                        </div>
+
+                        {/* Registration Deadline */}
+                        {event.registrationDeadline && (
+                          <div className="mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-amber-500" />
+                              <p className="text-xs text-gray-600">
+                                Registration closes on {new Date(event.registrationDeadline).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
       </div>
-
-      {/* Events Grid */}
-      <main className="min-h-screen p-6 bg-gradient-to-br from-blue-50 to-white text-gray-800">
-        <div className="max-w-7xl mx-auto">
-          {filteredEvents.length === 0 ? (
-            <div className="text-center py-12 text-gray-800">
-              No events found matching your criteria.
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEvents.map(event => (
-                <Card
-                  key={event._id}
-                  className="overflow-hidden rounded-xl shadow-lg transition-all hover:shadow-xl bg-white/50 border-gray-200"
-                  onClick={() => handleViewDetails(event)}
-                >
-                  <figure className="relative">
-                    <img
-                      src={event.image ? `/uploads/events/${event.image.split('/').pop()}` : "/default-event.jpg"}
-                      alt={event.event_name}
-                      className="w-full h-48 object-cover"
-                    />
-                    <span className="absolute bottom-4 left-4 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-sm">
-                      Rs. {event.price}
-                    </span>
-                  </figure>
-                  
-                  <CardContent className="p-6">
-                    <header className="flex items-center justify-between mb-3">
-                      <span className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4 text-gray-600" />
-                        <span className="text-sm text-gray-600">
-                          {new Date(event.date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                        </span>
-                      </span>
-                      <span className="flex items-center space-x-1">
-                        <Users className="h-4 w-4 text-gray-600" />
-                        <span className="text-sm text-gray-600">
-                          {event.attendees?.length || 0}/{event.totalSlots}
-                        </span>
-                      </span>
-                    </header>
-                    
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                      {event.event_name}
-                    </h3>
-                    
-                    <span className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-gray-600" />
-                      <span className="text-sm text-gray-600">
-                        {event.location}
-                      </span>
-                    </span>
-
-                    <div className="mt-3 mb-4">
-                      <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                        event.status === 'upcoming' ? 'bg-green-500/10 text-green-500' :
-                        event.status === 'ongoing' ? 'bg-blue-500/10 text-blue-500' :
-                        event.status === 'completed' ? 'bg-gray-500/10 text-gray-500' :
-                        'bg-red-500/10 text-red-500'
-                      }`}>
-                        {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-                      </span>
-                    </div>
-
-                    {/* Category badges */}
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {event.category && (
-                        <>
-                          <span className="px-2 py-1 rounded-full text-xs bg-gray-200 text-gray-800">
-                            {event.category.parentCategory?.categoryName}
-                          </span>
-                          <span className="px-2 py-1 rounded-full text-xs bg-gray-200 text-gray-800">
-                            {event.category.categoryName}
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    {event.tags && event.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {event.tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-1 bg-purple-500/10 text-purple-500 rounded-full text-xs"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    
-                    <div className="flex gap-2 mt-4">
-                      <button
-                        className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200 flex items-center justify-center space-x-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewDetails(event);
-                        }}
-                      >
-                        <span>Details</span>
-                        <svg 
-                          className="w-4 h-4" 
-                          fill="none" 
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth={2} 
-                            d="M9 5l7 7-7 7" 
-                          />
-                        </svg>
-                      </button>
-                      <button
-                        className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200"
-                        onClick={(e) => handleBooking(event, e)}
-                        disabled={event.status !== 'upcoming' || event.attendees?.length >= event.totalSlots}
-                      >
-                        {event.status !== 'upcoming' ? 'Event Not Available' :
-                         event.attendees?.length >= event.totalSlots ? 'Fully Booked' : 'Book'}
-                      </button>
-                    </div>
-
-                    {event.registrationDeadline && (
-                      <p className="text-xs text-gray-600 mt-3 text-center">
-                        Registration closes on {new Date(event.registrationDeadline).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
-
-      {/* Booking Form Modal */}
-      {showBookingForm && selectedEvent && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          onClick={() => {
-            setShowBookingForm(false);
-            setSelectedEvent(null);
-          }}
-        >
-          <div 
-            className="relative w-full max-w-md" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            <UserBooking 
-              event={selectedEvent}
-              onClose={() => {
-                setShowBookingForm(false);
-                setSelectedEvent(null);
-              }}
-              onBookingComplete={() => {
-                // Refresh events after successful booking
-                const updatedEvents = events.map(event => {
-                  if (event._id === selectedEvent._id) {
-                    return {
-                      ...event,
-                      attendees: [...(event.attendees || []), user._id]
-                    };
-                  }
-                  return event;
-                });
-                setEvents(updatedEvents);
-                setFilteredEvents(updatedEvents);
-                setShowBookingForm(false);
-                setSelectedEvent(null);
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Loading Overlay */}
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="text-xl text-gray-800">
-            Loading events...
-          </div>
-        </div>
-      )}
-
-      {/* Error Toast */}
-      {error && (
-        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg">
-          {error}
-        </div>
-      )}
-    </>
+    </div>
   );
 };
 
-export default UserEvents;  
+export default UserEvents;
