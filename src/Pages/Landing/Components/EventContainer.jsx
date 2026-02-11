@@ -1,8 +1,10 @@
-import { Calendar, Clock, MapPin, Tag, Star, TrendingUp, Flame, Info } from 'lucide-react';
+import { Calendar, Clock, MapPin, Flame, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const EventContainer = () => {
   const [activeTab, setActiveTab] = useState('All');
+  const navigate = useNavigate();
 
   const tabs = [
     { id: 'all', label: 'All' },
@@ -129,13 +131,29 @@ const EventContainer = () => {
   // Filter events based on active tab
   const filteredEvents = events.filter(event => {
     if (activeTab === 'All') return true;
-    if (activeTab === 'For you') return event.promoted; // Example logic for "For you"
-    if (activeTab === 'Free') return event.price === 'Free' || event.price === 'Free';
+    if (activeTab === 'For you') return event.promoted;
+    if (activeTab === 'Free') return event.price === 'Free' || event.price.toLowerCase().includes('free');
     if (activeTab === 'Online') return event.tags?.includes('online');
     if (activeTab === 'Today') return event.tags?.includes('today');
     if (activeTab === 'This weekend') return event.tags?.includes('this-weekend');
     return true;
   });
+
+  // Handle event card click
+  const handleEventClick = (eventId) => {
+    navigate('/loginsignup');
+  };
+
+  // Handle view details button click
+  const handleViewDetailsClick = (eventId, e) => {
+    e.stopPropagation();
+    navigate('/loginsignup');
+  };
+
+  // Handle "View all events" button click
+  const handleViewAllEventsClick = () => {
+    navigate('/loginsignup');
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -164,7 +182,10 @@ const EventContainer = () => {
               {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'} found
             </p>
           </div>
-          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+          <button 
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+            onClick={handleViewAllEventsClick}
+          >
             View all events →
           </button>
         </div>
@@ -176,6 +197,7 @@ const EventContainer = () => {
               <div
                 key={event.id}
                 className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border border-gray-100 hover:border-gray-200"
+                onClick={() => handleEventClick(event.id)}
               >
                 {/* Event Image */}
                 <div className="relative h-44 overflow-hidden">
@@ -236,7 +258,10 @@ const EventContainer = () => {
                     <span className="text-sm font-medium text-gray-900">
                       {event.price}
                     </span>
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    <button 
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      onClick={(e) => handleViewDetailsClick(event.id, e)}
+                    >
                       View details
                     </button>
                   </div>
@@ -253,12 +278,20 @@ const EventContainer = () => {
             <p className="text-gray-600 mb-4">
               There are no events matching the "{activeTab}" filter.
             </p>
-            <button
-              onClick={() => setActiveTab('All')}
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              View all events
-            </button>
+            <div className="space-x-4">
+              <button
+                onClick={() => setActiveTab('All')}
+                className="text-blue-600 hover:text-blue-700 font-medium mr-4"
+              >
+                View all events
+              </button>
+              <button
+                onClick={() => navigate('/loginsignup')}
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Go to Login
+              </button>
+            </div>
           </div>
         )}
       </div>
