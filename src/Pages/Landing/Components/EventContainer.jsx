@@ -1,10 +1,14 @@
-import { Calendar, Clock, MapPin, Flame, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
+import { Calendar, Clock, MapPin, Flame, TrendingUp, Sparkles, Brain } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext'; // Fixed: Using alias
 
 const EventContainer = () => {
   const [activeTab, setActiveTab] = useState('All');
+  const [aiEvents, setAiEvents] = useState([]);
+  const [loadingAI, setLoadingAI] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const tabs = [
     { id: 'all', label: 'All' },
@@ -14,6 +18,11 @@ const EventContainer = () => {
     { id: 'online', label: 'Online' },
     { id: 'free', label: 'Free' },
   ];
+
+  // Add AI Recommended tab for logged-in users
+  if (user) {
+    tabs.splice(1, 0, { id: 'ai-recommended', label: 'AI Recommended' });
+  }
 
   const events = [
     {
@@ -125,6 +134,39 @@ const EventContainer = () => {
       salesEndSoon: false,
       tags: ["this-weekend"],
       image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&h=300&fit=crop"
+    },
+    // AI recommended events
+    {
+      id: 101,
+      title: "AI-Picked: Tech Networking Based on Your Profile",
+      category: "AI Recommended",
+      date: "Fri, Jan 15",
+      time: "6:00 PM",
+      location: "Tech Hub Center",
+      price: "$25.00",
+      promoted: false,
+      goingFast: true,
+      salesEndSoon: false,
+      tags: ["ai-recommended", "today"],
+      image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=500&h=300&fit=crop",
+      aiRecommended: true,
+      aiReason: "Matches your interest in technology"
+    },
+    {
+      id: 102,
+      title: "Curated for You: Advanced JavaScript Workshop",
+      category: "AI Recommended",
+      date: "Sat, Jan 16",
+      time: "10:00 AM",
+      location: "Online",
+      price: "$49.99",
+      promoted: false,
+      goingFast: false,
+      salesEndSoon: true,
+      tags: ["ai-recommended", "online"],
+      image: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=500&h=300&fit=crop",
+      aiRecommended: true,
+      aiReason: "Based on your past programming workshops"
     }
   ];
 
@@ -132,6 +174,7 @@ const EventContainer = () => {
   const filteredEvents = events.filter(event => {
     if (activeTab === 'All') return true;
     if (activeTab === 'For you') return event.promoted;
+    if (activeTab === 'AI Recommended') return event.aiRecommended;
     if (activeTab === 'Free') return event.price === 'Free' || event.price.toLowerCase().includes('free');
     if (activeTab === 'Online') return event.tags?.includes('online');
     if (activeTab === 'Today') return event.tags?.includes('today');
@@ -155,6 +198,21 @@ const EventContainer = () => {
     navigate('/loginsignup');
   };
 
+  // Fetch AI recommendations
+  useEffect(() => {
+    if (activeTab === 'AI Recommended' && user) {
+      setLoadingAI(true);
+      // Simulate API call
+      setTimeout(() => {
+        setAiEvents(filteredEvents);
+        setLoadingAI(false);
+      }, 1000);
+    } else {
+      setAiEvents([]);
+      setLoadingAI(false);
+    }
+  }, [activeTab, user, filteredEvents]);
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 py-6">
@@ -164,11 +222,14 @@ const EventContainer = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.label)}
-              className={`pb-3 px-1 font-medium whitespace-nowrap transition-colors duration-200 ${activeTab === tab.label
+              className={`pb-3 px-1 font-medium whitespace-nowrap transition-colors duration-200 flex items-center gap-1 ${activeTab === tab.label
                 ? 'text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
+              {tab.label === 'AI Recommended' && (
+                <Sparkles className="w-4 h-4" />
+              )}
               {tab.label}
             </button>
           ))}
@@ -177,9 +238,17 @@ const EventContainer = () => {
         {/* Header with results count */}
         <div className="mb-6 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Events in</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {activeTab === 'AI Recommended' ? 'AI Recommendations' : 'Events in'}
+              {activeTab === 'AI Recommended' && user && (
+                <span className="ml-2 text-sm font-normal text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                  Personalized for you
+                </span>
+              )}
+            </h2>
             <p className="text-sm text-gray-600 mt-1">
               {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'} found
+              {activeTab === 'AI Recommended' && ' by AI'}
             </p>
           </div>
           <button 
@@ -190,15 +259,43 @@ const EventContainer = () => {
           </button>
         </div>
 
+        {/* AI Loading State */}
+        {activeTab === 'AI Recommended' && loadingAI && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 flex items-center justify-center">
+              <Brain className="w-8 h-8 text-purple-600 animate-pulse" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">AI is finding perfect events for you</h3>
+            <p className="text-gray-600">
+              Analyzing your preferences and history...
+            </p>
+            <div className="mt-6 flex space-x-2 justify-center">
+              <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            </div>
+          </div>
+        )}
+
         {/* Events Grid */}
-        {filteredEvents.length > 0 ? (
+        {!loadingAI && filteredEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {filteredEvents.map((event) => (
               <div
                 key={event.id}
-                className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border border-gray-100 hover:border-gray-200"
+                className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border border-gray-100 hover:border-gray-200 relative group"
                 onClick={() => handleEventClick(event.id)}
               >
+                {/* AI Badge */}
+                {event.aiRecommended && (
+                  <div className="absolute top-3 left-3 z-10">
+                    <span className="inline-flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
+                      <Sparkles className="w-3 h-3" />
+                      AI Picked
+                    </span>
+                  </div>
+                )}
+
                 {/* Event Image */}
                 <div className="relative h-44 overflow-hidden">
                   <img
@@ -206,6 +303,9 @@ const EventContainer = () => {
                     alt={event.title}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                   />
+                  {event.aiRecommended && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 to-transparent"></div>
+                  )}
                 </div>
 
                 {/* Event Details */}
@@ -236,6 +336,14 @@ const EventContainer = () => {
                   <h3 className="text-base font-semibold text-gray-900 mb-3 line-clamp-2 min-h-[3rem] hover:text-blue-600 transition-colors">
                     {event.title}
                   </h3>
+
+                  {/* AI Insight */}
+                  {event.aiReason && (
+                    <div className="mb-3 p-2 bg-purple-50 rounded border border-purple-100">
+                      <p className="text-xs text-purple-700 font-medium">🤖 AI Insight</p>
+                      <p className="text-xs text-gray-700 mt-0.5">{event.aiReason}</p>
+                    </div>
+                  )}
 
                   {/* Date & Time */}
                   <div className="mb-2 flex items-center gap-2 text-gray-700">
@@ -270,29 +378,34 @@ const EventContainer = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-              <Calendar className="w-8 h-8 text-gray-400" />
+          !loadingAI && (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                <Calendar className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No events found</h3>
+              <p className="text-gray-600 mb-4">
+                {activeTab === 'AI Recommended' 
+                  ? "AI needs more data about your preferences. Try attending some events first!"
+                  : `There are no events matching the "${activeTab}" filter.`
+                }
+              </p>
+              <div className="space-x-4">
+                <button
+                  onClick={() => setActiveTab('All')}
+                  className="text-blue-600 hover:text-blue-700 font-medium mr-4"
+                >
+                  View all events
+                </button>
+                <button
+                  onClick={() => navigate('/loginsignup')}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Go to Login
+                </button>
+              </div>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No events found</h3>
-            <p className="text-gray-600 mb-4">
-              There are no events matching the "{activeTab}" filter.
-            </p>
-            <div className="space-x-4">
-              <button
-                onClick={() => setActiveTab('All')}
-                className="text-blue-600 hover:text-blue-700 font-medium mr-4"
-              >
-                View all events
-              </button>
-              <button
-                onClick={() => navigate('/loginsignup')}
-                className="text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Go to Login
-              </button>
-            </div>
-          </div>
+          )
         )}
       </div>
     </div>
