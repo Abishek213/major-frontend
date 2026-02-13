@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import chatAssistantService from '../services/chatAssistantService';
+import chatAssistantService from '../services/chatAssistantService'; // Default import
 
 export const useChatAssistant = () => {
   const { user } = useAuth();
