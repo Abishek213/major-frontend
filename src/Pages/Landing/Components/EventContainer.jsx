@@ -1,7 +1,7 @@
 import { Calendar, Clock, MapPin, Flame, TrendingUp, Sparkles, Brain } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext'; // Fixed: Using alias
+import { useAuth } from '@/context/AuthContext';
 
 const EventContainer = () => {
   const [activeTab, setActiveTab] = useState('All');
@@ -9,6 +9,9 @@ const EventContainer = () => {
   const [loadingAI, setLoadingAI] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // Use ref to prevent infinite loop
+  const isInitialMount = useRef(true);
 
   const tabs = [
     { id: 'all', label: 'All' },
@@ -19,10 +22,10 @@ const EventContainer = () => {
     { id: 'free', label: 'Free' },
   ];
 
-  // Add AI Recommended tab for logged-in users
-  if (user) {
-    tabs.splice(1, 0, { id: 'ai-recommended', label: 'AI Recommended' });
-  }
+  // Add AI Recommended tab for logged-in users - DO THIS OUTSIDE RENDER
+  const allTabs = user 
+    ? [...tabs.slice(0, 1), { id: 'ai-recommended', label: 'AI Recommended' }, ...tabs.slice(1)]
+    : tabs;
 
   const events = [
     {
@@ -170,17 +173,21 @@ const EventContainer = () => {
     }
   ];
 
-  // Filter events based on active tab
-  const filteredEvents = events.filter(event => {
-    if (activeTab === 'All') return true;
-    if (activeTab === 'For you') return event.promoted;
-    if (activeTab === 'AI Recommended') return event.aiRecommended;
-    if (activeTab === 'Free') return event.price === 'Free' || event.price.toLowerCase().includes('free');
-    if (activeTab === 'Online') return event.tags?.includes('online');
-    if (activeTab === 'Today') return event.tags?.includes('today');
-    if (activeTab === 'This weekend') return event.tags?.includes('this-weekend');
-    return true;
-  });
+  // Filter events based on active tab - use useCallback to prevent recreation
+  const getFilteredEvents = useCallback(() => {
+    return events.filter(event => {
+      if (activeTab === 'All') return true;
+      if (activeTab === 'For you') return event.promoted;
+      if (activeTab === 'AI Recommended') return event.aiRecommended;
+      if (activeTab === 'Free') return event.price === 'Free' || event.price.toLowerCase().includes('free');
+      if (activeTab === 'Online') return event.tags?.includes('online');
+      if (activeTab === 'Today') return event.tags?.includes('today');
+      if (activeTab === 'This weekend') return event.tags?.includes('this-weekend');
+      return true;
+    });
+  }, [activeTab]);
+
+  const filteredEvents = getFilteredEvents();
 
   // Handle event card click
   const handleEventClick = (eventId) => {
@@ -198,34 +205,43 @@ const EventContainer = () => {
     navigate('/loginsignup');
   };
 
-  // Fetch AI recommendations
+  // Fetch AI recommendations - FIXED to prevent infinite loop
   useEffect(() => {
+    // Skip the first render to prevent infinite loop
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
     if (activeTab === 'AI Recommended' && user) {
       setLoadingAI(true);
       // Simulate API call
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setAiEvents(filteredEvents);
         setLoadingAI(false);
       }, 1000);
+      
+      return () => clearTimeout(timer);
     } else {
       setAiEvents([]);
       setLoadingAI(false);
     }
-  }, [activeTab, user, filteredEvents]);
+  }, [activeTab, user]); // Remove filteredEvents from dependencies
 
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Navigation Tabs */}
         <div className="flex gap-4 mb-8 border-b border-gray-200 overflow-x-auto pb-2">
-          {tabs.map((tab) => (
+          {allTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.label)}
-              className={`pb-3 px-1 font-medium whitespace-nowrap transition-colors duration-200 flex items-center gap-1 ${activeTab === tab.label
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-                }`}
+              className={`pb-3 px-1 font-medium whitespace-nowrap transition-colors duration-200 flex items-center gap-1 ${
+                activeTab === tab.label
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
             >
               {tab.label === 'AI Recommended' && (
                 <Sparkles className="w-4 h-4" />

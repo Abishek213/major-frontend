@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Brain, Star, Zap, Award, CheckCircle, TrendingUp, ThumbsUp, Crown, Shield, Heart } from 'lucide-react';
+import { Sparkles, Brain, Star, Zap, Award, CheckCircle, TrendingUp, ThumbsUp, Crown, Shield, Heart, Tag, TrendingDown, Clock } from 'lucide-react';
 
 const AIBadge = ({ 
   score, 
@@ -174,55 +174,6 @@ export const AICompactBadge = ({ score, className = '' }) => {
   );
 };
 
-// Badge with confidence meter
-export const AIConfidenceBadge = ({ score, size = 'md', className = '' }) => {
-  const getConfidenceColor = (score) => {
-    if (score >= 80) return 'bg-green-500';
-    if (score >= 60) return 'bg-blue-500';
-    if (score >= 40) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  const getConfidenceLabel = (score) => {
-    if (score >= 80) return 'High Confidence';
-    if (score >= 60) return 'Medium Confidence';
-    if (score >= 40) return 'Low Confidence';
-    return 'Very Low Confidence';
-  };
-
-  const sizeClasses = {
-    sm: { wrapper: 'px-2 py-1', bar: 'h-1', text: 'text-xs' },
-    md: { wrapper: 'px-3 py-1.5', bar: 'h-1.5', text: 'text-xs' },
-    lg: { wrapper: 'px-4 py-2', bar: 'h-2', text: 'text-sm' }
-  };
-
-  return (
-    <div className={`inline-flex flex-col ${sizeClasses[size].wrapper} bg-gray-50 border border-gray-200 rounded-lg ${className}`}>
-      <div className="flex items-center justify-between gap-3 mb-1">
-        <div className="flex items-center gap-1">
-          <Brain className={`${size === 'lg' ? 'w-4 h-4' : 'w-3 h-3'} text-purple-600`} />
-          <span className={`font-medium text-gray-700 ${sizeClasses[size].text}`}>AI Confidence</span>
-        </div>
-        <span className={`font-bold ${sizeClasses[size].text} ${
-          score >= 80 ? 'text-green-600' :
-          score >= 60 ? 'text-blue-600' :
-          score >= 40 ? 'text-yellow-600' :
-          'text-red-600'
-        }`}>{score}%</span>
-      </div>
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-500">{getConfidenceLabel(score)}</span>
-        <div className={`w-20 ${sizeClasses[size].bar} bg-gray-200 rounded-full overflow-hidden`}>
-          <div 
-            className={`${getConfidenceColor(score)} rounded-full transition-all duration-500`}
-            style={{ width: `${score}%`, height: '100%' }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Category badge for event types
 export const AICategoryBadge = ({ category, confidence, className = '' }) => {
   return (
@@ -286,8 +237,5 @@ export const AITimingBadge = ({ type, className = '' }) => {
     </div>
   );
 };
-
-// Import missing icons
-import { Tag, TrendingDown, Clock } from 'lucide-react';
 
 export default AIBadge;
