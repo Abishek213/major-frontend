@@ -6,9 +6,8 @@ import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
 import { useNavigate } from 'react-router-dom';
 
 const LoginSignup = () => {
-  const navigate = useNavigate(); // Initialize navigate hook
-  
-  const [isLogin, setIsLogin] = useState(true); // true for login, false for signup
+  const navigate = useNavigate();
+  const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     fullname: '',
     email: '',
@@ -24,17 +23,24 @@ const LoginSignup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showErrorAlert, setShowErrorAlert] = useState(false);
+  
+  // Add a ref to track if redirect has been attempted
+  const redirectAttempted = React.useRef(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
     
-    // Check for existing login and redirect
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-    if (token && role) {
-      redirectBasedOnRole(role);
+    // Only check and redirect once
+    if (!redirectAttempted.current) {
+      const token = localStorage.getItem('token');
+      const role = localStorage.getItem('role');
+      
+      if (token && role) {
+        redirectAttempted.current = true;
+        redirectBasedOnRole(role);
+      }
     }
-  }, []);
+  }, []); // Empty dependency array - runs only once on mount
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -42,6 +48,7 @@ const LoginSignup = () => {
       ...prev,
       [name]: value
     }));
+    // Clear specific field error
     setErrors(prev => ({
       ...prev,
       [name]: ''
@@ -52,49 +59,70 @@ const LoginSignup = () => {
   const redirectBasedOnRole = (role) => {
     switch (role) {
       case 'Admin':
-        navigate('/admindb');
+        navigate('/admindb', { replace: true });
         break;
       case 'Organizer':
-        navigate('/orgdb');
+        navigate('/orgdb', { replace: true });
         break;
       case 'User':
-        navigate('/userdb');
+        navigate('/userdb', { replace: true });
         break;
       default:
         setError('Invalid user role');
         setShowErrorAlert(true);
+        // Clear invalid role from localStorage
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
     }
   };
 
   const handleLogin = async () => {
+    // Clear previous errors
+    setErrors({});
+    setError('');
+    setShowErrorAlert(false);
+    
     const newErrors = {};
     
-    if (!formData.email) {
+    if (!formData.email?.trim()) {
       newErrors.email = 'Email is required';
     }
     if (!formData.password) {
       newErrors.password = 'Password is required';
     }
     
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
     
     setLoading(true);
     
     try {
       const loginData = {
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password
       };
 
       const response = await api.post("/users/login", loginData);
 
       if (response.data?.token && response.data?.user) {
+        // Clear any existing data first
+        localStorage.clear();
+        
+        // Set new data
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('role', response.data.user.role);
+        
+        // Optional: store user data
+        if (response.data.user) {
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+        }
 
         setError('');
         setShowErrorAlert(false);
+        
+        // Use replace to prevent going back to login page
         redirectBasedOnRole(response.data.user.role);
       } else {
         setError('Invalid response from server');
@@ -102,8 +130,8 @@ const LoginSignup = () => {
       }
     } catch (error) {
       console.error("Login Error:", error.response?.data || error.message);
+      
       let errorMessage = 'Invalid email or password';
-
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
@@ -118,28 +146,44 @@ const LoginSignup = () => {
   };
 
   const handleSignup = async () => {
+    // Clear previous errors
+    setErrors({});
+    setError('');
+    setShowErrorAlert(false);
+    
     const newErrors = {};
-    if (!formData.fullname) newErrors.fullname = 'Full name is required';
-    if (!formData.email) newErrors.email = 'Email is required';
+    
+    if (!formData.fullname?.trim()) newErrors.fullname = 'Full name is required';
+    if (!formData.email?.trim()) newErrors.email = 'Email is required';
     if (!formData.password) newErrors.password = 'Password is required';
     if (!formData.confirmPassword) newErrors.confirmPassword = 'Confirm password is required';
-    if (formData.password !== formData.confirmPassword) {
+    
+    if (formData.password && formData.confirmPassword && 
+        formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-    if (!formData.contactNo) newErrors.contactNo = 'Contact number is required';
+    
+    if (!formData.contactNo?.trim()) newErrors.contactNo = 'Contact number is required';
     if (!formData.role) newErrors.role = 'Role is required';
 
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
+    // Password strength validation (optional)
+    if (formData.password && formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
     setLoading(true);
     
     try {
       const signupData = {
-        fullname: formData.fullname,
-        email: formData.email,
+        fullname: formData.fullname.trim(),
+        email: formData.email.trim().toLowerCase(),
         password: formData.password,
-        contactNo: formData.contactNo,
+        contactNo: formData.contactNo.trim(),
         role: formData.role
       };
 
@@ -147,7 +191,11 @@ const LoginSignup = () => {
 
       if (response.data?.user) {
         setError('');
+        
+        // Show success message
         alert(response.data.message || 'Signup successful! Please login.');
+        
+        // Switch to login mode and clear form
         setIsLogin(true);
         setFormData({
           fullname: '',
@@ -163,8 +211,8 @@ const LoginSignup = () => {
       }
     } catch (error) {
       console.error("Signup Error:", error.response?.data || error.message);
+      
       let errorMessage = 'An error occurred during signup';
-
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
@@ -188,14 +236,24 @@ const LoginSignup = () => {
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && e.target.type !== 'textarea') {
-      e.preventDefault();
+    if (e.key === 'Enter' && !loading) {
       handleSubmit(e);
     }
   };
 
-  const handleSocialLogin = (provider) => {
-    console.log(`Social login with ${provider}`);
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setFormData({
+      fullname: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      contactNo: '',
+      role: ''
+    });
+    setErrors({});
+    setError('');
+    setShowErrorAlert(false);
   };
 
   return (
@@ -210,11 +268,11 @@ const LoginSignup = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-purple-900/30 to-blue-900/30"></div>
       </div>
 
-      {/* Form Card - Smaller and Centered with top margin */}
+      {/* Form Card */}
       <div className="relative z-10 flex items-center justify-center w-full pt-24 p-4">
         <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm p-4">
-          {/* Error Alert - Smaller */}
-          {showErrorAlert && (
+          {/* Error Alert */}
+          {showErrorAlert && error && (
             <Alert variant="destructive" className="mb-4 text-sm">
               <AlertTitle className="text-sm">Error</AlertTitle>
               <AlertDescription className="text-sm">{error}</AlertDescription>
@@ -240,7 +298,9 @@ const LoginSignup = () => {
                       placeholder="Full Name"
                       value={formData.fullname}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                      className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                        errors.fullname ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     />
                     {errors.fullname && (
                       <p className="text-red-500 text-xs mt-1">{errors.fullname}</p>
@@ -248,7 +308,7 @@ const LoginSignup = () => {
                   </div>
                 )}
 
-                {/* Email Field - Always Visible */}
+                {/* Email Field */}
                 <div>
                   <input
                     type="email"
@@ -256,14 +316,16 @@ const LoginSignup = () => {
                     placeholder="Email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                    className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                      errors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   {errors.email && (
                     <p className="text-red-500 text-xs mt-1">{errors.email}</p>
                   )}
                 </div>
 
-                {/* Password Field - Always Visible */}
+                {/* Password Field */}
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -271,7 +333,9 @@ const LoginSignup = () => {
                     placeholder="Password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm pr-10"
+                    className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm pr-10 ${
+                      errors.password ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <button
                     type="button"
@@ -294,7 +358,9 @@ const LoginSignup = () => {
                       placeholder="Confirm Password"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm pr-10"
+                      className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm pr-10 ${
+                        errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     />
                     <button
                       type="button"
@@ -318,7 +384,9 @@ const LoginSignup = () => {
                       placeholder="Contact Number"
                       value={formData.contactNo}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                      className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                        errors.contactNo ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     />
                     {errors.contactNo && (
                       <p className="text-red-500 text-xs mt-1">{errors.contactNo}</p>
@@ -333,7 +401,9 @@ const LoginSignup = () => {
                       name="role"
                       value={formData.role}
                       onChange={handleInputChange}
-                      className="w-full px- py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                      className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                        errors.role ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     >
                       <option value="" disabled>Select Role</option>
                       <option value="User">User</option>
@@ -350,94 +420,45 @@ const LoginSignup = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-semibold transition-colors text-sm disabled:opacity-50"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-semibold transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? (isLogin ? 'Logging in...' : 'Creating account...') : (isLogin ? 'Log in' : 'Sign up')}
+                  {loading ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {isLogin ? 'Logging in...' : 'Creating account...'}
+                    </span>
+                  ) : (
+                    isLogin ? 'Log in' : 'Sign up'
+                  )}
                 </button>
 
                 {/* Forgot Password - Login Only */}
                 {isLogin && (
                   <div className="text-center">
-                    <a href="#" className="text-blue-600 hover:underline text-xs">
+                    <button
+                      type="button"
+                      onClick={() => alert('Password reset functionality coming soon!')}
+                      className="text-blue-600 hover:underline text-xs"
+                    >
                       Forgot password?
-                    </a>
+                    </button>
                   </div>
-                )}
-
-                {/* Social Login - Login Only */}
-                {isLogin && (
-                  <>
-                    <div className="text-center">
-                      <p className="text-gray-500 text-xs mb-4">Or sign in with</p>
-                    </div>
-
-                    {/* Social Login Buttons - Smaller */}
-                    <div className="flex justify-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleSocialLogin('apple')}
-                        className="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:border-gray-400 transition-colors"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-                        </svg>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleSocialLogin('google')}
-                        className="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:border-gray-400 transition-colors"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                        </svg>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleSocialLogin('facebook')}
-                        className="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:border-gray-400 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="#1877F2" viewBox="0 0 24 24">
-                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    <div className="text-center mt-4">
-                      <p className="text-xs text-gray-600 leading-tight">
-                        By clicking Continue or the Apple, Google, or Facebook icons, you agree to Eventbrite's{' '}
-                        <a href="#" className="text-blue-600 hover:underline">Terms of Service</a> and{' '}
-                        <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>.
-                      </p>
-                    </div>
-                  </>
                 )}
 
                 {/* Toggle between Login and Signup */}
                 <div className="text-center mt-4">
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsLogin(!isLogin);
-                      setFormData({
-                        fullname: '',
-                        email: '',
-                        password: '',
-                        confirmPassword: '',
-                        contactNo: '',
-                        role: ''
-                      });
-                      setErrors({});
-                      setShowErrorAlert(false);
-                    }}
+                    onClick={toggleMode}
                     className="text-gray-700 hover:underline text-xs"
                   >
                     {isLogin ? "Don't have an account? " : "Already have an account? "}
-                    <span className="font-semibold">{isLogin ? 'Sign up' : 'Log in'}</span>
+                    <span className="font-semibold text-blue-600">
+                      {isLogin ? 'Sign up' : 'Log in'}
+                    </span>
                   </button>
                 </div>
               </div>

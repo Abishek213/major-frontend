@@ -22,7 +22,9 @@ import {
   Sparkles,
   TrendingUp,
   Activity,
-  ArrowRight
+  ArrowRight,
+  Bot,
+  Wand2
 } from 'lucide-react';
 import { 
   Dialog,
@@ -32,6 +34,11 @@ import {
   DialogAction
 } from '@/components/ui/dialog';
 import websocketManager from '@/utils/websocketManager';
+import EventPlanningAssistant from '../../../components/ai/organizer/EventPlanningAssistant';
+import PriceSuggestion from '../../../components/ai/organizer/PriceSuggestion';
+import TagRecommender from '../../../components/ai/organizer/TagRecommender';
+import { useOrganizerAI } from '../../../hooks/useOrganizerAI';
+import AIBadge from '../../../components/ai/AIBadge';
 
 // Improved helper function to organize categories with recursive support
 const organizeCategories = (categories) => {
@@ -67,6 +74,35 @@ const CreateEvent = () => {
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [pendingEventDetails, setPendingEventDetails] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  
+  // AI Assistant States
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState(null);
+  const [formData, setFormData] = useState({
+    event_name: '',
+    description: '',
+    event_date: '',
+    registrationDeadline: '',
+    time: '',
+    location: '',
+    price: '',
+    category: '',
+    totalSlots: '',
+    tags: [],
+    isPublic: false
+  });
+
+  const { 
+    fetchPriceSuggestion, 
+    fetchTagRecommendations, 
+    fetchSlotSuggestion, 
+    fetchDateSuggestion,
+    priceSuggestion,
+    tagRecommendations,
+    slotSuggestion,
+    dateSuggestion,
+    loading: aiLoading 
+  } = useOrganizerAI();
 
   // Improved indentation helper for deeper nesting
   const getIndentationStyle = (level) => {
@@ -136,6 +172,72 @@ const CreateEvent = () => {
     fetchInitialData();
   }, []);
 
+  // Handle AI suggestion application
+  const handleApplySuggestion = (type, value) => {
+    setFormData(prev => {
+      const updated = { ...prev };
+      
+      switch(type) {
+        case 'price':
+          updated.price = value;
+          break;
+        case 'tag':
+          if (!updated.tags.includes(value)) {
+            updated.tags = [...updated.tags, value];
+          }
+          break;
+        case 'slots':
+          updated.totalSlots = value;
+          break;
+        case 'date':
+          updated.event_date = value;
+          break;
+        default:
+          break;
+      }
+      
+      // Update form inputs
+      const form = document.querySelector('form');
+      if (form) {
+        const input = form.querySelector(`[name="${type === 'price' ? 'price' : type === 'slots' ? 'totalSlots' : type}"]`);
+        if (input) {
+          input.value = value;
+        }
+      }
+      
+      return updated;
+    });
+  };
+
+  // Handle input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Trigger AI suggestions when relevant fields change
+    if (name === 'category' && value && formData.location) {
+      fetchSlotSuggestion(formData.location, value);
+    }
+    if (name === 'location' && formData.category) {
+      fetchSlotSuggestion(value, formData.category);
+    }
+    if (name === 'description' && value.length > 50) {
+      fetchTagRecommendations(value, formData.category || 'general');
+    }
+  };
+
+  // Get AI price suggestion
+  const handleGetPriceSuggestion = async () => {
+    if (formData.category && formData.location) {
+      await fetchPriceSuggestion({
+        category: formData.category,
+        location: formData.location,
+        eventDate: formData.event_date,
+        description: formData.description
+      });
+    }
+  };
+
   const handleCreateEvent = async (event) => {
     event.preventDefault();
     setError("");
@@ -164,6 +266,11 @@ const CreateEvent = () => {
         throw new Error(failedValidation.message);
       }
 
+      // Get tags from form or use AI-suggested tags
+      const tags = form.tags.value 
+        ? form.tags.value.split(",").map(tag => tag.trim()) 
+        : formData.tags;
+
       // Construct event data object
       const eventData = {
         event_name: form.event_name.value.trim(),
@@ -176,7 +283,7 @@ const CreateEvent = () => {
         category: categoryId,
         totalSlots: Number(form.totalSlots.value),
         org_ID: userData._id,
-        tags: form.tags.value ? form.tags.value.split(",").map(tag => tag.trim()) : [],
+        tags: tags,
         isPublic: form.isPublic?.checked || false
       };
 
@@ -341,25 +448,43 @@ const CreateEvent = () => {
           {/* Header Section */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+              <div className="flex items-center gap-3 mb-2">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
                   <Activity className="w-6 h-6 text-white" />
                 </div>
-                Create New Event
-              </h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+                  Create New Event
+                </h1>
+              </div>
               <p className="text-gray-600">
-                Design and launch your perfect event with our intuitive creation tools
+                Design and launch your perfect event with our AI-powered creation tools
               </p>
             </div>
             
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="mt-4 md:mt-0 px-5 py-3 rounded-xl font-medium flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
-            >
-              <Plus className="w-5 h-5" />
-              Create Event
-            </button>
+            <div className="mt-4 md:mt-0 flex gap-3">
+              <button
+                onClick={() => setShowAIAssistant(!showAIAssistant)}
+                className="px-5 py-3 rounded-xl font-medium flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <Bot className="w-5 h-5" />
+                {showAIAssistant ? 'Hide AI Assistant' : 'Show AI Assistant'}
+              </button>
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="px-5 py-3 rounded-xl font-medium flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <Plus className="w-5 h-5" />
+                Create Event
+              </button>
+            </div>
           </div>
+
+          {/* AI Assistant Panel */}
+          {showAIAssistant && (
+            <div className="mb-8 animate-fade-in">
+              <EventPlanningAssistant onApplySuggestion={handleApplySuggestion} />
+            </div>
+          )}
 
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Event Creation Guide */}
@@ -430,6 +555,35 @@ const CreateEvent = () => {
                     </div>
                   ))}
                 </div>
+
+                {/* AI Features Highlight */}
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Wand2 className="w-5 h-5 text-purple-600" />
+                    <h4 className="font-semibold text-purple-800">AI-Powered Features</h4>
+                  </div>
+                  <p className="text-sm text-purple-700 mb-2">
+                    Our AI assistant can help you with:
+                  </p>
+                  <ul className="space-y-1 text-sm text-purple-600">
+                    <li className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Price optimization based on market data
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Smart tag recommendations
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Capacity suggestions for your venue
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Best date selection based on trends
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
@@ -443,11 +597,14 @@ const CreateEvent = () => {
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-gray-50 to-white border-gray-200 border-b px-6 py-4 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Create New Event
-                </h2>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Create New Event
+                  </h2>
+                  <AIBadge type="organizer" agent="planning" />
+                </div>
                 <p className="text-sm text-gray-600">
-                  Fill in the details to create your event
+                  Fill in the details to create your event. AI suggestions will appear as you type.
                 </p>
               </div>
               <button
@@ -476,6 +633,40 @@ const CreateEvent = () => {
                   </div>
                 )}
 
+                {/* AI Suggestions Panel (inline) */}
+                {formData.category && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* Price Suggestion */}
+                    {formData.category && formData.location && (
+                      <div className="transform scale-95 origin-top">
+                        <PriceSuggestion 
+                          category={formData.category}
+                          location={formData.location}
+                          onApplyPrice={(price) => handleApplySuggestion('price', price)}
+                        />
+                      </div>
+                    )}
+
+                    {/* Tag Recommender */}
+                    {formData.description && formData.description.length > 50 && (
+                      <div className="transform scale-95 origin-top">
+                        <TagRecommender 
+                          description={formData.description}
+                          category={formData.category || 'general'}
+                          onTagsSelected={(tags) => {
+                            setFormData(prev => ({ ...prev, tags }));
+                            // Update tags input
+                            const tagsInput = document.querySelector('input[name="tags"]');
+                            if (tagsInput) {
+                              tagsInput.value = tags.join(', ');
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   {/* Basic Details Section */}
                   <div className="space-y-4">
@@ -489,6 +680,7 @@ const CreateEvent = () => {
                         className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                         required
                         placeholder="Enter a compelling event name"
+                        onChange={handleInputChange}
                       />
                     </div>
 
@@ -501,6 +693,7 @@ const CreateEvent = () => {
                           name="category"
                           className="w-full px-4 py-3 rounded-xl border appearance-none bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                           required
+                          onChange={handleInputChange}
                         >
                           <option value="">Select Category</option>
                           {organizedCategories.map(category => renderCategoryOptions(category))}
@@ -529,6 +722,7 @@ const CreateEvent = () => {
                           type="date"
                           className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                           required
+                          onChange={handleInputChange}
                         />
                       </div>
                       <div>
@@ -543,6 +737,7 @@ const CreateEvent = () => {
                           type="time"
                           className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                           required
+                          onChange={handleInputChange}
                         />
                       </div>
                     </div>
@@ -556,6 +751,7 @@ const CreateEvent = () => {
                         type="date"
                         className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                         required
+                        onChange={handleInputChange}
                       />
                     </div>
                   </div>
@@ -576,6 +772,7 @@ const CreateEvent = () => {
                       className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       required
                       placeholder="Enter venue location"
+                      onChange={handleInputChange}
                     />
                   </div>
 
@@ -591,7 +788,17 @@ const CreateEvent = () => {
                       type="text"
                       className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       placeholder="Separate tags with commas"
+                      defaultValue={formData.tags.join(', ')}
                     />
+                    {formData.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {formData.tags.map((tag, index) => (
+                          <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -611,7 +818,14 @@ const CreateEvent = () => {
                       required
                       min="1"
                       placeholder="Enter capacity"
+                      onChange={handleInputChange}
+                      value={formData.totalSlots}
                     />
+                    {slotSuggestion && (
+                      <p className="text-xs text-purple-600 mt-1">
+                        AI suggests: {slotSuggestion.suggestedSlots} slots based on location
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -621,15 +835,28 @@ const CreateEvent = () => {
                         <span>Price (Rs)</span>
                       </div>
                     </label>
-                    <input
-                      name="price"
-                      type="number"
-                      className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="Enter price"
-                    />
+                    <div className="relative">
+                      <input
+                        name="price"
+                        type="number"
+                        className="w-full px-4 py-3 rounded-xl border bg-gray-50 border-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        required
+                        min="0"
+                        step="0.01"
+                        placeholder="Enter price"
+                        onChange={handleInputChange}
+                        value={formData.price}
+                      />
+                      {priceSuggestion && (
+                        <button
+                          type="button"
+                          onClick={() => handleApplySuggestion('price', priceSuggestion.suggestedPrice)}
+                          className="absolute right-2 top-2 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
+                        >
+                          Use AI: Rs.{priceSuggestion.suggestedPrice}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -663,7 +890,13 @@ const CreateEvent = () => {
                     rows="4"
                     required
                     placeholder="Describe your event in detail..."
+                    onChange={handleInputChange}
                   />
+                  {formData.description && formData.description.length < 50 && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Add more details (at least 50 characters) for AI tag suggestions
+                    </p>
+                  )}
                 </div>
 
                 {/* Submit Button */}
@@ -680,10 +913,10 @@ const CreateEvent = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || aiLoading}
                     className="flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? (
+                    {loading || aiLoading ? (
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
                         <span>Creating Event...</span>

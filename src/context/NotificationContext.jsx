@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import api from '../utils/api';
 import websocketManager from '../utils/websocketManager';
 import { useAuth } from './AuthContext';
@@ -17,15 +17,24 @@ export const NotificationProvider = ({ children }) => {
   
   const wsInitialized = useRef(false);
   const audioRef = useRef(null);
+  const isMounted = useRef(true);
 
   // Initialize audio for notifications
   useEffect(() => {
-    audioRef.current = new Audio('/src/assets/sounds/notification.mp3');
-    audioRef.current.volume = 0.5;
+    // Only create audio in browser environment
+    if (typeof window !== 'undefined') {
+      audioRef.current = new Audio('/src/assets/sounds/notification.mp3');
+      if (audioRef.current) {
+        audioRef.current.volume = 0.5;
+        // Preload audio
+        audioRef.current.load();
+      }
+    }
     
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current.src = '';
         audioRef.current = null;
       }
     };
@@ -33,16 +42,27 @@ export const NotificationProvider = ({ children }) => {
 
   // Fetch initial notifications
   useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      fetchNotifications();
+    if (isAuthenticated && user?.id && isMounted.current) {
+      fetchNotifications(true);
       fetchUnreadCount();
     }
-  }, [isAuthenticated, user?.id, filter]);
+    
+    return () => {
+      isMounted.current = false;
+    };
+  }, [isAuthenticated, user?.id]); // Remove filter from dependencies to prevent excessive calls
+
+  // Separate effect for filter changes
+  useEffect(() => {
+    if (isAuthenticated && user?.id && isMounted.current) {
+      fetchNotifications(true);
+    }
+  }, [filter]); // Only re-run when filter changes
 
   // Setup WebSocket connection for real-time notifications
   useEffect(() => {
     // Only setup WebSocket if user is authenticated and we haven't initialized yet
-    if (!isAuthenticated || !user?.id || wsInitialized.current) {
+    if (!isAuthenticated || !user?.id || wsInitialized.current || !isMounted.current) {
       return;
     }
 
@@ -61,12 +81,15 @@ export const NotificationProvider = ({ children }) => {
         const handleNewNotification = (data) => {
           console.log('New notification received:', data);
           
+          // Only update if component is mounted
+          if (!isMounted.current) return;
+          
           // Play sound
           if (audioRef.current) {
             audioRef.current.play().catch(e => console.log('Audio play failed:', e));
           }
 
-          // Add to notifications list
+          // Add to notifications list (at the beginning)
           setNotifications(prev => [data.notification, ...prev]);
           
           // Update unread count
@@ -76,24 +99,26 @@ export const NotificationProvider = ({ children }) => {
         // Handle unread count updates
         const handleUnreadCount = (data) => {
           console.log('Unread count update:', data);
-          setUnreadCount(data.count);
+          if (isMounted.current) {
+            setUnreadCount(data.count);
+          }
         };
 
         // Register handlers
         websocketManager.on('new_notification', handleNewNotification);
         websocketManager.on('unread_count', handleUnreadCount);
         
-        // Subscribe to notification channels
-        setTimeout(() => {
-          if (websocketManager.isConnected()) {
+        // Subscribe to notification channels with a slight delay
+        const subscriptionTimeout = setTimeout(() => {
+          if (websocketManager.isConnected() && isMounted.current) {
             websocketManager.subscribeToNotifications();
             websocketManager.subscribeToUnreadCount();
+            wsInitialized.current = true;
           }
         }, 500);
 
-        wsInitialized.current = true;
-
         return () => {
+          clearTimeout(subscriptionTimeout);
           websocketManager.off('new_notification', handleNewNotification);
           websocketManager.off('unread_count', handleUnreadCount);
         };
@@ -106,22 +131,24 @@ export const NotificationProvider = ({ children }) => {
 
     return () => {
       if (cleanup) cleanup();
-      
-      // Don't disconnect here - let the provider handle cleanup on unmount
       wsInitialized.current = false;
     };
-  }, [isAuthenticated, user?.id, getToken]);
+  }, [isAuthenticated, user?.id, getToken]); // Keep dependencies minimal
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       console.log('Cleaning up WebSocket connection...');
+      isMounted.current = false;
       websocketManager.disconnect();
       wsInitialized.current = false;
     };
   }, []);
 
-  const fetchNotifications = async (reset = false) => {
+  const fetchNotifications = useCallback(async (reset = false) => {
+    // Don't fetch if component is unmounted
+    if (!isMounted.current) return;
+    
     try {
       setLoading(true);
       setError(null);
@@ -129,32 +156,54 @@ export const NotificationProvider = ({ children }) => {
       const currentPage = reset ? 1 : page;
       const response = await api.safeGet(`/notifications?page=${currentPage}&limit=10&filter=${filter}`);
       
+      // Check if component is still mounted before updating state
+      if (!isMounted.current) return;
+      
       if (response.data) {
-        setNotifications(prev => reset ? response.data.notifications : [...prev, ...response.data.notifications]);
-        setHasMore(response.data.hasMore);
+        setNotifications(prev => {
+          if (reset) {
+            return response.data.notifications || [];
+          }
+          // Avoid duplicates
+          const newNotifications = (response.data.notifications || []).filter(
+            newNotif => !prev.some(existing => existing._id === newNotif._id)
+          );
+          return [...prev, ...newNotifications];
+        });
+        setHasMore(response.data.hasMore || false);
         setPage(prev => reset ? 2 : prev + 1);
       }
     } catch (err) {
-      setError(err.message || 'Failed to fetch notifications');
+      if (isMounted.current) {
+        setError(err.message || 'Failed to fetch notifications');
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [page, filter]); // Add page and filter as dependencies
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
+    if (!isMounted.current) return;
+    
     try {
       const response = await api.safeGet('/notifications/count');
-      if (response.data) {
+      if (isMounted.current && response.data) {
         setUnreadCount(response.data.count);
       }
     } catch (err) {
       console.error('Failed to fetch unread count:', err);
     }
-  };
+  }, []);
 
-  const markAsRead = async (notificationId) => {
+  const markAsRead = useCallback(async (notificationId) => {
+    if (!isMounted.current) return;
+    
     try {
       await api.safePatch(`/notifications/${notificationId}/read`);
+      
+      if (!isMounted.current) return;
       
       setNotifications(prev =>
         prev.map(n =>
@@ -166,11 +215,15 @@ export const NotificationProvider = ({ children }) => {
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
     }
-  };
+  }, []);
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = useCallback(async () => {
+    if (!isMounted.current) return;
+    
     try {
       await api.safePatch('/notifications/read-all');
+      
+      if (!isMounted.current) return;
       
       setNotifications(prev =>
         prev.map(n => ({ ...n, read: true }))
@@ -180,29 +233,34 @@ export const NotificationProvider = ({ children }) => {
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err);
     }
-  };
+  }, []);
 
-  const deleteNotification = async (notificationId) => {
+  const deleteNotification = useCallback(async (notificationId) => {
+    if (!isMounted.current) return;
+    
     try {
       await api.safeDelete(`/notifications/${notificationId}`);
+      
+      if (!isMounted.current) return;
       
       setNotifications(prev => {
         const deleted = prev.find(n => n._id === notificationId);
         if (deleted && !deleted.read) {
-          setUnreadCount(prev => Math.max(0, prev - 1));
+          setUnreadCount(prevCount => Math.max(0, prevCount - 1));
         }
         return prev.filter(n => n._id !== notificationId);
       });
     } catch (err) {
       console.error('Failed to delete notification:', err);
     }
-  };
+  }, []);
 
-  const refreshNotifications = () => {
+  const refreshNotifications = useCallback(() => {
     fetchNotifications(true);
-  };
+  }, [fetchNotifications]);
 
-  const value = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     notifications,
     unreadCount,
     loading,
@@ -215,7 +273,19 @@ export const NotificationProvider = ({ children }) => {
     markAsRead,
     markAllAsRead,
     deleteNotification,
-  };
+  }), [
+    notifications,
+    unreadCount,
+    loading,
+    error,
+    hasMore,
+    filter,
+    fetchNotifications,
+    refreshNotifications,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  ]);
 
   return (
     <NotificationContext.Provider value={value}>

@@ -1,3 +1,4 @@
+// src/components/NotificationDropdown.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/context/NotificationContext';
@@ -9,17 +10,16 @@ import {
   Eye, EyeOff
 } from 'lucide-react';
 
-const NotificationDropdown = () => {
+const NotificationDropdown = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
   const observerTarget = useRef(null);
-  const dropdownRef = useRef(null); // Ref for the dropdown container
+  const dropdownRef = useRef(null);
   const userRole = localStorage.getItem('role');
 
   const {
     notifications,
-    isNotificationsOpen,
     filter,
     setFilter,
     markAsRead,
@@ -30,30 +30,36 @@ const NotificationDropdown = () => {
     error,
     pagination,
     unreadCount,
-    toggleNotifications // We'll need this from context to close the dropdown
   } = useNotifications();
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // If dropdown is open and click is outside of dropdown
-      if (isNotificationsOpen && 
+      if (isOpen && 
           dropdownRef.current && 
           !dropdownRef.current.contains(event.target) &&
-          // Also check if we're not clicking on the notification bell button itself
           !event.target.closest('.notifications-dropdown')) {
-        toggleNotifications(); // Close the dropdown
+        onClose();
       }
     };
 
-    // Add event listener
     document.addEventListener('mousedown', handleClickOutside);
-    
-    // Cleanup
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isNotificationsOpen, toggleNotifications]);
+  }, [isOpen, onClose]);
+
+  // Reset to first page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter]);
+
+  // Fetch notifications when component mounts or filter changes
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications(1, filter);
+    }
+  }, [isOpen, filter, fetchNotifications]);
 
   const getNotificationIcon = (type) => {
     const iconMap = {
@@ -107,18 +113,23 @@ const NotificationDropdown = () => {
 
     if (observerTarget.current) observer.observe(observerTarget.current);
     return () => observer.disconnect();
-  }, [currentPage, filter, isLoading, pagination?.totalPages]);
+  }, [currentPage, filter, isLoading, pagination?.totalPages, fetchNotifications]);
 
   const handleNotificationClick = async (notification) => {
     try {
       if (!notification._id.startsWith('temp-')) {
         await markAsRead(notification._id);
       }
-      const path = navigationMap[userRole]?.[notification.type];
-      if (path) navigate(path, { state: { highlightId: notification.eventId } });
+      // You'll need to define navigationMap
+      onClose(); // Close dropdown after clicking
     } catch (error) {
       console.error('Notification click error:', error);
     }
+  };
+
+  const handleFilterChange = (newFilter) => {
+    setCurrentPage(1);
+    setFilter(newFilter);
   };
 
   const NotificationItem = ({ notification }) => {
@@ -129,7 +140,7 @@ const NotificationDropdown = () => {
         className={`px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0 cursor-pointer transition-all duration-200 ${
           !notification.read ? 'bg-blue-50' : ''
         }`}
-        onClick={() => notification.eventId && notification.type && handleNotificationClick(notification)}
+        onClick={() => handleNotificationClick(notification)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -294,17 +305,11 @@ const NotificationDropdown = () => {
     </div>
   );
 
-  const handleFilterChange = (newFilter) => {
-    setCurrentPage(1);
-    setFilter(newFilter);
-    fetchNotifications(1, newFilter);
-  };
-
-  if (!isNotificationsOpen) return null;
+  if (!isOpen) return null;
 
   return (
     <div 
-      ref={dropdownRef} // Attach the ref here
+      ref={dropdownRef}
       className="absolute right-0 mt-2 w-96 rounded-lg bg-white shadow-xl border border-gray-200 overflow-hidden z-50"
     >
       <div className="p-4 border-b border-gray-200 bg-gray-50">
@@ -329,7 +334,10 @@ const NotificationDropdown = () => {
               <Settings className="w-5 h-5" />
             </button>
             <button
-              onClick={markAllAsRead}
+              onClick={() => {
+                markAllAsRead();
+                onClose();
+              }}
               disabled={unreadCount === 0}
               className={`px-3 py-2 rounded-lg flex items-center gap-1 text-sm ${
                 unreadCount > 0 

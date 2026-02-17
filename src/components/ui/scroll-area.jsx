@@ -1,5 +1,7 @@
+// src/components/ui/scroll-area.jsx
 import React from 'react';
 
+// Make sure to export with the exact name 'ScrollArea'
 export const ScrollArea = ({ 
   children, 
   className = "",
@@ -47,3 +49,6 @@ export const ScrollAreaThumb = ({ className = "", ...props }) => {
     />
   );
 };
+
+// Also export as default for backward compatibility
+export default ScrollArea;

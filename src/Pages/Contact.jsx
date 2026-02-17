@@ -111,7 +111,7 @@ function AIChatSupport({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed bottom-24 right-6 w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[9999] flex flex-col" style={{ height: '600px' }}>
+    <div className="fixed bottom-2 right-6 w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[9999] flex flex-col" style={{ height: '600px' }}>
       {/* Header */}
       <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-12 rounded-t-2xl">
         <div className="flex items-center gap-3">
@@ -123,54 +123,22 @@ function AIChatSupport({ isOpen, onClose }) {
           </div>
           <div>
             <h3 className="font-semibold flex items-center gap-2">
-              AI Support Assistant
-              <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs">
-                24/7
-              </span>
+              Support Assistant
+             
             </h3>
             <p className="text-xs text-blue-100">Online • Instant response</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <LanguageSelector
-            value={language}
-            onChange={setLanguage}
-            compact={true}
-          />
+          
           <button 
             type="button" 
             onClick={onClose}
             className="p-1.5 hover:bg-white/20 rounded-lg transition"
           >
-            <X className="w-5 h-5" />
+            <X className="w-8 h-8" />
           </button>
         </div>
-      </div>
-
-      {/* AI/Human Toggle */}
-      <div className="flex items-center gap-2 p-3 bg-gray-50 border-b">
-        <button
-          onClick={() => setIsAIMode(true)}
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${
-            isAIMode
-              ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
-              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-          }`}
-        >
-          <Bot className="w-4 h-4" />
-          AI Assistant
-        </button>
-        <button
-          onClick={switchToHuman}
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${
-            !isAIMode
-              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md'
-              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-          }`}
-        >
-          <User className="w-4 h-4" />
-          Human Agent
-        </button>
       </div>
 
       {/* Messages */}
