@@ -1,3 +1,4 @@
+// src/Pages/Landing/User/IntrestedOrganizers.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/utils/api';
@@ -11,7 +12,7 @@ import {
   Plus, ChevronRight, RefreshCw, UserCircle, Clock, Award, Brain,
   Star, ThumbsUp, ThumbsDown, TrendingDown, BarChart3, Mail,
   Globe, Briefcase, Heart, Share2, Filter, SortAsc, Download, Eye,
-  Zap, Shield, Bot, Wallet, Smartphone, X  // Add X here
+  Zap, Shield, Bot, Wallet, Smartphone, X
 } from 'lucide-react';
 
 const InterestedOrganizers = () => {
@@ -40,39 +41,43 @@ const InterestedOrganizers = () => {
     organizerMatches 
   } = useEventRequest();
 
-  useEffect(() => {
-  const fetchEventRequests = async () => {
-    try {
-      const response = await api.safeGet("/eventrequest/event-requests-for-user");
-      
-      // Check if response has data
-      if (response.data && response.data.eventRequests) {
-        setEventRequests(response.data.eventRequests);
-      } else {
-        setEventRequests([]);
-      }
-      setError(null);
-    } catch (error) {
-      console.error('Error fetching event requests:', error);
-      
-      // Handle 404 gracefully - user has no requests yet
-      if (error.status === 404) {
-        setEventRequests([]);
-        setError(null); // Clear error - this is not an error state
-      } else {
-        setEventRequests([]);
-        // Only set error for non-404 errors
-        if (error.status !== 404) {
-          setError(error.message || 'Failed to fetch event requests');
+useEffect(() => {
+    const fetchEventRequests = async () => {
+      try {
+        setLoading(true);
+        const response = await api.safeGet("/eventrequest/event-requests-for-user");
+        
+        // Check if response has data
+        if (response?.data?.eventRequests) {
+          setEventRequests(response.data.eventRequests);
+          // Generate AI insights after getting data
+          setTimeout(() => generateAIInsights(response.data.eventRequests), 100);
+        } else {
+          setEventRequests([]);
         }
+        setError(null);
+      } catch (error) {
+        console.log('Error fetching event requests:', error);
+        
+        // Handle 404 gracefully - user has no requests yet
+        if (error.status === 404 || error.message?.includes('404') || error.message?.includes('No event requests found')) {
+          console.log('No event requests found - showing empty state');
+          setEventRequests([]);
+          setError(null); // Clear error - this is not an error state
+        } else {
+          setEventRequests([]);
+          // Only set error for non-404 errors
+          if (error.status !== 404 && !error.message?.includes('404') && !error.message?.includes('No event requests found')) {
+            setError(error.message || 'Failed to fetch event requests');
+          }
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  fetchEventRequests();
-}, []);
+    fetchEventRequests();
+  }, []);
 
   // AI: Enhance organizers with match scores and insights
   const enhanceOrganizersWithAI = (organizers, eventRequest) => {
@@ -249,12 +254,16 @@ const InterestedOrganizers = () => {
   };
 
   // AI: Generate overall insights for the event request
-  const generateAIInsights = () => {
+  const generateAIInsights = (requests) => {
+    if (!requests || requests.length === 0) return;
+    
     const insights = {};
     
-    eventRequests.forEach(request => {
+    requests.forEach(request => {
+      if (!request.organizers || request.organizers.length === 0) return;
+      
       const totalOrganizers = request.organizers.length;
-      const avgMatchScore = request.organizers.reduce((sum, org) => sum + (org.aiMatchScore || 0), 0) / totalOrganizers || 0;
+      const avgMatchScore = request.organizers.reduce((sum, org) => sum + (org.aiMatchScore || 70), 0) / totalOrganizers || 0;
       const topOrganizer = request.organizers[0];
       
       insights[request.eventId] = {
@@ -277,7 +286,7 @@ const InterestedOrganizers = () => {
 
   // AI: Get recommendation based on all factors
   const getAIRecommendation = (request) => {
-    if (request.organizers.length === 0) {
+    if (!request.organizers || request.organizers.length === 0) {
       return "No organizers yet. Consider promoting your request.";
     }
     
@@ -293,6 +302,10 @@ const InterestedOrganizers = () => {
 
   // AI: Get market insight
   const getMarketInsight = (request) => {
+    if (!request.organizers || request.organizers.length === 0) {
+      return "No market data available yet. Check back later.";
+    }
+    
     const avgBudget = request.organizers.reduce((sum, o) => sum + o.proposedBudget, 0) / request.organizers.length || request.budget;
     const ratio = avgBudget / request.budget;
     
@@ -321,7 +334,7 @@ const InterestedOrganizers = () => {
             organizerId,
             interactionType: 'select_organizer',
             timestamp: new Date().toISOString()
-          });
+          }).catch(err => console.log('Interaction tracking not available'));
         }
         
         const updatedResponse = await api.safeGet("/eventrequest/event-requests-for-user");
@@ -396,6 +409,12 @@ const InterestedOrganizers = () => {
     navigate('/userdb/eventrequest');
   };
 
+  const handleRefresh = () => {
+    setLoading(true);
+    // Re-run the fetch effect
+    window.location.reload();
+  };
+
   if (loading) {
     return (
       <div className="space-y-8 p-4 md:p-6">
@@ -424,6 +443,12 @@ const InterestedOrganizers = () => {
             <h4 className="font-bold text-red-800 mb-1">Error</h4>
             <p className="text-sm text-red-600">{error}</p>
           </div>
+          <button
+            onClick={handleRefresh}
+            className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -542,7 +567,7 @@ const InterestedOrganizers = () => {
                 Compare ({comparisonList.length}/3)
               </button>
               <button
-                onClick={fetchEventRequests}
+                onClick={handleRefresh}
                 className="p-3 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 transition-all duration-300"
               >
                 <RefreshCw className="w-5 h-5" />
@@ -568,7 +593,7 @@ const InterestedOrganizers = () => {
                   <Sparkles className="w-8 h-8 text-indigo-300" />
                 </div>
                 <h3 className="text-3xl font-bold text-gray-800 mb-1">
-                  {eventRequests.reduce((acc, req) => acc + req.organizers.length, 0)}
+                  {eventRequests.reduce((acc, req) => acc + (req.organizers?.length || 0), 0)}
                 </h3>
                 <p className="text-gray-600 font-medium">Total Organizer Matches</p>
               </div>
@@ -581,7 +606,7 @@ const InterestedOrganizers = () => {
                   <Brain className="w-8 h-8 text-purple-300" />
                 </div>
                 <h3 className="text-3xl font-bold text-gray-800 mb-1">
-                  {eventRequests.filter(req => req.organizers.some(o => o.aiMatchScore > 85)).length}
+                  {eventRequests.filter(req => req.organizers?.some(o => o.aiMatchScore > 85)).length}
                 </h3>
                 <p className="text-gray-600 font-medium">High Match Requests</p>
               </div>
@@ -591,10 +616,13 @@ const InterestedOrganizers = () => {
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
                     <DollarSign className="w-6 h-6 text-white" />
                   </div>
-                  <TrendDown className="w-8 h-8 text-emerald-300" />
+                  <TrendingDown className="w-8 h-8 text-emerald-300" />
                 </div>
                 <h3 className="text-3xl font-bold text-gray-800 mb-1">
-                  ${eventRequests.reduce((acc, req) => acc + (aiInsights[req.eventId]?.budgetRange?.average || 0), 0) / eventRequests.length || 0}
+                  ${eventRequests.reduce((acc, req) => {
+                    if (!req.organizers || req.organizers.length === 0) return acc;
+                    return acc + (aiInsights[req.eventId]?.budgetRange?.average || 0);
+                  }, 0) / eventRequests.length || 0}
                 </h3>
                 <p className="text-gray-600 font-medium">Avg. Proposed Budget</p>
               </div>
@@ -608,6 +636,7 @@ const InterestedOrganizers = () => {
                 </div>
                 <h3 className="text-3xl font-bold text-gray-800 mb-1">
                   {Math.round(eventRequests.reduce((acc, req) => {
+                    if (!req.organizers || req.organizers.length === 0) return acc;
                     const fastResponses = req.organizers.filter(o => o.responseSpeed === 'lightning' || o.responseSpeed === 'fast').length;
                     return acc + (fastResponses / req.organizers.length || 0) * 100;
                   }, 0) / eventRequests.length)}%
@@ -642,7 +671,7 @@ const InterestedOrganizers = () => {
                       {getStatusBadge(event.status)}
                       <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl">
                         <Users className="w-4 h-4 text-gray-600" />
-                        <span className="font-medium text-gray-800">{event.organizers.length} Organizers</span>
+                        <span className="font-medium text-gray-800">{event.organizers?.length || 0} Organizers</span>
                       </div>
                     </div>
                   </div>
@@ -724,23 +753,25 @@ const InterestedOrganizers = () => {
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                         <Brain className="w-5 h-5 text-indigo-600" />
-                        AI-Ranked Organizers ({event.organizers.length})
+                        AI-Ranked Organizers ({event.organizers?.length || 0})
                       </h3>
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={sortBy}
-                          onChange={(e) => setSortBy(e.target.value)}
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        >
-                          <option value="matchScore">Sort by Match Score</option>
-                          <option value="budget">Sort by Budget</option>
-                          <option value="responseTime">Sort by Response Time</option>
-                          <option value="experience">Sort by Experience</option>
-                        </select>
-                      </div>
+                      {event.organizers && event.organizers.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          >
+                            <option value="matchScore">Sort by Match Score</option>
+                            <option value="budget">Sort by Budget</option>
+                            <option value="responseTime">Sort by Response Time</option>
+                            <option value="experience">Sort by Experience</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
                     
-                    {event.organizers.length === 0 ? (
+                    {!event.organizers || event.organizers.length === 0 ? (
                       <div className="py-12 text-center bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
                         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center mx-auto mb-6">
                           <Users className="w-10 h-10 text-gray-400" />
@@ -752,9 +783,12 @@ const InterestedOrganizers = () => {
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {event.organizers
                           .sort((a, b) => {
-                            if (sortBy === 'matchScore') return b.aiMatchScore - a.aiMatchScore;
-                            if (sortBy === 'budget') return a.proposedBudget - b.proposedBudget;
-                            if (sortBy === 'responseTime') return (a.responseSpeed === 'lightning' ? 1 : 0) - (b.responseSpeed === 'lightning' ? 1 : 0);
+                            if (sortBy === 'matchScore') return (b.aiMatchScore || 0) - (a.aiMatchScore || 0);
+                            if (sortBy === 'budget') return (a.proposedBudget || 0) - (b.proposedBudget || 0);
+                            if (sortBy === 'responseTime') {
+                              const speedWeight = { lightning: 4, fast: 3, normal: 2, slow: 1 };
+                              return (speedWeight[b.responseSpeed] || 0) - (speedWeight[a.responseSpeed] || 0);
+                            }
                             return 0;
                           })
                           .map((organizer, index) => (
@@ -832,17 +866,17 @@ const InterestedOrganizers = () => {
                                       strokeWidth="4"
                                       fill="none"
                                       strokeDasharray={`${2 * Math.PI * 28}`}
-                                      strokeDashoffset={`${2 * Math.PI * 28 * (1 - organizer.aiMatchScore / 100)}`}
+                                      strokeDashoffset={`${2 * Math.PI * 28 * (1 - (organizer.aiMatchScore || 70) / 100)}`}
                                       className={`${
-                                        organizer.aiMatchScore > 85 ? 'text-emerald-500' :
-                                        organizer.aiMatchScore > 75 ? 'text-blue-500' :
-                                        organizer.aiMatchScore > 65 ? 'text-amber-500' :
+                                        (organizer.aiMatchScore || 70) > 85 ? 'text-emerald-500' :
+                                        (organizer.aiMatchScore || 70) > 75 ? 'text-blue-500' :
+                                        (organizer.aiMatchScore || 70) > 65 ? 'text-amber-500' :
                                         'text-rose-500'
                                       }`}
                                     />
                                   </svg>
                                   <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-lg font-bold text-gray-800">{organizer.aiMatchScore}%</span>
+                                    <span className="text-lg font-bold text-gray-800">{organizer.aiMatchScore || 70}%</span>
                                   </div>
                                 </div>
                                 <p className="text-xs text-gray-600 mt-1">AI Match</p>
@@ -851,7 +885,7 @@ const InterestedOrganizers = () => {
                             
                             {/* AI Insights */}
                             <div className="space-y-2 mb-4">
-                              {organizer.aiInsights?.map((insight, i) => (
+                              {(organizer.aiInsights || []).map((insight, i) => (
                                 <div key={i} className="flex items-start gap-2 text-xs">
                                   <Sparkles className="w-3 h-3 text-purple-600 mt-0.5" />
                                   <span className="text-gray-700">{insight}</span>
@@ -891,7 +925,7 @@ const InterestedOrganizers = () => {
                                   Strengths
                                 </p>
                                 <div className="space-y-1">
-                                  {organizer.strengths?.map((strength, i) => (
+                                  {(organizer.strengths || []).map((strength, i) => (
                                     <div key={i} className="flex items-center gap-1 text-xs text-emerald-700">
                                       <CheckCircle className="w-3 h-3" />
                                       {strength}
@@ -905,7 +939,7 @@ const InterestedOrganizers = () => {
                                   Considerations
                                 </p>
                                 <div className="space-y-1">
-                                  {organizer.weaknesses?.map((weakness, i) => (
+                                  {(organizer.weaknesses || []).map((weakness, i) => (
                                     <div key={i} className="flex items-center gap-1 text-xs text-rose-700">
                                       <AlertTriangle className="w-3 h-3" />
                                       {weakness}
@@ -932,7 +966,7 @@ const InterestedOrganizers = () => {
                                 Select Organizer
                               </button>
                               <button
-                                onClick={() => window.location.href = `mailto:${organizer.contact}`}
+                                onClick={() => window.location.href = `mailto:${organizer.contact || ''}`}
                                 className="px-4 py-3 rounded-xl font-medium flex items-center justify-center gap-2 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 hover:from-blue-200 hover:to-cyan-200 shadow-md hover:shadow-lg transition-all duration-300"
                               >
                                 <Mail className="w-5 h-5" />
@@ -978,7 +1012,7 @@ const InterestedOrganizers = () => {
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {eventRequests.flatMap(event => 
-                  event.organizers
+                  (event.organizers || [])
                     .filter(org => comparisonList.includes(org.organizerId))
                     .map((organizer, idx) => (
                       <div key={organizer.organizerId} className="border border-gray-200 rounded-xl p-6">
@@ -996,11 +1030,11 @@ const InterestedOrganizers = () => {
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-600">AI Match Score</span>
                             <span className={`font-bold ${
-                              organizer.aiMatchScore > 85 ? 'text-emerald-600' :
-                              organizer.aiMatchScore > 75 ? 'text-blue-600' :
+                              (organizer.aiMatchScore || 70) > 85 ? 'text-emerald-600' :
+                              (organizer.aiMatchScore || 70) > 75 ? 'text-blue-600' :
                               'text-amber-600'
                             }`}>
-                              {organizer.aiMatchScore}%
+                              {organizer.aiMatchScore || 70}%
                             </span>
                           </div>
                           
@@ -1018,7 +1052,7 @@ const InterestedOrganizers = () => {
                           
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-600">Reliability Score</span>
-                            <span className="font-bold text-gray-800">{organizer.reliabilityScore}%</span>
+                            <span className="font-bold text-gray-800">{organizer.reliabilityScore || 85}%</span>
                           </div>
                           
                           <div className="pt-4 border-t border-gray-200">

@@ -24,7 +24,7 @@ const EventContainer = () => {
 
   // Add AI Recommended tab for logged-in users - DO THIS OUTSIDE RENDER
   const allTabs = user 
-    ? [...tabs.slice(0, 1), { id: 'ai-recommended', label: 'AI Recommended' }, ...tabs.slice(1)]
+    ? [...tabs.slice(0, 1), { id: 'ai-recommended', label: 'Recommended' }, ...tabs.slice(1)]
     : tabs;
 
   const events = [

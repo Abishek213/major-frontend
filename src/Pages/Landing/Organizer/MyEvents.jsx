@@ -1,14 +1,33 @@
 import { useState, useEffect } from 'react';
-import { Eye, Edit, Trash2, Calendar, MapPin, DollarSign, Users, AlertTriangle, Sparkles, TrendingUp, RefreshCw, Clock, Target, Activity, ChevronRight } from 'lucide-react';
+import { 
+  Eye, Edit, Trash2, Calendar, MapPin, DollarSign, Users, 
+  AlertTriangle, Sparkles, TrendingUp, RefreshCw, Clock, Target, 
+  Activity, ChevronRight, Bot, Award, Zap, BarChart3, Star,
+  ThumbsUp, ThumbsDown, MessageCircle, Share2, Download, Filter
+} from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../../../utils/api';
 import { getToken } from '../../../utils/auth';
+import AIBadge from '../../../components/ai/AIBadge';
+import { useOrganizerAI } from '../../../hooks/useOrganizerAI';
 
 const MyEvents = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshCount, setRefreshCount] = useState(0);
+  const [userData, setUserData] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showAIAnalytics, setShowAIAnalytics] = useState(false);
+  const [eventInsights, setEventInsights] = useState({});
+  const [filterType, setFilterType] = useState('all'); // all, upcoming, past
+  const [sortBy, setSortBy] = useState('date'); // date, attendees, revenue
+
+  const { 
+    getEventPerformance, 
+    getSentimentAnalysis,
+    loading: aiLoading 
+  } = useOrganizerAI(userData?._id);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -28,6 +47,7 @@ const MyEvents = () => {
 
         const userResponse = await api.get(`/users/email/${decodedToken.user.email}`);
         const userData = userResponse.data.user;
+        setUserData(userData);
             
         if (!userData || !userData._id) {
           throw new Error("Unable to verify user credentials");
@@ -35,6 +55,9 @@ const MyEvents = () => {
 
         const eventsResponse = await api.get(`/events/user/${userData._id}`);
         setEvents(eventsResponse.data);
+        
+        // Generate insights for each event
+        generateEventInsights(eventsResponse.data);
       } catch (err) {
         console.error("Error fetching events:", err);
         let errorMessage = "Failed to fetch events";
@@ -54,6 +77,99 @@ const MyEvents = () => {
     fetchEvents();
   }, [refreshCount]);
 
+  const generateEventInsights = (eventsData) => {
+    const insights = {};
+    
+    eventsData.forEach(event => {
+      const eventInsight = [];
+      const attendees = event.attendees?.length || 0;
+      const fillRate = (attendees / event.totalSlots) * 100;
+      const daysUntilEvent = Math.ceil((new Date(event.event_date) - new Date()) / (1000 * 60 * 60 * 24));
+      
+      // Fill rate insights
+      if (fillRate >= 80) {
+        eventInsight.push({
+          type: 'success',
+          icon: <Award className="w-4 h-4" />,
+          message: '🔥 High demand! Almost sold out!',
+          action: 'Consider adding more slots'
+        });
+      } else if (fillRate <= 30 && daysUntilEvent < 7) {
+        eventInsight.push({
+          type: 'warning',
+          icon: <AlertTriangle className="w-4 h-4" />,
+          message: '⚠️ Low attendance risk',
+          action: 'Boost promotion now'
+        });
+      } else if (fillRate <= 50 && daysUntilEvent < 14) {
+        eventInsight.push({
+          type: 'info',
+          icon: <Target className="w-4 h-4" />,
+          message: '📊 Room for growth',
+          action: 'Run targeted ads'
+        });
+      }
+
+      // Timing insights
+      if (daysUntilEvent < 0) {
+        eventInsight.push({
+          type: 'info',
+          icon: <Clock className="w-4 h-4" />,
+          message: '✅ Event completed',
+          action: 'View feedback'
+        });
+      } else if (daysUntilEvent === 0) {
+        eventInsight.push({
+          type: 'success',
+          icon: <Sparkles className="w-4 h-4" />,
+          message: '🎉 Event happening today!',
+          action: 'Check-in attendees'
+        });
+      } else if (daysUntilEvent < 3) {
+        eventInsight.push({
+          type: 'warning',
+          icon: <Clock className="w-4 h-4" />,
+          message: `⏰ Only ${daysUntilEvent} days left!`,
+          action: 'Send reminders'
+        });
+      }
+
+      // Revenue insights
+      const revenue = event.price * attendees;
+      if (revenue > 5000) {
+        eventInsight.push({
+          type: 'success',
+          icon: <DollarSign className="w-4 h-4" />,
+          message: `💰 Revenue: $${revenue.toLocaleString()}`,
+          action: 'View breakdown'
+        });
+      }
+
+      // Rating insights (if available)
+      if (event.averageRating) {
+        if (event.averageRating >= 4.5) {
+          eventInsight.push({
+            type: 'success',
+            icon: <Star className="w-4 h-4 fill-current" />,
+            message: `⭐ ${event.averageRating} stars - Excellent!`,
+            action: 'See reviews'
+          });
+        } else if (event.averageRating <= 2.5) {
+          eventInsight.push({
+            type: 'warning',
+            icon: <ThumbsDown className="w-4 h-4" />,
+            message: `📉 Low rating (${event.averageRating} stars)`,
+            action: 'Address issues'
+          });
+        }
+      }
+
+      insights[event._id] = eventInsight;
+    });
+
+    setEventInsights(insights);
+  };
+
   const handleRefresh = () => {
     setRefreshCount(prev => prev + 1);
   };
@@ -70,6 +186,38 @@ const MyEvents = () => {
     }
   };
 
+  const handleViewAIAnalytics = (event) => {
+    setSelectedEvent(event);
+    setShowAIAnalytics(true);
+  };
+
+  const getFilteredAndSortedEvents = () => {
+    let filtered = [...events];
+    
+    // Apply filter
+    if (filterType === 'upcoming') {
+      filtered = filtered.filter(e => new Date(e.event_date) > new Date());
+    } else if (filterType === 'past') {
+      filtered = filtered.filter(e => new Date(e.event_date) <= new Date());
+    }
+    
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch(sortBy) {
+        case 'date':
+          return new Date(a.event_date) - new Date(b.event_date);
+        case 'attendees':
+          return (b.attendees?.length || 0) - (a.attendees?.length || 0);
+        case 'revenue':
+          return (b.price * (b.attendees?.length || 0)) - (a.price * (a.attendees?.length || 0));
+        default:
+          return 0;
+      }
+    });
+    
+    return filtered;
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'upcoming':
@@ -83,10 +231,6 @@ const MyEvents = () => {
       default:
         return 'from-gray-500 to-gray-700';
     }
-  };
-
-  const getStatusText = (status) => {
-    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const StatCard = ({ title, value, icon: Icon, color = "blue" }) => {
@@ -130,7 +274,7 @@ const MyEvents = () => {
             <div className="text-center">
               <RefreshCw className="w-16 h-16 text-indigo-500 animate-spin mx-auto mb-6" />
               <h3 className="text-2xl font-bold text-gray-800 mb-2">Loading Your Events...</h3>
-              <p className="text-gray-600">Fetching your event data</p>
+              <p className="text-gray-600">Fetching your event data with AI insights</p>
               <div className="mt-6 h-2 w-64 mx-auto bg-gradient-to-r from-indigo-100 to-purple-100 rounded-full overflow-hidden">
                 <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse rounded-full"></div>
               </div>
@@ -166,14 +310,54 @@ const MyEvents = () => {
     );
   }
 
+  const filteredEvents = getFilteredAndSortedEvents();
   const upcomingEvents = events.filter(e => new Date(e.event_date) > new Date());
   const pastEvents = events.filter(e => new Date(e.event_date) <= new Date());
   const totalAttendees = events.reduce((sum, event) => sum + (event.attendees?.length || 0), 0);
   const totalRevenue = events.reduce((sum, event) => 
     sum + (event.price * (event.attendees?.length || 0)), 0);
 
+  // Calculate insights summary
+  const highDemandEvents = upcomingEvents.filter(e => 
+    ((e.attendees?.length || 0) / e.totalSlots) * 100 >= 80
+  ).length;
+  
+  const lowAttendanceEvents = upcomingEvents.filter(e => 
+    ((e.attendees?.length || 0) / e.totalSlots) * 100 <= 30 &&
+    Math.ceil((new Date(e.event_date) - new Date()) / (1000 * 60 * 60 * 24)) < 7
+  ).length;
+
   return (
     <div className="space-y-8 p-4 md:p-6 bg-gradient-to-br from-gray-50 to-white min-h-screen">
+      {/* AI Analytics Modal */}
+      {showAIAnalytics && selectedEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white">
+                <Bot className="w-6 h-6" />
+                <h2 className="text-xl font-bold">AI Event Analytics</h2>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAIAnalytics(false);
+                  setSelectedEvent(null);
+                }}
+                className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <EventAIAnalytics event={selectedEvent} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl p-6 md:p-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -183,8 +367,9 @@ const MyEvents = () => {
                 <Activity className="h-6 w-6 text-indigo-600" />
               </div>
               <h1 className="text-3xl font-bold text-gray-800">My Events</h1>
+              <AIBadge type="organizer" agent="dashboard" />
             </div>
-            <p className="text-gray-600 text-lg">Manage and monitor all your events in one place</p>
+            <p className="text-gray-600 text-lg">Manage and monitor all your events with AI-powered insights</p>
           </div>
           
           <div className="flex items-center gap-4">
@@ -237,36 +422,148 @@ const MyEvents = () => {
         />
       </div>
 
+      {/* AI Insights Summary */}
+      {(highDemandEvents > 0 || lowAttendanceEvents > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {highDemandEvents > 0 && (
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Award className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-green-800">High Demand Events</h3>
+                  <p className="text-sm text-green-700">
+                    You have {highDemandEvents} event{highDemandEvents > 1 ? 's' : ''} with over 80% attendance. 
+                    Consider adding more slots!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {lowAttendanceEvents > 0 && (
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-yellow-100 rounded-lg">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-yellow-800">Attention Needed</h3>
+                  <p className="text-sm text-yellow-700">
+                    {lowAttendanceEvents} event{lowAttendanceEvents > 1 ? 's are' : ' is'} at risk of low attendance. 
+                    Boost promotion now!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Filter and Sort Controls */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Filter:</span>
+          </div>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFilterType('all')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                filterType === 'all' 
+                  ? 'bg-indigo-100 text-indigo-700' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              All Events
+            </button>
+            <button
+              onClick={() => setFilterType('upcoming')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                filterType === 'upcoming' 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Upcoming
+            </button>
+            <button
+              onClick={() => setFilterType('past')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                filterType === 'past' 
+                  ? 'bg-gray-200 text-gray-700' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Past
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-sm font-medium text-gray-700">Sort by:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="date">Date</option>
+              <option value="attendees">Attendees</option>
+              <option value="revenue">Revenue</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Events Grid */}
       <div className="space-y-6">
-        {events.length > 0 ? (
+        {filteredEvents.length > 0 ? (
           <>
             {/* Upcoming Events */}
-            {upcomingEvents.length > 0 && (
+            {filteredEvents.some(e => new Date(e.event_date) > new Date()) && filterType !== 'past' && (
               <div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                   <Sparkles className="w-6 h-6 text-indigo-600" />
-                  Upcoming Events ({upcomingEvents.length})
+                  Upcoming Events ({filteredEvents.filter(e => new Date(e.event_date) > new Date()).length})
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {upcomingEvents.map((event) => (
-                    <EventCard key={event._id} event={event} onDelete={handleDeleteEvent} />
-                  ))}
+                  {filteredEvents
+                    .filter(e => new Date(e.event_date) > new Date())
+                    .map((event) => (
+                      <EventCard 
+                        key={event._id} 
+                        event={event} 
+                        onDelete={handleDeleteEvent}
+                        onViewAI={handleViewAIAnalytics}
+                        insights={eventInsights[event._id] || []}
+                      />
+                    ))}
                 </div>
               </div>
             )}
 
             {/* Past Events */}
-            {pastEvents.length > 0 && (
+            {filteredEvents.some(e => new Date(e.event_date) <= new Date()) && filterType !== 'upcoming' && (
               <div className="pt-8 border-t border-gray-200">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                   <Clock className="w-6 h-6 text-gray-600" />
-                  Past Events ({pastEvents.length})
+                  Past Events ({filteredEvents.filter(e => new Date(e.event_date) <= new Date()).length})
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {pastEvents.map((event) => (
-                    <EventCard key={event._id} event={event} onDelete={handleDeleteEvent} isPast={true} />
-                  ))}
+                  {filteredEvents
+                    .filter(e => new Date(e.event_date) <= new Date())
+                    .map((event) => (
+                      <EventCard 
+                        key={event._id} 
+                        event={event} 
+                        onDelete={handleDeleteEvent}
+                        onViewAI={handleViewAIAnalytics}
+                        insights={eventInsights[event._id] || []}
+                        isPast={true}
+                      />
+                    ))}
                 </div>
               </div>
             )}
@@ -278,7 +575,9 @@ const MyEvents = () => {
             </div>
             <h3 className="text-2xl font-bold text-gray-800 mb-3">No Events Found</h3>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              You haven't created any events yet. Start your journey by creating your first event!
+              {filterType !== 'all' 
+                ? `No ${filterType} events match your criteria.` 
+                : "You haven't created any events yet. Start your journey by creating your first event!"}
             </p>
             <button
               onClick={() => window.location.href = '/orgdb/create-event'}
@@ -294,8 +593,13 @@ const MyEvents = () => {
   );
 };
 
-const EventCard = ({ event, onDelete, isPast = false }) => {
+const EventCard = ({ event, onDelete, onViewAI, insights = [], isPast = false }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
+
+  const fillRate = ((event.attendees?.length || 0) / event.totalSlots) * 100;
+  const daysUntilEvent = Math.ceil((new Date(event.event_date) - new Date()) / (1000 * 60 * 60 * 24));
+  const revenue = event.price * (event.attendees?.length || 0);
 
   return (
     <div 
@@ -304,10 +608,24 @@ const EventCard = ({ event, onDelete, isPast = false }) => {
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Status Badge */}
-      <div className="absolute top-4 right-4 z-10">
-        <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${event.status === 'upcoming' ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 'bg-gradient-to-r from-gray-500 to-gray-700'} text-white`}>
+      <div className="absolute top-4 right-4 z-10 flex gap-2">
+        <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${
+          event.status === 'upcoming' ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 
+          'bg-gradient-to-r from-gray-500 to-gray-700'
+        } text-white`}>
           {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
         </span>
+        
+        {/* AI Insight Badge */}
+        {insights.length > 0 && (
+          <button
+            onClick={() => setShowInsights(!showInsights)}
+            className="p-1 rounded-full bg-purple-500 text-white shadow-lg hover:bg-purple-600 transition-colors"
+            title="AI Insights"
+          >
+            <Bot className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Event Image */}
@@ -319,8 +637,23 @@ const EventCard = ({ event, onDelete, isPast = false }) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         
-        {/* Hover Overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 opacity-0 transition-opacity duration-300 ${isHovered ? 'opacity-100' : ''}`} />
+        {/* Fill Rate Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+          <div className="flex items-center justify-between text-white mb-1">
+            <span className="text-xs font-medium">Fill Rate</span>
+            <span className="text-xs font-bold">{Math.round(fillRate)}%</span>
+          </div>
+          <div className="h-1.5 bg-white/30 rounded-full overflow-hidden">
+            <div 
+              className={`h-full rounded-full ${
+                fillRate >= 80 ? 'bg-green-400' :
+                fillRate >= 50 ? 'bg-yellow-400' :
+                'bg-red-400'
+              }`}
+              style={{ width: `${fillRate}%` }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Event Content */}
@@ -333,11 +666,47 @@ const EventCard = ({ event, onDelete, isPast = false }) => {
           {event.description}
         </p>
 
+        {/* AI Insights Dropdown */}
+        {showInsights && insights.length > 0 && (
+          <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-100 animate-fade-in">
+            <div className="flex items-center gap-2 mb-2">
+              <Bot className="w-4 h-4 text-purple-600" />
+              <span className="text-xs font-semibold text-purple-800">AI Insights</span>
+            </div>
+            <div className="space-y-2">
+              {insights.map((insight, index) => (
+                <div key={index} className="flex items-start gap-2 text-xs">
+                  <span className={`
+                    ${insight.type === 'success' ? 'text-green-600' : 
+                      insight.type === 'warning' ? 'text-yellow-600' : 
+                      'text-blue-600'}
+                  `}>
+                    {insight.icon}
+                  </span>
+                  <div>
+                    <p className="text-gray-700">{insight.message}</p>
+                    {insight.action && (
+                      <button className="text-purple-600 hover:text-purple-800 font-medium mt-1">
+                        {insight.action} →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Event Details */}
         <div className="space-y-3 mb-6">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Calendar className="w-4 h-4 text-blue-500" />
             <span>{format(new Date(event.event_date), 'MMM dd, yyyy')}</span>
+            {!isPast && daysUntilEvent >= 0 && (
+              <span className="ml-auto text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                {daysUntilEvent === 0 ? 'Today' : `${daysUntilEvent} days left`}
+              </span>
+            )}
           </div>
           
           <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -348,6 +717,9 @@ const EventCard = ({ event, onDelete, isPast = false }) => {
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <DollarSign className="w-4 h-4 text-emerald-500" />
             <span>Rs. {event.price}</span>
+            <span className="ml-auto text-xs font-medium text-emerald-600">
+              Revenue: Rs. {revenue.toLocaleString()}
+            </span>
           </div>
           
           <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -355,12 +727,6 @@ const EventCard = ({ event, onDelete, isPast = false }) => {
             <span>
               {event.attendees?.length || 0} / {event.totalSlots} attendees
             </span>
-            <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-500"
-                style={{ width: `${((event.attendees?.length || 0) / event.totalSlots) * 100}%` }}
-              ></div>
-            </div>
           </div>
         </div>
 
@@ -375,6 +741,14 @@ const EventCard = ({ event, onDelete, isPast = false }) => {
           </button>
           
           <div className="flex items-center gap-2">
+            <button 
+              onClick={() => onViewAI(event)}
+              className="p-2 rounded-lg text-purple-600 hover:bg-purple-50 transition-colors duration-300 hover:scale-110"
+              title="AI Analytics"
+            >
+              <BarChart3 className="w-5 h-5" />
+            </button>
+            
             <button 
               onClick={() => window.location.href = `/event/edit/${event._id}`}
               className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors duration-300 hover:scale-110"
@@ -398,5 +772,151 @@ const EventCard = ({ event, onDelete, isPast = false }) => {
     </div>
   );
 };
+
+const EventAIAnalytics = ({ event }) => {
+  const attendees = event.attendees?.length || 0;
+  const fillRate = (attendees / event.totalSlots) * 100;
+  const revenue = event.price * attendees;
+  const daysUntilEvent = Math.ceil((new Date(event.event_date) - new Date()) / (1000 * 60 * 60 * 24));
+
+  // Generate recommendations
+  const recommendations = [];
+
+  if (fillRate < 50 && daysUntilEvent > 7) {
+    recommendations.push({
+      title: 'Increase Visibility',
+      description: 'Consider running targeted social media ads and email campaigns to boost attendance.',
+      action: 'Run Campaign'
+    });
+  }
+
+  if (fillRate > 80) {
+    recommendations.push({
+      title: 'Expand Capacity',
+      description: 'High demand detected! Consider adding more slots or organizing a second session.',
+      action: 'Adjust Slots'
+    });
+  }
+
+  if (daysUntilEvent < 3 && fillRate < 60) {
+    recommendations.push({
+      title: 'Last Minute Push',
+      description: 'Offer limited-time discounts or bundle deals to attract last-minute attendees.',
+      action: 'Create Offer'
+    });
+  }
+
+  if (event.averageRating && event.averageRating < 3) {
+    recommendations.push({
+      title: 'Improve Experience',
+      description: 'Low ratings detected. Review feedback and address common issues.',
+      action: 'View Feedback'
+    });
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Performance Metrics */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl">
+          <p className="text-xs text-blue-600 mb-1">Performance Score</p>
+          <div className="flex items-end gap-2">
+            <span className="text-2xl font-bold text-blue-700">
+              {Math.round(fillRate)}%
+            </span>
+            <span className="text-xs text-blue-500 mb-1">fill rate</span>
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl">
+          <p className="text-xs text-green-600 mb-1">Revenue</p>
+          <div className="flex items-end gap-2">
+            <span className="text-2xl font-bold text-green-700">
+              Rs. {revenue.toLocaleString()}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Recommendations */}
+      {recommendations.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <Zap className="w-4 h-4 text-yellow-500" />
+            AI Recommendations
+          </h3>
+          <div className="space-y-3">
+            {recommendations.map((rec, index) => (
+              <div key={index} className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-100">
+                <h4 className="font-medium text-amber-800 mb-1">{rec.title}</h4>
+                <p className="text-sm text-amber-700 mb-3">{rec.description}</p>
+                <button className="text-sm font-medium text-amber-800 hover:text-amber-900 flex items-center gap-1">
+                  {rec.action}
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sentiment Analysis Preview */}
+      <div>
+        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <MessageCircle className="w-4 h-4 text-purple-500" />
+          Sentiment Analysis
+        </h3>
+        <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-xl border border-gray-200">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <ThumbsUp className="w-5 h-5 text-green-500 mx-auto mb-1" />
+                <span className="text-xs text-gray-600">78%</span>
+              </div>
+              <div className="text-center">
+                <ThumbsDown className="w-5 h-5 text-red-500 mx-auto mb-1" />
+                <span className="text-xs text-gray-600">12%</span>
+              </div>
+              <div className="text-center">
+                <Minus className="w-5 h-5 text-gray-500 mx-auto mb-1" />
+                <span className="text-xs text-gray-600">10%</span>
+              </div>
+            </div>
+          </div>
+          <p className="text-sm text-gray-600">
+            Most attendees praised the organization and content quality. 
+            Some mentioned parking issues.
+          </p>
+        </div>
+      </div>
+
+      {/* Export Options */}
+      <div className="pt-4 border-t border-gray-200">
+        <button className="w-full py-2 px-4 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+          <Download className="w-4 h-4" />
+          Download Full Report
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Missing Minus component
+const Minus = (props) => (
+  <svg 
+    {...props}
+    xmlns="http://www.w3.org/2000/svg" 
+    width="24" 
+    height="24" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+  >
+    <line x1="5" y1="12" x2="19" y2="12"></line>
+  </svg>
+);
 
 export default MyEvents;

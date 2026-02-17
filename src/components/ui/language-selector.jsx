@@ -1,82 +1,78 @@
-import { Globe } from 'lucide-react';
-import { useState } from 'react';
+// src/components/ui/language-selector.jsx
+import React, { useState } from 'react';
+import { Globe, Check, ChevronDown } from 'lucide-react';
+import { ScrollArea } from './scroll-area';
 
-const LanguageSelector = ({ value, onChange, compact = false }) => {
+const languages = [
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'ne', name: 'नेपाली', flag: '🇳🇵' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+  { code: 'pt', name: 'Português', flag: '🇧🇷' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+  { code: 'it', name: 'Italiano', flag: '🇮🇹' }
+];
+
+export const LanguageSelector = ({ 
+  value = 'en', 
+  onChange, 
+  className = '' 
+}) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [selected, setSelected] = useState(languages.find(l => l.code === value) || languages[0]);
 
-  const languages = [
-    { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'es', name: 'Español', flag: '🇪🇸' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-    { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
-    { code: 'ne', name: 'नेपाली', flag: '🇳🇵' },
-    { code: 'zh', name: '中文', flag: '🇨🇳' },
-    { code: 'ja', name: '日本語', flag: '🇯🇵' },
-    { code: 'ko', name: '한국어', flag: '🇰🇷' },
-    { code: 'ar', name: 'العربية', flag: '🇸🇦' }
-  ];
-
-  const selectedLanguage = languages.find(lang => lang.code === value) || languages[0];
+  const handleSelect = (language) => {
+    setSelected(language);
+    setIsOpen(false);
+    if (onChange) {
+      onChange(language.code);
+    }
+  };
 
   return (
-    <div className="relative">
-      {compact ? (
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm"
-        >
-          <span>{selectedLanguage.flag}</span>
-          <span className="hidden sm:inline">{selectedLanguage.code.toUpperCase()}</span>
-          <Globe className="w-4 h-4" />
-        </button>
-      ) : (
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-300 hover:border-gray-400 rounded-lg transition-all text-sm font-medium min-w-[160px] justify-between"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-lg">{selectedLanguage.flag}</span>
-            <span>{selectedLanguage.name}</span>
-          </div>
-          <svg
-            className={`w-4 h-4 transition-transform ${isOpen ? 'transform rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-      )}
+    <div className={`relative ${className}`}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+      >
+        <Globe className="h-4 w-4 text-gray-600" />
+        <span className="text-base">{selected.flag}</span>
+        <span className="text-sm font-medium">{selected.name}</span>
+        <ChevronDown className={`h-3 w-3 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
 
       {isOpen && (
         <>
-          <div
-            className="fixed inset-0 z-40"
+          <div 
+            className="fixed inset-0 z-40" 
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-50 py-2">
-            {languages.map((language) => (
-              <button
-                key={language.code}
-                onClick={() => {
-                  onChange(language.code);
-                  setIsOpen(false);
-                }}
-                className={`w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-3 ${value === language.code ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                  }`}
-              >
-                <span className="text-lg">{language.flag}</span>
-                <div className="flex-1">
-                  <div className="font-medium">{language.name}</div>
-                  <div className="text-xs text-gray-500">{language.code.toUpperCase()}</div>
-                </div>
-                {value === language.code && (
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                )}
-              </button>
-            ))}
+          
+          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+            <ScrollArea className="max-h-80">
+              <div className="py-1">
+                {languages.map((language) => (
+                  <button
+                    key={language.code}
+                    onClick={() => handleSelect(language)}
+                    className="w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{language.flag}</span>
+                      <span className="text-gray-700">{language.name}</span>
+                    </div>
+                    {selected.code === language.code && (
+                      <Check className="h-4 w-4 text-green-600" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         </>
       )}

@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { Calendar, Users, DollarSign, Clock, TrendingUp, ArrowUp, ArrowDown, Sparkles, RefreshCw, AlertTriangle, PlusCircle, ChevronRight, Target, Activity } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { 
+  Calendar, Users, DollarSign, Clock, TrendingUp, ArrowUp, ArrowDown, 
+  Sparkles, RefreshCw, AlertTriangle, PlusCircle, ChevronRight, Target, 
+  Activity, Bot, Award, Zap, BarChart3, MessageCircle, ThumbsUp, 
+  ThumbsDown, Eye, Download, Share2, Star, PieChart as PieChartIcon
+} from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../../../utils/api';
 import { getToken } from '../../../utils/auth';
+import OrganizerDashboardAI from '../../../components/ai/organizer/OrganizerDashboardAI';
+import AIBadge from '../../../components/ai/AIBadge';
+import { useOrganizerAI } from '../../../hooks/useOrganizerAI';
 
 const Overview = () => {
   const [stats, setStats] = useState({
@@ -16,6 +24,18 @@ const Overview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshCount, setRefreshCount] = useState(0);
+  const [userData, setUserData] = useState(null);
+  const [showAIDashboard, setShowAIDashboard] = useState(false);
+  const [aiInsights, setAiInsights] = useState([]);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('month');
+
+  const { 
+    fetchDashboardMetrics, 
+    fetchSentimentAnalysis,
+    dashboardMetrics,
+    sentimentData,
+    loading: aiLoading 
+  } = useOrganizerAI(userData?._id);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,6 +54,7 @@ const Overview = () => {
         // First get user data
         const userResponse = await api.get(`/users/email/${decodedToken.user.email}`);
         const userData = userResponse.data.user;
+        setUserData(userData);
             
         if (!userData || !userData._id) {
           throw new Error("Unable to verify user credentials");
@@ -70,6 +91,10 @@ const Overview = () => {
           }));
 
         setChartData(chartData);
+
+        // Generate AI insights
+        generateAIInsights(userEvents, stats);
+        
         setError("");
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -81,6 +106,92 @@ const Overview = () => {
 
     fetchData();
   }, [refreshCount]);
+
+  // Fetch AI dashboard data when userData is available
+  useEffect(() => {
+    if (userData?._id && showAIDashboard) {
+      fetchDashboardMetrics(selectedTimeframe);
+      fetchSentimentAnalysis();
+    }
+  }, [userData, showAIDashboard, selectedTimeframe, fetchDashboardMetrics, fetchSentimentAnalysis]);
+
+  const generateAIInsights = (events, currentStats) => {
+    const insights = [];
+
+    // Revenue insights
+    if (currentStats.totalRevenue > 10000) {
+      insights.push({
+        type: 'success',
+        icon: <DollarSign className="w-4 h-4" />,
+        title: 'Revenue Milestone',
+        message: `You've crossed $10,000 in total revenue! Great job!`,
+        action: 'View breakdown'
+      });
+    }
+
+    // Attendance insights
+    const avgAttendance = currentStats.totalAttendees / (currentStats.totalEvents || 1);
+    if (avgAttendance > 50) {
+      insights.push({
+        type: 'success',
+        icon: <Users className="w-4 h-4" />,
+        title: 'High Attendance',
+        message: `Average attendance of ${Math.round(avgAttendance)} per event - above industry average!`,
+        action: 'See trends'
+      });
+    } else if (avgAttendance < 20) {
+      insights.push({
+        type: 'warning',
+        icon: <AlertTriangle className="w-4 h-4" />,
+        title: 'Attendance Alert',
+        message: `Average attendance is ${Math.round(avgAttendance)}. Consider promoting your events more.`,
+        action: 'Get tips'
+      });
+    }
+
+    // Upcoming events insights
+    if (currentStats.upcomingEvents === 0) {
+      insights.push({
+        type: 'info',
+        icon: <Calendar className="w-4 h-4" />,
+        title: 'No Upcoming Events',
+        message: 'You have no upcoming events. Create one now to keep growing!',
+        action: 'Create Event'
+      });
+    } else if (currentStats.upcomingEvents > 5) {
+      insights.push({
+        type: 'info',
+        icon: <Calendar className="w-4 h-4" />,
+        title: 'Busy Schedule',
+        message: `You have ${currentStats.upcomingEvents} upcoming events. Stay organized!`,
+        action: 'View schedule'
+      });
+    }
+
+    // Fill rate insights
+    if (chartData.length > 0) {
+      const avgFillRate = chartData.reduce((sum, item) => sum + item.fillRate, 0) / chartData.length;
+      if (avgFillRate > 80) {
+        insights.push({
+          type: 'success',
+          icon: <Target className="w-4 h-4" />,
+          title: 'Excellent Fill Rate',
+          message: `Average fill rate of ${Math.round(avgFillRate)}% - events are very popular!`,
+          action: 'Analyze success'
+        });
+      } else if (avgFillRate < 40) {
+        insights.push({
+          type: 'warning',
+          icon: <Target className="w-4 h-4" />,
+          title: 'Low Fill Rate',
+          message: `Average fill rate is ${Math.round(avgFillRate)}%. Consider optimizing pricing or marketing.`,
+          action: 'Get recommendations'
+        });
+      }
+    }
+
+    setAiInsights(insights);
+  };
 
   const handleRefresh = () => {
     setRefreshCount(prev => prev + 1);
@@ -99,13 +210,6 @@ const Overview = () => {
       green: "from-emerald-500 to-green-500",
       purple: "from-purple-500 to-violet-500", 
       orange: "from-amber-500 to-yellow-500"
-    };
-
-    const textColorClasses = {
-      blue: "text-blue-600",
-      green: "text-emerald-600",
-      purple: "text-purple-600",
-      orange: "text-amber-600"
     };
 
     return (
@@ -129,22 +233,6 @@ const Overview = () => {
           <p className="text-3xl font-bold text-gray-800">{value}</p>
           <p className="text-sm text-gray-500">{subtitle}</p>
         </div>
-
-        {/* Progress bar for capacity */}
-        {title === "Total Attendees" && (
-          <div className="mt-6">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
-              <span>Capacity Utilization</span>
-              <span>{Math.round((stats.totalAttendees / (stats.totalEvents * 100)) * 100) || 0}%</span>
-            </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div 
-                className={`h-full bg-gradient-to-r ${iconColorClasses.green} rounded-full transition-all duration-500`}
-                style={{ width: `${Math.min((stats.totalAttendees / (stats.totalEvents * 100)) * 100, 100)}%` }}
-              ></div>
-            </div>
-          </div>
-        )}
       </div>
     );
   };
@@ -215,6 +303,12 @@ const Overview = () => {
     ? Math.round(chartData.reduce((sum, item) => sum + item.attendees, 0) / chartData.length)
     : 0;
 
+  // Prepare pie chart data for event distribution
+  const pieData = [
+    { name: 'Upcoming', value: stats.upcomingEvents, color: '#3b82f6' },
+    { name: 'Past', value: stats.totalEvents - stats.upcomingEvents, color: '#94a3b8' }
+  ].filter(item => item.value > 0);
+
   return (
     <div className="space-y-8 p-4 md:p-6">
       {/* Main Dashboard Container */}
@@ -223,25 +317,68 @@ const Overview = () => {
           {/* Header Section */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+              <div className="flex items-center gap-3 mb-2">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
                   <Activity className="w-6 h-6 text-white" />
                 </div>
-                Dashboard Overview
-              </h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+                  Dashboard Overview
+                </h1>
+              </div>
               <p className="text-gray-600">
-                Track your event performance and key metrics in real-time
+                Track your event performance and key metrics 
               </p>
             </div>
             
-            <button
-              onClick={handleRefresh}
-              className="mt-4 md:mt-0 px-5 py-3 rounded-xl font-medium flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
-            >
-              <RefreshCw className="w-5 h-5" />
-              Refresh Data
-            </button>
+            <div className="mt-4 md:mt-0 flex gap-3">
+              <button
+                onClick={() => setShowAIDashboard(!showAIDashboard)}
+                className="px-5 py-3 rounded-xl font-medium flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <Bot className="w-5 h-5" />
+                {showAIDashboard ? 'Hide AI Insights' : 'Show AI Insights'}
+              </button>
+              <button
+                onClick={handleRefresh}
+                className="px-5 py-3 rounded-xl font-medium flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <RefreshCw className="w-5 h-5" />
+                Refresh Data
+              </button>
+            </div>
           </div>
+
+          {/* AI Insights Banner */}
+          {aiInsights.length > 0 && (
+            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {aiInsights.map((insight, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-xl border ${
+                    insight.type === 'success' ? 'bg-green-50 border-green-200' :
+                    insight.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
+                    'bg-blue-50 border-blue-200'
+                  } flex items-start gap-3`}
+                >
+                  <div className={`p-2 rounded-lg ${
+                    insight.type === 'success' ? 'bg-green-100 text-green-600' :
+                    insight.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
+                    'bg-blue-100 text-blue-600'
+                  }`}>
+                    {insight.icon}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-800 mb-1">{insight.title}</h4>
+                    <p className="text-sm text-gray-600 mb-2">{insight.message}</p>
+                    <button className="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                      {insight.action}
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Stats Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
@@ -285,6 +422,29 @@ const Overview = () => {
               color="orange"
             />
           </div>
+
+          {/* AI Dashboard Section */}
+          {showAIDashboard && userData && (
+            <div className="mb-10">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <Bot className="w-5 h-5 text-purple-600" />
+                  AI-Powered Insights
+                </h2>
+                <select
+                  value={selectedTimeframe}
+                  onChange={(e) => setSelectedTimeframe(e.target.value)}
+                  className="px-3 py-1 border rounded-lg text-sm"
+                >
+                  <option value="week">Last Week</option>
+                  <option value="month">Last Month</option>
+                  <option value="quarter">Last Quarter</option>
+                  <option value="year">Last Year</option>
+                </select>
+              </div>
+              <OrganizerDashboardAI orgId={userData._id} />
+            </div>
+          )}
 
           {/* Charts Section */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -412,17 +572,70 @@ const Overview = () => {
             </ChartCard>
           </div>
 
-          {/* Quick Actions Card */}
-          <div className="mt-10 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-8 text-white shadow-2xl overflow-hidden">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="max-w-xl">
-                <div className="flex items-center gap-3 mb-4">
-                  <Sparkles className="w-6 h-6 text-white" />
-                  <h3 className="text-2xl font-bold">Ready to create your next event?</h3>
-                </div>
-                <p className="text-white/90 text-lg">Start planning and reach more attendees with our powerful event management tools.</p>
+          {/* Quick Stats Row */}
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Event Distribution Pie Chart */}
+            <div className="bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl p-6 shadow-md">
+              <h3 className="text-sm font-medium text-gray-600 mb-4 flex items-center gap-2">
+                <PieChartIcon className="w-4 h-4" />
+                Event Distribution
+              </h3>
+              <div className="h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={30}
+                      outerRadius={40}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-             
+              <div className="flex justify-center gap-4 mt-2">
+                {pieData.map((item, index) => (
+                  <div key={index} className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-xs text-gray-600">{item.name}: {item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-6 shadow-md col-span-3">
+              <h3 className="text-sm font-medium text-indigo-800 mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  onClick={() => window.location.href = '/orgdb/create-event'}
+                  className="p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 text-center group"
+                >
+                  <PlusCircle className="w-5 h-5 text-indigo-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium text-gray-700">Create Event</span>
+                </button>
+                <button
+                  onClick={() => window.location.href = '/orgdb/my-events'}
+                  className="p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 text-center group"
+                >
+                  <Eye className="w-5 h-5 text-purple-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium text-gray-700">View Events</span>
+                </button>
+                <button
+                  onClick={() => window.location.href = '/orgdb/event-requests'}
+                  className="p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 text-center group"
+                >
+                  <Target className="w-5 h-5 text-green-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium text-gray-700">Requests</span>
+                </button>
+              </div>
             </div>
           </div>
 

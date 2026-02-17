@@ -329,11 +329,11 @@ const UserEvents = ({ user }) => {
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
                   <Brain className="w-6 h-6 text-white" />
                 </div>
-                AI-Powered Events Dashboard
+                Events Dashboard
               </h1>
               <p className="text-gray-600 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-500" />
-                Personalized event recommendations powered by AI
+                Personalized event recommendations
               </p>
             </div>
             
@@ -434,51 +434,6 @@ const UserEvents = ({ user }) => {
             </div>
           </div>
 
-          {/* AI Recommendation Banner */}
-          {authUser && showAIRecommendations && aiRecommendations.length > 0 && (
-            <div className="mb-10 p-6 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-xl">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-white/20 rounded-2xl backdrop-blur flex items-center justify-center">
-                    <Brain className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                      AI Personalized Picks
-                      <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-normal">
-                        {insights?.avgMatchScore || 85}% Match
-                      </span>
-                    </h3>
-                    <p className="text-purple-100 mb-4">
-                      Based on your {events.filter(e => e.status === 'completed').length} attended events and preferences
-                    </p>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => setActiveTab('ai-recommended')}
-                        className="px-6 py-2.5 bg-white text-purple-700 rounded-xl font-medium hover:bg-purple-50 transition-all flex items-center gap-2"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        View All AI Recommendations
-                      </button>
-                      <button
-                        onClick={refreshRecommendations}
-                        className="px-6 py-2.5 bg-purple-500 text-white rounded-xl font-medium hover:bg-purple-400 transition-all flex items-center gap-2"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                        Refresh
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowAIRecommendations(false)}
-                  className="text-white/70 hover:text-white transition"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Filters Section */}
           <div className="space-y-6 mb-10">
