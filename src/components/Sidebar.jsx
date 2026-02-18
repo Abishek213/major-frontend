@@ -52,7 +52,7 @@ const Sidebar = ({ user }) => {
           ${isSidebarOpen ? "block" : "hidden"}
           h-8 flex items-center
         `}>
-         <img src='/images/eventa.png' alt="logo" className="h-12 w-auto" />
+         <img src='/images/eventA.png' alt="logo" className="h-12 w-auto" />
         </div>
   
       </div>

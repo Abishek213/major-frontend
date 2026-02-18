@@ -320,7 +320,7 @@ const NavBar = () => {
           <div className="flex items-center justify-between w-full">
             {/* Logo */}
             <Link to="/" className="flex items-center">
-              <img src='/images/eventa.png' alt="logo" className="w-auto h-16" />
+              <img src='/images/eventA.png' alt="logo" className="w-auto h-16" />
             </Link>
 
             {/* Center Menu */}
