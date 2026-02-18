@@ -457,7 +457,7 @@ const CreateEvent = () => {
                 </h1>
               </div>
               <p className="text-gray-600">
-                Design and launch your perfect event with our AI-powered creation tools
+                Design and launch your perfect event with
               </p>
             </div>
             
