@@ -14,7 +14,17 @@ const LoginSignup = () => {
     password: '',
     confirmPassword: '',
     contactNo: '',
-    role: ''
+    role: '',
+    // Organizer specific fields
+    organizerDetails: {
+      organizationName: '',
+      organizationEmail: '',
+      organizationPhone: '',
+      organizationAddress: '',
+      organizationWebsite: '',
+      taxId: '',
+      description: ''
+    }
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -40,14 +50,28 @@ const LoginSignup = () => {
         redirectBasedOnRole(role);
       }
     }
-  }, []); // Empty dependency array - runs only once on mount
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Handle nested organizer details
+    if (name.startsWith('organizer.')) {
+      const field = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        organizerDetails: {
+          ...prev.organizerDetails,
+          [field]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+    
     // Clear specific field error
     setErrors(prev => ({
       ...prev,
@@ -145,6 +169,30 @@ const LoginSignup = () => {
     }
   };
 
+  const validateOrganizerDetails = () => {
+    const organizerErrors = {};
+    
+    if (formData.role === 'Organizer') {
+      if (!formData.organizerDetails.organizationName?.trim()) {
+        organizerErrors['organizer.organizationName'] = 'Organization name is required';
+      }
+      if (!formData.organizerDetails.organizationEmail?.trim()) {
+        organizerErrors['organizer.organizationEmail'] = 'Organization email is required';
+      }
+      if (!formData.organizerDetails.organizationPhone?.trim()) {
+        organizerErrors['organizer.organizationPhone'] = 'Organization phone is required';
+      }
+      if (!formData.organizerDetails.organizationAddress?.trim()) {
+        organizerErrors['organizer.organizationAddress'] = 'Organization address is required';
+      }
+      if (!formData.organizerDetails.taxId?.trim()) {
+        organizerErrors['organizer.taxId'] = 'Tax ID/Business registration is required';
+      }
+    }
+    
+    return organizerErrors;
+  };
+
   const handleSignup = async () => {
     // Clear previous errors
     setErrors({});
@@ -153,6 +201,7 @@ const LoginSignup = () => {
     
     const newErrors = {};
     
+    // Basic validation
     if (!formData.fullname?.trim()) newErrors.fullname = 'Full name is required';
     if (!formData.email?.trim()) newErrors.email = 'Email is required';
     if (!formData.password) newErrors.password = 'Password is required';
@@ -166,9 +215,15 @@ const LoginSignup = () => {
     if (!formData.contactNo?.trim()) newErrors.contactNo = 'Contact number is required';
     if (!formData.role) newErrors.role = 'Role is required';
 
-    // Password strength validation (optional)
+    // Password strength validation
     if (formData.password && formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    // Add organizer validation if role is Organizer
+    if (formData.role === 'Organizer') {
+      const organizerErrors = validateOrganizerDetails();
+      Object.assign(newErrors, organizerErrors);
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -184,7 +239,11 @@ const LoginSignup = () => {
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         contactNo: formData.contactNo.trim(),
-        role: formData.role
+        role: formData.role,
+        // Include organizerDetails only if role is Organizer
+        ...(formData.role === 'Organizer' && {
+          organizerDetails: formData.organizerDetails
+        })
       };
 
       const response = await api.post("/users/signup", signupData);
@@ -203,7 +262,16 @@ const LoginSignup = () => {
           password: '',
           confirmPassword: '',
           contactNo: '',
-          role: ''
+          role: '',
+          organizerDetails: {
+            organizationName: '',
+            organizationEmail: '',
+            organizationPhone: '',
+            organizationAddress: '',
+            organizationWebsite: '',
+            taxId: '',
+            description: ''
+          }
         });
       } else {
         setError('Signup failed: Invalid response data');
@@ -249,11 +317,89 @@ const LoginSignup = () => {
       password: '',
       confirmPassword: '',
       contactNo: '',
-      role: ''
+      role: '',
+      organizerDetails: {
+        organizationName: '',
+        organizationEmail: '',
+        organizationPhone: '',
+        organizationAddress: '',
+        organizationWebsite: '',
+        taxId: '',
+        description: ''
+      }
     });
     setErrors({});
     setError('');
     setShowErrorAlert(false);
+  };
+
+  // Render organizer fields
+  const renderOrganizerFields = () => {
+    if (formData.role !== 'Organizer') return null;
+
+    return (
+      <div className="space-y-2 mt-4 pt-4 border-t border-gray-200">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Organization Details</h3>
+        
+        
+
+        <div>
+          <textarea
+            name="organizer.organizationAddress"
+            placeholder="Organization Address *"
+            value={formData.organizerDetails.organizationAddress}
+            onChange={handleInputChange}
+            rows="2"
+            className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm resize-none ${
+              errors['organizer.organizationAddress'] ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors['organizer.organizationAddress'] && (
+            <p className="text-red-500 text-xs mt-1">{errors['organizer.organizationAddress']}</p>
+          )}
+        </div>
+
+        <div>
+          <input
+            type="text"
+            name="organizer.organizationWebsite"
+            placeholder="Organization Website (optional)"
+            value={formData.organizerDetails.organizationWebsite}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+          />
+        </div>
+
+        <div>
+          <input
+            type="text"
+            name="organizer.taxId"
+            placeholder="Tax ID / Business Registration *"
+            value={formData.organizerDetails.taxId}
+            onChange={handleInputChange}
+            className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+              errors['organizer.taxId'] ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors['organizer.taxId'] && (
+            <p className="text-red-500 text-xs mt-1">{errors['organizer.taxId']}</p>
+          )}
+        </div>
+
+        <div>
+          <textarea
+            name="organizer.description"
+            placeholder="Organization Description (optional)"
+            value={formData.organizerDetails.description}
+            onChange={handleInputChange}
+            rows="3"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm resize-none"
+          />
+        </div>
+
+        <p className="text-xs text-gray-500 mt-2">* Required fields for organizer registration</p>
+      </div>
+    );
   };
 
   return (
@@ -268,9 +414,9 @@ const LoginSignup = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-purple-900/30 to-blue-900/30"></div>
       </div>
 
-      {/* Form Card */}
+      {/* Form Card - Made scrollable for organizer fields */}
       <div className="relative z-10 flex items-center justify-center w-full pt-24 p-4">
-        <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm p-4">
+        <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-4 max-h-[90vh] overflow-y-auto">
           {/* Error Alert */}
           {showErrorAlert && error && (
             <Alert variant="destructive" className="mb-4 text-sm">
@@ -415,6 +561,9 @@ const LoginSignup = () => {
                     )}
                   </div>
                 )}
+
+                {/* Organizer Specific Fields */}
+                {!isLogin && renderOrganizerFields()}
 
                 {/* Submit Button */}
                 <button
