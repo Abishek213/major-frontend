@@ -42,12 +42,13 @@ import {
   ThumbsDown
 } from 'lucide-react';
 import AIBadge, { AIAgentBadge, AIRiskBadge, AISentimentBadge } from './AIBadge';
+import chatAssistantService from '../../services/chatAssistantService'; // Import the service
 
 const ChatAssistant = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Hello! I'm your AI booking assistant. I can help you with event bookings, answer FAQs, and support multiple languages. I can also route your queries to specialized AI agents for fraud detection, analytics, sentiment analysis, and event planning. How can I help you today?",
+      text: "Hello! I'm your AI booking assistant. I can help you with event bookings, answer FAQs, and support multiple languages. How can I help you today?",
       sender: 'ai',
       timestamp: '10:00 AM',
       agent: 'assistant'
@@ -58,16 +59,30 @@ const ChatAssistant = () => {
   const [isAIMode, setIsAIMode] = useState(true);
   const [currentAgent, setCurrentAgent] = useState('assistant');
   const [agentMode, setAgentMode] = useState('auto');
-  const [faqSuggestions, setFaqSuggestions] = useState([
-    "How do I book an event?",
-    "What's the cancellation policy?",
-    "Can I transfer my ticket?",
-    "How do I contact support?"
-  ]);
+  const [faqSuggestions, setFaqSuggestions] = useState([]);
   const [showAgentMenu, setShowAgentMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [typing, setTyping] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
   const messagesEndRef = useRef(null);
+
+  // Initialize session on component mount
+  useEffect(() => {
+    const initChat = async () => {
+      // Get or create session ID for anonymous users
+      const sid = chatAssistantService.getOrCreateSessionId();
+      setSessionId(sid);
+      
+      // Load FAQs
+      updateFAQSuggestions('assistant');
+      
+      // Check health
+      const health = await chatAssistantService.checkHealth();
+      console.log('Chat health:', health);
+    };
+    
+    initChat();
+  }, []);
 
   const agents = {
     fraud: {
@@ -237,7 +252,8 @@ const ChatAssistant = () => {
     return 'assistant';
   };
 
-  const handleSend = (e) => {
+  // Updated handleSend to use the service
+  const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
@@ -252,59 +268,60 @@ const ChatAssistant = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const userInput = input;
     setInput('');
     setCurrentAgent(detectedAgent);
     updateFAQSuggestions(detectedAgent);
     setTyping(true);
 
-    setTimeout(() => {
-      setTyping(false);
-      const aiResponse = generateAIResponse(input, detectedAgent);
+    try {
+      // Prepare context — include agent so the backend can route accordingly
+      const context = {
+        sessionId: sessionId,
+        agent: detectedAgent,
+        mode: agentMode
+      };
+
+      // Send message to backend
+      const response = await chatAssistantService.sendMessage(
+        userInput, 
+        language, 
+        context
+      );
+
+      // Create AI response from backend
+      const aiResponse = {
+        id: messages.length + 2,
+        text: response.response || response.message || "I received your message. How can I help you further?",
+        sender: 'ai',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        agent: detectedAgent,
+        confidence: response.confidence || 85
+      };
+
       setMessages(prev => [...prev, aiResponse]);
-    }, 1500);
-  };
-
-  const generateAIResponse = (query, agentId) => {
-    const agent = agents[agentId];
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    const responses = {
-      fraud: {
-        en: `🔒 **Fraud Detection Analysis**\n\nI've analyzed your query about "${query}". Based on our security protocols, I recommend:\n\n• Reviewing recent transaction patterns\n• Enabling two-factor authentication\n• Contacting support for suspicious activities\n\nWould you like me to run a security check on any specific transaction?`,
-      },
-      analytics: {
-        en: `📊 **Analytics Insights**\n\nBased on your interest in "${query}", here are some key metrics:\n\n• Platform growth: +15% this month\n• Most popular category: Music Events\n• Peak booking times: Weekends 2-6 PM\n\nWhat specific metrics would you like to explore?`,
-      },
-      sentiment: {
-        en: `💭 **Sentiment Analysis**\n\nI've analyzed feedback related to "${query}". Key findings:\n\n• Overall sentiment: Positive (78%)\n• Common keywords: great, organized, fun\n• Action items: Address parking concerns\n\nWould you like detailed review analysis?`,
-      },
-      planning: {
-        en: `📅 **Event Planning Assistant**\n\nFor your query about "${query}", I can help with:\n\n• Optimal pricing based on market data\n• Recommended tags for discoverability\n• Capacity planning suggestions\n• Best dates for your event type\n\nWhat aspect would you like to optimize?`,
-      },
-      negotiation: {
-        en: `💰 **Negotiation Assistant**\n\nRegarding "${query}", here's my analysis:\n\n• Market rate range: $500 - $2000\n• Your win probability: 75%\n• Competitor offers: 3 active\n• Suggested counter-offer: $1500\n\nShall I prepare a proposal?`,
-      },
-      dashboard: {
-        en: `📈 **Dashboard Insights**\n\nBased on "${query}", here's your current snapshot:\n\n• Total events: 12\n• Total attendees: 345\n• Revenue: $12,450\n• Avg rating: 4.5 ⭐\n\nWhat metrics would you like to monitor?`,
-      },
-      recommendations: {
-        en: `🎯 **Personalized Recommendations**\n\nBased on your interest in "${query}", I recommend:\n\n• Similar events in your area\n• Trending in your favorite categories\n• Early bird specials this week\n• Events followed by friends\n\nWould you like me to show you these recommendations?`,
-      },
-      assistant: {
-        en: `🤖 **General Assistant**\n\nI've processed your request about "${query}". Based on our FAQ database and booking policies, here's what I found:\n\n• Check our help center for detailed guides\n• Contact support for personalized assistance\n• Browse our community forums\n\nIs there anything specific I can help you with?`,
+      
+      // Update FAQs based on response if suggestions are provided
+      if (response.suggestions) {
+        setFaqSuggestions(response.suggestions);
       }
-    };
-
-    const responseText = responses[agentId]?.[language] || responses[agentId]?.en || responses.assistant.en;
-
-    return {
-      id: messages.length + 2,
-      text: responseText,
-      sender: 'ai',
-      timestamp: timestamp,
-      agent: agentId,
-      confidence: Math.floor(Math.random() * 20 + 80)
-    };
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      // Fallback response
+      const errorResponse = {
+        id: messages.length + 2,
+        text: "Sorry, I'm having trouble connecting to the server. Please try again in a moment.",
+        sender: 'ai',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        agent: 'assistant',
+        isError: true
+      };
+      
+      setMessages(prev => [...prev, errorResponse]);
+    } finally {
+      setTyping(false);
+    }
   };
 
   const updateFAQSuggestions = (agentId) => {
@@ -366,7 +383,8 @@ const ChatAssistant = () => {
     setInput(question);
   };
 
-  const handleFileUpload = (e) => {
+  // Updated file upload handler
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       let agent = 'assistant';
@@ -378,7 +396,7 @@ const ChatAssistant = () => {
         agent = 'fraud';
       }
 
-      const message = {
+      const userMessage = {
         id: messages.length + 1,
         text: `Uploaded document: ${file.name}`,
         sender: 'user',
@@ -386,9 +404,65 @@ const ChatAssistant = () => {
         hasFile: true,
         agent: agent
       };
-      setMessages(prev => [...prev, message]);
+      
+      setMessages(prev => [...prev, userMessage]);
       setCurrentAgent(agent);
       updateFAQSuggestions(agent);
+      setTyping(true);
+
+      try {
+        // Upload document
+        const context = { sessionId };
+        const response = await chatAssistantService.sendMessage(
+          `Please analyze this document: ${file.name}`,
+          language,
+          context,
+          file
+        );
+
+        const aiResponse = {
+          id: messages.length + 2,
+          text: response.response || `I've received your document "${file.name}". How would you like me to help with it?`,
+          sender: 'ai',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          agent: agent
+        };
+        
+        setMessages(prev => [...prev, aiResponse]);
+      } catch (error) {
+        console.error('File upload error:', error);
+      } finally {
+        setTyping(false);
+      }
+    }
+  };
+
+  // Updated clear history handler
+  const handleClearHistory = async () => {
+    const resetMessages = [
+      {
+        id: 1,
+        text: "Hello! I'm your AI booking assistant. I can help you with event bookings, answer FAQs, and support multiple languages. How can I help you today?",
+        sender: 'ai',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        agent: 'assistant'
+      }
+    ];
+
+    try {
+      // Pass the current sessionId so the service can route to the correct
+      // endpoint (anonymous vs authenticated) and clear the right conversation.
+      await chatAssistantService.clearHistory(sessionId);
+    } catch (error) {
+      console.error('Clear history error:', error);
+      // Continue resetting the UI even if the API call failed.
+    } finally {
+      // Always rotate the session so the next conversation is a clean slate.
+      // clearSessionId() removes the old key; getOrCreateSessionId() mints a
+      // new one — order matters here.
+      chatAssistantService.clearSessionId();
+      setSessionId(chatAssistantService.getOrCreateSessionId());
+      setMessages(resetMessages);
     }
   };
 
@@ -442,6 +516,15 @@ const ChatAssistant = () => {
             </div>
             
             <div className="flex items-center gap-2">
+              {/* Clear History Button */}
+              <button
+                onClick={handleClearHistory}
+                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300"
+                title="Clear conversation"
+              >
+                <RefreshCw className="w-4 h-4 text-gray-600" />
+              </button>
+              
               {/* Language Selector */}
               <div className="relative">
                 <button
@@ -605,7 +688,9 @@ const ChatAssistant = () => {
                         ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-br-none'
                         : msg.isSystem
                           ? 'bg-gradient-to-r from-gray-200 to-gray-300 text-gray-700 rounded-bl-none'
-                          : `bg-gradient-to-r ${msgAgent.color} text-white rounded-bl-none`
+                          : msg.isError
+                            ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-bl-none'
+                            : `bg-gradient-to-r ${msgAgent.color} text-white rounded-bl-none`
                     } shadow-md hover:shadow-lg transition-shadow duration-300`}
                   >
                     <div className="flex items-center justify-between mb-2">

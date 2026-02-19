@@ -1,64 +1,115 @@
 import api from '../utils/api';
 
+// ─── Base path ────────────────────────────────────────────────────────────────
+// Server mounts this router at: /api/v1/eventrequest  (see server.js)
+// api.js baseURL should be set via VITE_API_URL env var, e.g.:
+//   VITE_API_URL=http://localhost:5000/api/v1
+// So BASE = '/eventrequest' resolves to: http://localhost:5000/api/v1/eventrequest
+const BASE = '/eventrequest';
+
 class EventRequestService {
-  async processNaturalLanguageRequest(request, userId, context = {}) {
+  /**
+   * Submit a natural language event request to the backend with AI processing.
+   * Calls POST /api/v1/eventrequest with useAI: true so the controller runs
+   * callAIAgent() and returns matchedOrganizers + budgetAnalysis.
+   *
+   * @param {string}  naturalLanguage  - Free-text description from the user
+   * @param {string}  userId           - Authenticated user ID
+   * @param {Object}  extraFields      - Optional structured fields (eventType, venue, …)
+   * @returns {Object} { success, message, data: { eventRequest, aiInsights } }
+   */
+  async processNaturalLanguageRequest(naturalLanguage, userId, extraFields = {}) {
     try {
-      const response = await api.safePost('/ai/event-request', {
-        request,
-        userId,
-        context
-      });
-      return response.data;
+      const payload = {
+        useAI: true,
+        naturalLanguage,
+        // Sensible defaults so the EventRequest schema is satisfied;
+        // the AI service extracts richer values from naturalLanguage on the backend.
+        eventType:   extraFields.eventType   || 'General',
+        venue:       extraFields.venue       || 'TBD',
+        date:        extraFields.date        || new Date().toISOString(),
+        budget:      extraFields.budget      || 0,
+        description: naturalLanguage,
+        ...extraFields
+      };
+
+      // POST /api/v1/eventrequest
+      const response = await api.safePost(BASE, payload);
+      return response.data; // { success, message, data: { eventRequest, aiInsights } }
     } catch (error) {
       console.error('Event request service error:', error);
-      
-      // Return mock data for development
+
       if (import.meta.env.MODE === 'development') {
-        return this.getMockProcessedRequest(request);
+        return this._mockProcessedRequest(naturalLanguage);
       }
-      
+
       throw error;
     }
   }
 
-  async extractEntities(text) {
+  /**
+   * Fetch AI insights stored on an event request.
+   * GET /api/v1/eventrequest/with-ai-insights/:id
+   */
+  async getEventRequestWithAIInsights(requestId) {
     try {
-      const response = await api.safePost('/ai/extract-entities', { text });
-      return response.data;
+      const response = await api.safeGet(`${BASE}/with-ai-insights/${requestId}`);
+      return response.data; // { success, data: { eventRequest, interestedOrganizers, aiInsights } }
     } catch (error) {
-      console.error('Entity extraction error:', error);
-      
-      // Mock extraction for development
+      console.error('AI insights fetch error:', error);
+
       if (import.meta.env.MODE === 'development') {
-        return this.getMockEntities(text);
+        return { success: false, data: null };
       }
-      
+
       throw error;
     }
   }
 
-  async findMatchingOrganizers(criteria) {
+  /**
+   * Get AI-suggested organizers for an already-created event request.
+   * GET /api/v1/eventrequest/ai-suggestions/:id
+   */
+  async getAISuggestedOrganizers(requestId) {
     try {
-      const response = await api.safePost('/ai/match-organizers', criteria);
-      return response.data;
+      const response = await api.safeGet(`${BASE}/ai-suggestions/${requestId}`);
+      return response.data; // { success, data: { aiEnabled, filteredSuggestions, … } }
     } catch (error) {
-      console.error('Organizer matching error:', error);
-      
-      // Mock organizers for development
+      console.error('AI organizer suggestion error:', error);
+
       if (import.meta.env.MODE === 'development') {
-        return this.getMockOrganizers();
+        return {
+          success: true,
+          data: { aiEnabled: false, filteredSuggestions: this._mockOrganizers() }
+        };
       }
-      
+
       throw error;
     }
   }
+
+  /**
+   * Trigger a fresh AI reprocessing pass on an existing event request.
+   * POST /api/v1/eventrequest/reprocess-with-ai/:id
+   */
+  async reprocessWithAI(requestId, naturalLanguage = null) {
+    try {
+      const response = await api.safePost(
+        `${BASE}/reprocess-with-ai/${requestId}`,
+        { naturalLanguage }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('AI reprocess error:', error);
+      throw error;
+    }
+  }
+
+  // ─── Legacy helpers kept for backward compatibility ───────────────────────────
 
   async sendRequestToOrganizers(requestId, organizerIds) {
     try {
-      const response = await api.safePost('/ai/send-request', {
-        requestId,
-        organizerIds
-      });
+      const response = await api.safePost('/ai/send-request', { requestId, organizerIds });
       return response.data;
     } catch (error) {
       console.error('Request sending error:', error);
@@ -66,71 +117,40 @@ class EventRequestService {
     }
   }
 
+  /**
+   * Fetch all event requests for the logged-in user.
+   * GET /api/v1/eventrequest/event-requests-for-user
+   */
   async getRequestHistory(userId) {
     try {
-      const response = await api.safeGet(`/ai/request-history/${userId}`);
+      const response = await api.safeGet(`${BASE}/event-requests-for-user`);
       return response.data;
     } catch (error) {
       console.error('Request history error:', error);
-      
-      // Mock history for development
-      if (import.meta.env.MODE === 'development') {
-        return [];
+      if (import.meta.env.MODE === 'development') return [];
+      throw error;
+    }
+  }
+
+  // ─── Mock data (development fallbacks) ───────────────────────────────────────
+
+  _mockProcessedRequest(text) {
+    return {
+      success: true,
+      message: '[DEV] Mock response — backend not reachable',
+      data: {
+        eventRequest: { _id: `mock_${Date.now()}`, description: text, status: 'open' },
+        aiInsights: {
+          enabled: true,
+          matchedOrganizers: this._mockOrganizers(),
+          budgetAnalysis: { feasibility: 'moderate', note: 'Mock analysis' },
+          suggestions: { tip: 'Book at least 4 weeks in advance' }
+        }
       }
-      
-      throw error;
-    }
-  }
-
-  async trackRequestStatus(requestId) {
-    try {
-      const response = await api.safeGet(`/ai/request-status/${requestId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Status tracking error:', error);
-      throw error;
-    }
-  }
-
-  // Mock data for development
-  getMockProcessedRequest(request) {
-    return {
-      entities: this.getMockEntities(request),
-      organizers: this.getMockOrganizers(),
-      requestId: Date.now().toString(),
-      timestamp: new Date().toISOString()
     };
   }
 
-  getMockEntities(text) {
-    return {
-      eventType: text.includes('tech') ? 'Technology' : 
-                text.includes('music') ? 'Music' : 
-                text.includes('business') ? 'Business' : 
-                text.includes('wedding') ? 'Wedding' :
-                text.includes('sports') ? 'Sports' :
-                text.includes('educational') ? 'Educational' : 'General',
-      location: text.includes('kathmandu') ? 'Kathmandu' : 
-                text.includes('pokhara') ? 'Pokhara' :
-                text.includes('online') ? 'Online' : 'Not specified',
-      date: text.includes('next month') ? 'Next Month' : 
-            text.includes('next week') ? 'Next Week' :
-            text.includes('weekend') ? 'This Weekend' : 
-            text.includes('today') ? 'Today' : 'Flexible',
-      budget: text.includes('free') ? 'Free' : 
-              text.includes('$') ? 'Paid' : 'Not specified',
-      attendees: text.includes('small') ? 'Small (< 50)' : 
-                text.includes('large') ? 'Large (> 200)' : 
-                text.includes('50') ? '50' :
-                text.includes('100') ? '100' : 'Medium (50-200)',
-      keywords: text.toLowerCase().split(' ').filter(word => 
-        ['tech', 'music', 'business', 'workshop', 'seminar', 'festival', 
-         'wedding', 'sports', 'conference', 'meetup', 'party', 'concert'].includes(word)
-      )
-    };
-  }
-
-  getMockOrganizers() {
+  _mockOrganizers() {
     return [
       {
         id: 1,
@@ -139,8 +159,7 @@ class EventRequestService {
         specialization: 'Technology Conferences',
         experience: '5+ years',
         rating: 4.8,
-        previousEvents: ['AI Summit 2023', 'DevCon 2024', 'TechFest 2023'],
-        contact: 'tech@events.com',
+        previousEvents: ['AI Summit 2023', 'DevCon 2024'],
         responseTime: '< 1 hour',
         completedEvents: 47,
         successRate: '98%'
@@ -152,8 +171,7 @@ class EventRequestService {
         specialization: 'Local Business Events',
         experience: '3+ years',
         rating: 4.5,
-        previousEvents: ['Business Expo 2023', 'Startup Weekend', 'Networking Night'],
-        contact: 'info@kathmanduevents.com',
+        previousEvents: ['Business Expo 2023', 'Startup Weekend'],
         responseTime: '< 3 hours',
         completedEvents: 28,
         successRate: '95%'
@@ -165,8 +183,7 @@ class EventRequestService {
         specialization: 'Online Tech Events',
         experience: '4+ years',
         rating: 4.7,
-        previousEvents: ['Digital Marketing Conference', 'Web3 Workshop', 'Virtual Summit 2024'],
-        contact: 'hello@digitalsummit.com',
+        previousEvents: ['Digital Marketing Conference', 'Web3 Workshop'],
         responseTime: '< 2 hours',
         completedEvents: 35,
         successRate: '96%'
@@ -175,9 +192,7 @@ class EventRequestService {
   }
 }
 
-// Create an instance of the service
 const eventRequestService = new EventRequestService();
 
-// Export both the class and the default instance
 export { EventRequestService };
 export default eventRequestService;
