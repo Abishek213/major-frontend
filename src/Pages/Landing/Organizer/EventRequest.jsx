@@ -459,7 +459,7 @@ const EventRequest = () => {
               <h1 className="text-3xl font-bold text-gray-800">Event Requests</h1>
               <AIBadge type="organizer" agent="negotiation" />
             </div>
-            <p className="text-gray-600 text-lg">Manage and respond to incoming event opportunities with AI assistance</p>
+            <p className="text-gray-600 text-lg">Manage and respond to incoming event opportunities</p>
           </div>
           
           <div className="flex items-center gap-4">

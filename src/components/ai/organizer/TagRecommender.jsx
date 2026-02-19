@@ -1,73 +1,80 @@
+// src/components/ai/organizer/TagRecommender.jsx
+import React, { useState, useEffect, useRef } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "../../ui/card";
+import { Button } from "../../ui/button";
+import { Badge } from "../../ui/badge";
+import { Input } from "../../ui/input";
+import { Tag, Sparkles, Plus, X, TrendingUp } from "lucide-react";
+import AIBadge from "../AIBadge";
+import AILoadingSpinner from "../AILoadingSpinner";
+import organizerAIService from "../../../services/organizerAIService";
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
-import { Input } from '../../ui/input';
-import { Tag, Sparkles, Plus, X, TrendingUp } from 'lucide-react';
-import AIBadge from '../AIBadge';
-import AILoadingSpinner from '../AILoadingSpinner';
-import organizerAIService from '../../../services/organizerAIService';
+// Only call backend when category is a real MongoDB ObjectId
+const isObjectId = (val) =>
+  typeof val === "string" && /^[a-f\d]{24}$/i.test(val);
 
 const TagRecommender = ({ description, category, onTagsSelected }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [recommendedTags, setRecommendedTags] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
-  const [customTag, setCustomTag] = useState('');
+  const [customTag, setCustomTag] = useState("");
+  const debounceRef = useRef(null);
 
   useEffect(() => {
-    if (description && category) {
-      fetchRecommendations();
-    }
+    // Need at least 50 chars before triggering (matches the hint in CreateEvent)
+    if (!description || description.length < 50) return;
+
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await organizerAIService.getTagRecommendations(
+          description,
+          isObjectId(category) ? category : "" // pass empty string for non-ObjectId categories
+        );
+        setRecommendedTags(data.tags || []);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }, 1000);
+
+    return () => clearTimeout(debounceRef.current);
   }, [description, category]);
 
-  const fetchRecommendations = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await organizerAIService.getTagRecommendations(description, category);
-      setRecommendedTags(data.tags || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleTagSelect = (tag) => {
-    if (!selectedTags.includes(tag)) {
-      const newSelected = [...selectedTags, tag];
-      setSelectedTags(newSelected);
-      onTagsSelected?.(newSelected);
-    }
+    if (selectedTags.includes(tag)) return;
+    const newSelected = [...selectedTags, tag];
+    setSelectedTags(newSelected);
+    onTagsSelected?.(newSelected);
   };
 
   const handleTagRemove = (tag) => {
-    const newSelected = selectedTags.filter(t => t !== tag);
+    const newSelected = selectedTags.filter((t) => t !== tag);
     setSelectedTags(newSelected);
     onTagsSelected?.(newSelected);
   };
 
   const handleAddCustomTag = () => {
-    if (customTag.trim() && !selectedTags.includes(customTag.trim())) {
-      const newSelected = [...selectedTags, customTag.trim()];
-      setSelectedTags(newSelected);
-      onTagsSelected?.(newSelected);
-      setCustomTag('');
-    }
+    const val = customTag.trim();
+    if (!val || selectedTags.includes(val)) return;
+    const newSelected = [...selectedTags, val];
+    setSelectedTags(newSelected);
+    onTagsSelected?.(newSelected);
+    setCustomTag("");
   };
 
-  const getTagPopularity = (tag) => {
-    const found = recommendedTags.find(t => t.name === tag);
-    return found ? found.popularity : 50;
-  };
+  // Don't render until description is long enough
+  if (!description || description.length < 50) return null;
 
   if (loading) {
     return (
       <Card className="w-full">
         <CardContent className="flex items-center justify-center h-32">
-          <AILoadingSpinner size="sm" />
+          <AILoadingSpinner size="sm" label="Finding best tags…" />
         </CardContent>
       </Card>
     );
@@ -80,7 +87,7 @@ const TagRecommender = ({ description, category, onTagsSelected }) => {
           <Tag className="w-5 h-5 text-blue-500" />
           <CardTitle className="text-lg">AI Tag Recommender</CardTitle>
         </div>
-        <AIBadge type="organizer" agent="planning" />
+        <AIBadge type="organizer" agent="planning" size="sm" animate={false} />
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -118,21 +125,26 @@ const TagRecommender = ({ description, category, onTagsSelected }) => {
               AI Recommended Tags
             </h4>
             <div className="flex flex-wrap gap-2">
-              {recommendedTags.map((tag, index) => (
-                <Badge
-                  key={index}
-                  variant={selectedTags.includes(tag.name) ? 'default' : 'outline'}
-                  className={`cursor-pointer hover:bg-purple-100 flex items-center gap-1 ${
-                    selectedTags.includes(tag.name) ? 'bg-purple-500' : ''
-                  }`}
-                  onClick={() => handleTagSelect(tag.name)}
-                >
-                  {tag.name}
-                  {tag.popularity > 70 && (
-                    <TrendingUp className="w-3 h-3 ml-1" />
-                  )}
-                </Badge>
-              ))}
+              {recommendedTags.map((tag, index) => {
+                const name = tag.name ?? tag;
+                const popular = (tag.popularity ?? 0) > 70;
+                const selected = selectedTags.includes(name);
+                return (
+                  <Badge
+                    key={index}
+                    variant={selected ? "default" : "outline"}
+                    className={`cursor-pointer hover:bg-purple-100 flex items-center gap-1 ${
+                      selected ? "bg-purple-500" : ""
+                    }`}
+                    onClick={() =>
+                      selected ? handleTagRemove(name) : handleTagSelect(name)
+                    }
+                  >
+                    {name}
+                    {popular && <TrendingUp className="w-3 h-3 ml-1" />}
+                  </Badge>
+                );
+              })}
             </div>
           </div>
         )}
@@ -140,12 +152,18 @@ const TagRecommender = ({ description, category, onTagsSelected }) => {
         {/* Custom Tag Input */}
         <div className="flex gap-2">
           <Input
-            placeholder="Add custom tag..."
+            placeholder="Add custom tag…"
             value={customTag}
             onChange={(e) => setCustomTag(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddCustomTag()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddCustomTag();
+              }
+            }}
           />
           <Button
+            type="button"
             variant="outline"
             size="icon"
             onClick={handleAddCustomTag}
