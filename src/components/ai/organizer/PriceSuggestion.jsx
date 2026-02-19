@@ -1,38 +1,58 @@
-import React, { useState, useEffect } from 'react';
+// src/components/ai/organizer/PriceSuggestion.jsx
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../../ui/card";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
-import { Slider } from "../../ui/slider"; // This should now work
+import { Slider } from "../../ui/slider";
 import { TrendingUp, DollarSign, Info, Zap, CheckCircle } from "lucide-react";
 import AIBadge from "../AIBadge";
 import AILoadingSpinner from "../AILoadingSpinner";
-import organizerAIService from '../../../services/organizerAIService';
+import organizerAIService from "../../../services/organizerAIService";
+
+// Only call backend when category is a real MongoDB ObjectId
+const isObjectId = (val) =>
+  typeof val === "string" && /^[a-f\d]{24}$/i.test(val);
 
 const PriceSuggestion = ({ category, location, onApplyPrice }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [suggestion, setSuggestion] = useState(null);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 0, suggested: 0 });
-  const [manualPrice, setManualPrice] = useState('');
+  const [priceRange, setPriceRange] = useState({
+    min: 0,
+    max: 0,
+    suggested: 0,
+  });
+  const [manualPrice, setManualPrice] = useState("");
   const [selectedPrice, setSelectedPrice] = useState(null);
+  const debounceRef = useRef(null);
 
   useEffect(() => {
-    if (category && location) {
+    // Guard: only fire when we have a valid ObjectId AND meaningful location
+    if (!isObjectId(category) || !location || location.length < 2) return;
+
+    // Debounce: wait 800ms after the last prop change before firing
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
       fetchPriceSuggestion();
-    }
+    }, 800);
+
+    return () => clearTimeout(debounceRef.current);
   }, [category, location]);
 
   const fetchPriceSuggestion = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await organizerAIService.getPriceSuggestion({ category, location });
+      const data = await organizerAIService.getPriceSuggestion({
+        category,
+        location,
+      });
       setSuggestion(data);
       setPriceRange({
         min: data.priceRange.min,
         max: data.priceRange.max,
-        suggested: data.suggestedPrice
+        suggested: data.suggestedPrice,
       });
       setSelectedPrice(data.suggestedPrice);
     } catch (err) {
@@ -42,30 +62,30 @@ const PriceSuggestion = ({ category, location, onApplyPrice }) => {
     }
   };
 
-  const handlePriceChange = (value) => {
-    setSelectedPrice(value);
-  };
+  const handlePriceChange = (value) => setSelectedPrice(value);
 
   const handleApply = () => {
-    if (onApplyPrice && selectedPrice) {
-      onApplyPrice(selectedPrice);
-    }
+    if (onApplyPrice && selectedPrice) onApplyPrice(selectedPrice);
   };
 
   const getDemandLevel = () => {
     if (!suggestion) return null;
-    if (suggestion.demandScore > 0.7) return { level: 'High', color: 'green' };
-    if (suggestion.demandScore > 0.4) return { level: 'Medium', color: 'yellow' };
-    return { level: 'Low', color: 'red' };
+    if (suggestion.demandScore > 0.7) return { level: "High", color: "green" };
+    if (suggestion.demandScore > 0.4)
+      return { level: "Medium", color: "yellow" };
+    return { level: "Low", color: "red" };
   };
 
   const demand = getDemandLevel();
+
+  // Don't render anything until we have a valid ObjectId category
+  if (!isObjectId(category)) return null;
 
   if (loading) {
     return (
       <Card className="w-full">
         <CardContent className="flex items-center justify-center h-48">
-          <AILoadingSpinner size="md" />
+          <AILoadingSpinner size="md" label="Analysing market prices…" />
         </CardContent>
       </Card>
     );
@@ -77,8 +97,11 @@ const PriceSuggestion = ({ category, location, onApplyPrice }) => {
         <div className="flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-green-500" />
           <CardTitle className="text-lg">AI Price Suggestion</CardTitle>
+          {suggestion?.source === "mock" && (
+            <span className="text-xs text-gray-400">(estimated)</span>
+          )}
         </div>
-        <AIBadge type="organizer" agent="planning" />
+        <AIBadge type="organizer" agent="planning" size="sm" animate={false} />
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -99,13 +122,19 @@ const PriceSuggestion = ({ category, location, onApplyPrice }) => {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <p className="text-gray-500">Avg. Market Price</p>
-                  <p className="font-semibold">${suggestion.marketAverage}</p>
+                  <p className="font-semibold">
+                    Rs. {suggestion.marketAverage}
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-500">Demand Level</p>
                   <div className="flex items-center gap-1">
-                    <div className={`w-2 h-2 rounded-full bg-${demand?.color}-500`} />
-                    <span className="font-semibold">{demand?.level} Demand</span>
+                    <div
+                      className={`w-2 h-2 rounded-full bg-${demand?.color}-500`}
+                    />
+                    <span className="font-semibold">
+                      {demand?.level} Demand
+                    </span>
                   </div>
                 </div>
               </div>
@@ -116,15 +145,18 @@ const PriceSuggestion = ({ category, location, onApplyPrice }) => {
               <div className="flex justify-between items-center">
                 <Label>Recommended Price Range</Label>
                 <span className="text-sm font-medium">
-                  ${priceRange.min} - ${priceRange.max}
+                  Rs. {priceRange.min} – Rs. {priceRange.max}
                 </span>
               </div>
 
               <Slider
                 min={priceRange.min}
                 max={priceRange.max}
-                step={5}
-                value={[selectedPrice]}
+                step={Math.max(
+                  1,
+                  Math.round((priceRange.max - priceRange.min) / 50)
+                )}
+                value={[selectedPrice ?? priceRange.suggested]}
                 onValueChange={(value) => handlePriceChange(value[0])}
                 className="w-full"
               />
@@ -132,11 +164,15 @@ const PriceSuggestion = ({ category, location, onApplyPrice }) => {
               <div className="flex items-center justify-between mt-2">
                 <div className="text-sm">
                   <span className="text-gray-500">Suggested: </span>
-                  <span className="font-bold text-green-600">${priceRange.suggested}</span>
+                  <span className="font-bold text-green-600">
+                    Rs. {priceRange.suggested}
+                  </span>
                 </div>
                 <div className="text-sm">
                   <span className="text-gray-500">Your selection: </span>
-                  <span className="font-bold text-blue-600">${selectedPrice}</span>
+                  <span className="font-bold text-blue-600">
+                    Rs. {selectedPrice}
+                  </span>
                 </div>
               </div>
             </div>
@@ -157,12 +193,11 @@ const PriceSuggestion = ({ category, location, onApplyPrice }) => {
                   />
                 </div>
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    if (manualPrice) {
-                      setSelectedPrice(parseInt(manualPrice));
-                    }
+                    if (manualPrice) setSelectedPrice(parseInt(manualPrice));
                   }}
                 >
                   Set
@@ -172,24 +207,28 @@ const PriceSuggestion = ({ category, location, onApplyPrice }) => {
 
             {/* Success Probability */}
             {selectedPrice && (
-              <div className={`p-3 rounded-lg ${
-                selectedPrice <= priceRange.max && selectedPrice >= priceRange.min
-                  ? 'bg-green-50'
-                  : 'bg-yellow-50'
-              }`}>
+              <div
+                className={`p-3 rounded-lg ${
+                  selectedPrice <= priceRange.max &&
+                  selectedPrice >= priceRange.min
+                    ? "bg-green-50"
+                    : "bg-yellow-50"
+                }`}
+              >
                 <div className="flex items-center gap-2">
-                  {selectedPrice <= priceRange.max && selectedPrice >= priceRange.min ? (
+                  {selectedPrice <= priceRange.max &&
+                  selectedPrice >= priceRange.min ? (
                     <>
                       <CheckCircle className="w-4 h-4 text-green-500" />
                       <span className="text-sm text-green-700">
-                        Price within optimal range - good chance of bookings
+                        Price within optimal range — good chance of bookings
                       </span>
                     </>
                   ) : (
                     <>
                       <Zap className="w-4 h-4 text-yellow-500" />
                       <span className="text-sm text-yellow-700">
-                        Price outside optimal range - may affect booking rate
+                        Price outside optimal range — may affect booking rate
                       </span>
                     </>
                   )}
@@ -199,11 +238,12 @@ const PriceSuggestion = ({ category, location, onApplyPrice }) => {
 
             {/* Apply Button */}
             <Button
+              type="button"
               onClick={handleApply}
               disabled={!selectedPrice}
               className="w-full"
             >
-              Apply Price ${selectedPrice}
+              Apply Rs. {selectedPrice} to form
             </Button>
           </>
         )}

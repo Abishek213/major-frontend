@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import organizerAIService from '../services/organizerAIService';
+// src/hooks/useOrganizerAI.js
+import { useState, useCallback } from "react";
+import organizerAIService from "../services/organizerAIService";
 
 export const useOrganizerAI = (orgId) => {
   const [loading, setLoading] = useState(false);
@@ -10,10 +11,14 @@ export const useOrganizerAI = (orgId) => {
   const [tagRecommendations, setTagRecommendations] = useState([]);
   const [slotSuggestion, setSlotSuggestion] = useState(null);
   const [dateSuggestion, setDateSuggestion] = useState(null);
-  const [activeNegotiations, setActiveNegotiations] = useState([]);
   const [competitorAnalysis, setCompetitorAnalysis] = useState(null);
 
-  // Event Planning Functions
+  // NOTE: activeNegotiations polling was removed because /ai/organizer/offer-status/
+  // does not exist in the backend. Add it back when the backend route is implemented.
+  const [activeNegotiations] = useState([]);
+
+  // ── Event Planning ────────────────────────────────────────────────────────
+
   const fetchPriceSuggestion = useCallback(async (eventData) => {
     setLoading(true);
     setError(null);
@@ -33,7 +38,10 @@ export const useOrganizerAI = (orgId) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await organizerAIService.getTagRecommendations(description, category);
+      const data = await organizerAIService.getTagRecommendations(
+        description,
+        category
+      );
       setTagRecommendations(data.tags || []);
       return data;
     } catch (err) {
@@ -48,7 +56,10 @@ export const useOrganizerAI = (orgId) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await organizerAIService.getSlotSuggestion(location, category);
+      const data = await organizerAIService.getSlotSuggestion(
+        location,
+        category
+      );
       setSlotSuggestion(data);
       return data;
     } catch (err) {
@@ -74,12 +85,16 @@ export const useOrganizerAI = (orgId) => {
     }
   }, []);
 
-  // Negotiation Functions
+  // ── Negotiation ───────────────────────────────────────────────────────────
+
   const createOffer = useCallback(async (requestId, offerData) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await organizerAIService.createNegotiationOffer(requestId, offerData);
+      const data = await organizerAIService.createNegotiationOffer(
+        requestId,
+        offerData
+      );
       return data;
     } catch (err) {
       setError(err.message);
@@ -104,22 +119,29 @@ export const useOrganizerAI = (orgId) => {
     }
   }, []);
 
-  // Dashboard Functions
-  const fetchDashboardMetrics = useCallback(async (timeframe = 'month') => {
-    if (!orgId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await organizerAIService.getDashboardMetrics(orgId, timeframe);
-      setDashboardMetrics(data);
-      return data;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
+  // ── Dashboard ─────────────────────────────────────────────────────────────
+
+  const fetchDashboardMetrics = useCallback(
+    async (timeframe = "month") => {
+      if (!orgId) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await organizerAIService.getDashboardMetrics(
+          orgId,
+          timeframe
+        );
+        setDashboardMetrics(data);
+        return data;
+      } catch (err) {
+        setError(err.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [orgId]
+  );
 
   const fetchSentimentAnalysis = useCallback(async () => {
     if (!orgId) return;
@@ -135,23 +157,6 @@ export const useOrganizerAI = (orgId) => {
     } finally {
       setLoading(false);
     }
-  }, [orgId]);
-
-  // Real-time updates for negotiations
-  useEffect(() => {
-    if (!orgId) return;
-
-    const pollInterval = setInterval(async () => {
-      try {
-        // Poll for negotiation updates
-        const response = await organizerAIService.getOfferStatus(orgId);
-        setActiveNegotiations(response.negotiations || []);
-      } catch (err) {
-        console.error('Error polling negotiations:', err);
-      }
-    }, 30000); // Poll every 30 seconds
-
-    return () => clearInterval(pollInterval);
   }, [orgId]);
 
   return {
@@ -175,9 +180,11 @@ export const useOrganizerAI = (orgId) => {
     fetchCompetitorAnalysis,
     // Dashboard
     fetchDashboardMetrics,
-    fetchSentimentAnalysis
+    fetchSentimentAnalysis,
   };
 };
+
+// ── useEventPlanning ──────────────────────────────────────────────────────────
 
 export const useEventPlanning = () => {
   const [suggestions, setSuggestions] = useState(null);
@@ -190,18 +197,22 @@ export const useEventPlanning = () => {
     try {
       const [price, tags, slots, date] = await Promise.all([
         organizerAIService.getPriceSuggestion(eventData),
-        organizerAIService.getTagRecommendations(eventData.description, eventData.category),
-        organizerAIService.getSlotSuggestion(eventData.location, eventData.category),
-        organizerAIService.getDateSuggestion(eventData.category)
+        organizerAIService.getTagRecommendations(
+          eventData.description,
+          eventData.category
+        ),
+        organizerAIService.getSlotSuggestion(
+          eventData.location,
+          eventData.category
+        ),
+        organizerAIService.getDateSuggestion(eventData.category),
       ]);
-
       setSuggestions({
         price: price.suggestedPrice,
         tags: tags.tags,
         slots: slots.suggestedSlots,
-        date: date.suggestedDates
+        date: date.suggestedDates,
       });
-
       return { price, tags, slots, date };
     } catch (err) {
       setError(err.message);
@@ -214,6 +225,8 @@ export const useEventPlanning = () => {
   return { suggestions, loading, error, getSuggestions };
 };
 
+// ── useNegotiation ────────────────────────────────────────────────────────────
+
 export const useNegotiation = (requestId) => {
   const [offers, setOffers] = useState([]);
   const [competitors, setCompetitors] = useState(null);
@@ -224,8 +237,11 @@ export const useNegotiation = (requestId) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await organizerAIService.createNegotiationOffer(requestId, offerData);
-      setOffers(prev => [...prev, data]);
+      const data = await organizerAIService.createNegotiationOffer(
+        requestId,
+        offerData
+      );
+      setOffers((prev) => [...prev, data]);
       return data;
     } catch (err) {
       setError(err.message);
@@ -256,6 +272,6 @@ export const useNegotiation = (requestId) => {
     loading,
     error,
     submitOffer,
-    getCompetitorAnalysis
+    getCompetitorAnalysis,
   };
 };
