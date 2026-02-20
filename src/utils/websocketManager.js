@@ -85,6 +85,18 @@ const closeReason = (code) =>
     ? `${CLOSE_REASONS[code]} (${code})`
     : `Unknown close code (${code})`;
 
+// ─── Error types for better handling ──────────────────────────────────────────
+const ERROR_TYPES = {
+  AUTH_FAILED: 'auth_failed',
+  TOKEN_EXPIRED: 'token_expired',
+  RATE_LIMIT: 'rate_limit',
+  INVALID_MESSAGE: 'invalid_message',
+  SERVER_ERROR: 'server_error',
+  NOTIFICATION_FAILED: 'notification_failed',
+  SUBSCRIPTION_FAILED: 'subscription_failed',
+  CONNECTION_LOST: 'connection_lost'
+};
+
 // ─── WebSocketManager ─────────────────────────────────────────────────────────
 class WebSocketManager {
   constructor() {
@@ -98,6 +110,160 @@ class WebSocketManager {
     this.reconnectTimer = null;
     this.onConnectedCallback = null;
     this._connectedAt = null;
+    this.errorCount = 0;
+    this.lastErrorTime = null;
+    
+    // Setup default error handler on construction
+    this.setupDefaultErrorHandler();
+  }
+
+  // ── Default error handler setup ─────────────────────────────────────────────
+  setupDefaultErrorHandler() {
+    // Remove any existing error handlers to avoid duplicates
+    if (this.messageHandlers.has('error')) {
+      this.messageHandlers.delete('error');
+    }
+
+    // Add default error handler
+    this.on('error', (data) => {
+      const payload = data.payload || {};
+      const errorCode = payload.code || 'UNKNOWN';
+      const errorMessage = payload.message || 'WebSocket error occurred';
+      const correlationId = data.correlationId || '—';
+      
+      // Track error metrics
+      this.errorCount++;
+      this.lastErrorTime = new Date();
+
+      // Handle different error types
+      switch(errorCode) {
+        case ERROR_TYPES.AUTH_FAILED:
+        case ERROR_TYPES.TOKEN_EXPIRED:
+          logger.error(
+            'WS ERROR', 
+            `🔐 Authentication failed: ${errorMessage}`, 
+            `code=${errorCode} correlationId=${correlationId}`
+          );
+          // Dispatch auth failure event
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('ws:auth:failed', { 
+              detail: { 
+                code: errorCode, 
+                message: errorMessage,
+                timestamp: new Date().toISOString()
+              } 
+            }));
+          }
+          // Attempt to reconnect with new token if available
+          this.handleAuthFailure();
+          break;
+          
+        case ERROR_TYPES.RATE_LIMIT:
+          logger.warn(
+            'WS ERROR', 
+            '⏱️ Rate limit reached', 
+            `code=${errorCode} correlationId=${correlationId}`
+          );
+          // Implement exponential backoff for rate limiting
+          this.handleRateLimit();
+          break;
+          
+        case ERROR_TYPES.INVALID_MESSAGE:
+          logger.warn(
+            'WS ERROR', 
+            '📨 Invalid message format', 
+            `code=${errorCode} correlationId=${correlationId}`
+          );
+          break;
+          
+        case ERROR_TYPES.SERVER_ERROR:
+          logger.error(
+            'WS ERROR', 
+            '🔧 Server error occurred', 
+            `code=${errorCode} correlationId=${correlationId}`
+          );
+          break;
+          
+        case ERROR_TYPES.NOTIFICATION_FAILED:
+        case ERROR_TYPES.SUBSCRIPTION_FAILED:
+          logger.warn(
+            'WS ERROR', 
+            `📢 ${errorCode.replace('_', ' ')}`, 
+            `channel=${payload.channel || 'unknown'} correlationId=${correlationId}`
+          );
+          // Retry subscription after delay
+          setTimeout(() => {
+            if (payload.channel && this.isConnected()) {
+              logger.info('RETRY', `Resubscribing to ${payload.channel}`);
+              this.send({ type: 'subscribe', channel: payload.channel });
+            }
+          }, 5000);
+          break;
+          
+        default:
+          // For unknown errors, log at debug level after first occurrence
+          if (this.errorCount <= 3) {
+            console.debug(
+              `${LOG_PREFIX} WS ERROR (unhandled type)`, 
+              `code=${errorCode}`, 
+              `message=${errorMessage}`
+            );
+          } else {
+            // Suppress after 3 errors to avoid console spam
+            console.debug(`${LOG_PREFIX} WS ERROR suppressed (${this.errorCount} total)`);
+          }
+      }
+
+      // Also dispatch a general error event for app-wide handling
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ws:error', { 
+          detail: { 
+            code: errorCode, 
+            message: errorMessage,
+            correlationId,
+            count: this.errorCount
+          } 
+        }));
+      }
+    });
+
+    logger.info('SETUP', 'Default error handler registered');
+  }
+
+  // ── Handle authentication failure ───────────────────────────────────────────
+  handleAuthFailure() {
+    // Check if token exists and might be expired
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      logger.warn('AUTH', 'No token available for reconnection');
+      return;
+    }
+
+    // Attempt to reconnect after delay
+    setTimeout(() => {
+      if (!this.isConnected() && token) {
+        logger.info('AUTH', 'Attempting reconnection with new token');
+        this.connect(token, this.onConnectedCallback);
+      }
+    }, 3000);
+  }
+
+  // ── Handle rate limiting ────────────────────────────────────────────────────
+  handleRateLimit() {
+    // Implement exponential backoff
+    const backoffTime = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+    
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      logger.info('RATE LIMIT', `Backing off for ${backoffTime}ms`);
+      
+      setTimeout(() => {
+        if (this.isConnected()) {
+          // Resume normal operations
+          this.reconnectAttempts = 0;
+        }
+      }, backoffTime);
+    }
   }
 
   // ── connect ──────────────────────────────────────────────────────────────────
@@ -113,8 +279,6 @@ class WebSocketManager {
     }
 
     if (this.isConnecting) {
-      // FIX: React StrictMode runs effects twice — the second connect() call
-      // hits this branch. Log at debug level so it doesn't clutter the console.
       console.debug(
         `${LOG_PREFIX} CONNECT already in progress — skipped (StrictMode double-invoke)`
       );
@@ -158,6 +322,7 @@ class WebSocketManager {
       this._connectedAt = Date.now();
       this.isConnecting = false;
       this.reconnectAttempts = 0;
+      this.errorCount = 0; // Reset error count on successful connection
 
       logger.divider("Connected ✓");
       logger.success("CONNECTED", "🟢 WebSocket is OPEN", `url=${wsUrl}`);
@@ -173,11 +338,16 @@ class WebSocketManager {
     this.socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        logger.info(
-          "MSG ↓ IN",
-          `Received: ${data.type}`,
-          `correlationId=${data.payload?.correlationId || "—"}`
-        );
+        
+        // Log all incoming messages except heartbeats/pings
+        if (data.type !== 'ping' && data.type !== 'pong') {
+          logger.info(
+            "MSG ↓ IN",
+            `Received: ${data.type}`,
+            `correlationId=${data.payload?.correlationId || "—"}`
+          );
+        }
+        
         this.handleMessage(data);
       } catch (error) {
         logger.error(
@@ -233,12 +403,22 @@ class WebSocketManager {
     };
 
     // ── onerror ───────────────────────────────────────────────────────────────
-    this.socket.onerror = () => {
+    this.socket.onerror = (error) => {
       logger.error(
         "SOCKET ERR",
         "WebSocket error fired",
         `readyState=${this.socket?.readyState ?? "?"} — check Network tab`
       );
+      
+      // Dispatch error event for connection errors
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ws:connection:error', { 
+          detail: { 
+            error: error.message || 'Unknown connection error',
+            timestamp: new Date().toISOString()
+          } 
+        }));
+      }
     };
   }
 
@@ -253,13 +433,19 @@ class WebSocketManager {
         "subscription_success",
         "connected",
         "welcome",
+        "ping",
+        "pong"
       ];
+      
       if (!silentTypes.includes(data.type)) {
-        logger.warn(
-          "MSG HANDLE",
-          `No handlers for type: ${data.type}`,
-          "register with websocketManager.on(...)"
-        );
+        // For error messages, we already have a handler, so this shouldn't happen
+        // But just in case, log at debug level
+        if (data.type !== 'error') {
+          console.debug(
+            `${LOG_PREFIX} No handlers for: ${data.type}`, 
+            `register with websocketManager.on(...)`
+          );
+        }
       }
       return;
     }
@@ -283,9 +469,6 @@ class WebSocketManager {
     this.send({ type: "subscribe", channel: "notifications" });
   }
 
-  // NOTE: subscribeToNotifications() already triggers unread count on the
-  // backend (handleSubscribe → handleUnreadCountSubscription). Only call this
-  // directly if you need an isolated unread count refresh.
   subscribeToUnreadCount() {
     logger.info("SUB", "Subscribing to channel: unread_count");
     this.send({ type: "subscribe", channel: "unread_count" });
@@ -305,11 +488,15 @@ class WebSocketManager {
     if (this.socket?.readyState === WebSocket.OPEN) {
       try {
         this.socket.send(JSON.stringify(data));
-        logger.info(
-          "MSG ↑ OUT",
-          `Sent: ${data.type}`,
-          data.channel ? `channel=${data.channel}` : ""
-        );
+        
+        // Don't log heartbeat messages
+        if (data.type !== 'ping' && data.type !== 'pong') {
+          logger.info(
+            "MSG ↑ OUT",
+            `Sent: ${data.type}`,
+            data.channel ? `channel=${data.channel}` : ""
+          );
+        }
         return true;
       } catch (error) {
         logger.error(
@@ -369,10 +556,6 @@ class WebSocketManager {
   }
 
   // ── handler registry ──────────────────────────────────────────────────────────
-  // FIX: Handler registration/deregistration is now logged at debug level.
-  // Previously logged at info level, which caused visual noise from React
-  // StrictMode's intentional double-invoke (register → cleanup → register).
-  // Functional logs (connect, disconnect, messages) stay at info/warn/error.
   on(messageType, handler) {
     if (!this.messageHandlers.has(messageType)) {
       this.messageHandlers.set(messageType, []);
@@ -419,6 +602,17 @@ class WebSocketManager {
         `❌ Max attempts (${this.maxReconnectAttempts}) reached — giving up`,
         "Refresh the page to reconnect"
       );
+      
+      // Dispatch connection lost event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ws:connection:lost', { 
+          detail: { 
+            attempts: this.reconnectAttempts,
+            timestamp: new Date().toISOString()
+          } 
+        }));
+      }
+      
       this.token = null;
       return;
     }
@@ -484,6 +678,7 @@ class WebSocketManager {
     this.token = null;
     this.reconnectAttempts = 0;
     this._connectedAt = null;
+    this.errorCount = 0;
 
     logger.info(
       "DISCONNECT",
@@ -521,6 +716,7 @@ class WebSocketManager {
       maxReconnectAttempts: this.maxReconnectAttempts,
       hasToken: !!this.token,
       registeredHandlers: this.messageHandlers.size,
+      errorCount: this.errorCount,
       uptimeSeconds: this._connectedAt
         ? ((Date.now() - this._connectedAt) / 1000).toFixed(1)
         : null,
@@ -539,6 +735,16 @@ class WebSocketManager {
       console.log("%c[WS] Registered handlers:", style.tag, handlers);
     }
   }
+
+  // Get error statistics
+  getErrorStats() {
+    return {
+      totalErrors: this.errorCount,
+      lastErrorTime: this.lastErrorTime,
+      isConnected: this.isConnected(),
+      reconnectAttempts: this.reconnectAttempts
+    };
+  }
 }
 
 // ─── Singleton ────────────────────────────────────────────────────────────────
@@ -547,6 +753,9 @@ const websocketManager = new WebSocketManager();
 // Expose to browser console: __wsManager.debug()
 if (typeof window !== "undefined") {
   window.__wsManager = websocketManager;
+  
+  // Also expose error types for debugging
+  window.__WS_ERRORS = ERROR_TYPES;
 }
 
 // ─── Vite HMR — close socket only, preserve token & callbacks ─────────────────

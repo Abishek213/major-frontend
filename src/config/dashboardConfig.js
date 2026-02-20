@@ -405,39 +405,39 @@ import {
 } from "lucide-react";
 
 // Rest of your imports (components) remain the same...
-import Overview from "../Pages/Landing/Organizer/Overview";
-import CreateEvent from "../Pages/Landing/Organizer/CreateEvent";
-import MyEvents from "../Pages/Landing/Organizer/MyEvents";
-import EventRequestorg from "../Pages/Landing/Organizer/EventRequest";
-import MarketingHub from "../Pages/Landing/Organizer/MarketingHub";
-import SmartPricing from "../Pages/Landing/Organizer/SmartPricing";
+import Overview from "../Pages/Dashboard/Organizer/Overview";
+import CreateEvent from "../Pages/Dashboard/Organizer/CreateEvent";
+import MyEvents from "../Pages/Dashboard/Organizer/MyEvents";
+import EventRequestorg from "../Pages/Dashboard/Organizer/EventRequest";
+import MarketingHub from "../Pages/Dashboard/Organizer/MarketingHub";
+import SmartPricing from "../Pages/Dashboard/Organizer/SmartPricing";
 
 // Import Admin components
-import AdminOverview from "../Pages/Landing/Admin/Overview";
-import EventsManagement from "../Pages/Landing/Admin/EventsManagement";
-import UsersManagement from "../Pages/Landing/Admin/UsersManagement";
-import PermissionsManagement from "../Pages/Landing/Admin/PermissionsManagement";
-import CategoriesManagement from "../Pages/Landing/Admin/CategoriesManagement";
-import Settings from "../Pages/Landing/Admin/Settings";
-import FraudDetection from "../Pages/Landing/Admin/FraudDetection";
-import TrendsAnalytics from "../Pages/Landing/Admin/TrendsAnalytics";
+import AdminOverview from "../Pages/Dashboard/Admin/Overview";
+import EventsManagement from "../Pages/Dashboard/Admin/EventsManagement";
+import UsersManagement from "../Pages/Dashboard/Admin/UsersManagement";
+import PermissionsManagement from "../Pages/Dashboard/Admin/PermissionsManagement";
+import CategoriesManagement from "../Pages/Dashboard/Admin/CategoriesManagement";
+import Settings from "../Pages/Dashboard/Admin/Settings";
+import FraudDetection from "../Pages/Dashboard/Admin/FraudDetection";
+import TrendsAnalytics from "../Pages/Dashboard/Admin/TrendsAnalytics";
 
 // Import User components
-import UserEvents from "../Pages/Landing/User/UserEvents";
-import EventDetails from "../Pages/Landing/User/EventDetail";
-import EventRequest from "../Pages/Landing/User/EventRequest";
-import InterestedOrganizers from "../Pages/Landing/User/IntrestedOrganizers";
-import UserWishlist from "../Pages/Landing/User/UserWishlist";
-import UserBookings from "../Pages/Landing/User/UserBookings";
-import BookingSuccess from "../Pages/Landing/User/booking/BookingSuccess";
-import BookingFailed from "../Pages/Landing/User/booking/BookingFailed";
+import UserEvents from "../Pages/Dashboard/User/UserEvents";
+import EventDetails from "../Pages/Dashboard/User/EventDetail";
+import EventRequest from "../Pages/Dashboard/User/EventRequest";
+import InterestedOrganizers from "../Pages/Dashboard/User/IntrestedOrganizers";
+import UserWishlist from "../Pages/Dashboard/User/UserWishlist";
+import UserBookings from "../Pages/Dashboard/User/UserBookings";
+import BookingSuccess from "../Pages/Dashboard/User/booking/BookingSuccess";
+import BookingFailed from "../Pages/Dashboard/User/booking/BookingFailed";
 
 // Import AI components
-import RecommendationSection from "../components/ai/RecommendationSection";
-import ChatAssistant from "../components/ai/ChatAssistant";
-import FAQViewer from "../components/ai/FAQViewer";
-import EventRequestAssistant from "../components/ai/EventRequestAssistant";
-import AIBadge from "../components/ai/AIBadge";
+import RecommendationSection from "../components/ai/user/RecommendationSection";
+import ChatAssistant from "../components/ai/user/ChatAssistant";
+import FAQViewer from "../components/ai/user/FAQViewer";
+import EventRequestAssistant from "../components/ai/user/EventRequestAssistant";
+import AIBadge from "../components/ai/user/AIBadge";
 
 // Import AI-specific components for each dashboard
 import EventPlanningAssistant from "../components/ai/organizer/EventPlanningAssistant";
@@ -668,7 +668,7 @@ export const userDashboardConfig = {
 
     // AI-POWERED WISHLIST TAB
     wishlist: {
-      title: "Smart Wishlist",
+      title: "Wishlist",
       description: "Intelligent tracking with price alerts and recommendations",
       component: UserWishlist,
       permissions: ["VIEW_USER_WISHLIST"],

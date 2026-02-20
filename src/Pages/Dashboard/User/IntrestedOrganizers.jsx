@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { useEventRequest } from '@/hooks/useEventRequest';
-import AIBadge from '@/components/ai/AIBadge';
-import AILoadingSpinner from '@/components/ai/AILoadingSpinner';
+import AIBadge from "@/components/ai/user/AIBadge";
+import AILoadingSpinner from "@/components/ai/user/AILoadingSpinner";
 import { 
   AlertTriangle, CheckCircle, XCircle, Users, MapPin, Calendar, 
   DollarSign, FileText, MessageSquare, Phone, TrendingUp, Sparkles,

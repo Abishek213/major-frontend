@@ -43,10 +43,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useChatAssistant } from '@/hooks/useChatAssistant';
-import FAQViewer from '@/components/ai/FAQViewer';
-import LanguageSelector from '@/components/ui/language-selector';
-import AIBadge from '@/components/ai/AIBadge';
-import AILoadingSpinner from '@/components/ai/AILoadingSpinner';
+import FAQViewer from "@/components/ai/user/FAQViewer";
 
 // Enhanced AI Chat Component
 function AIChatSupport({ isOpen, onClose }) {

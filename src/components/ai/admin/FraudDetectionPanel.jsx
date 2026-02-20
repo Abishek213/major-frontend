@@ -62,9 +62,9 @@ import {
   Network,
   Cpu
 } from 'lucide-react';
-import FraudDetectionPanel from '../../../components/ai/admin/FraudDetectionPanel';
-import FraudAlertModal from '../../../components/ai/admin/FraudAlertModal';
-import AIBadge from '../../../components/ai/AIBadge';
+import FraudDetectionPanel from './FraudDetectionPanel';
+import FraudAlertModal from './FraudAlertModal';
+import AIBadge from '../user/AIBadge';
 import { useAdminAI, useFraudDetection } from '../../../hooks/useAdminAI';
 import { getRiskLevel, detectBookingAnomalies } from '../../../utils/fraudHelpers';
 import { Line, Bar, Pie } from 'react-chartjs-2';

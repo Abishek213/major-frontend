@@ -50,7 +50,7 @@ import {
   Calendar,
   DollarSign
 } from 'lucide-react';
-import AIBadge from '../../../components/ai/AIBadge';
+import AIBadge from '../../../components/ai/user/AIBadge';
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);

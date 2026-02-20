@@ -240,23 +240,6 @@ const MarketingHub = () => {
               <EmailMarketingTab />
             )}
           </div>
-
-          {/* Quick Actions Card */}
-          <div className="mt-10 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 rounded-2xl p-8 text-white shadow-2xl overflow-hidden">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="max-w-xl">
-                <div className="flex items-center gap-3 mb-4">
-                  <Sparkles className="w-6 h-6 text-white" />
-                  <h3 className="text-2xl font-bold">AI-Powered Marketing</h3>
-                </div>
-                <p className="text-white/90 text-lg">Get intelligent suggestions for your next campaign based on audience insights and past performance.</p>
-              </div>
-              <button className="px-6 py-3 bg-white/20 backdrop-blur-sm rounded-xl font-medium flex items-center gap-2 hover:bg-white/30 transition-all duration-300 shadow-lg">
-                Explore AI Features
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 

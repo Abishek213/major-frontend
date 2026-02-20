@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Clock, TrendingUp } from 'lucide-react';
-import api from '../utils/api';
+import api from '../../utils/api';
 
 const PublicEvent = () => {
   const navigate = useNavigate();

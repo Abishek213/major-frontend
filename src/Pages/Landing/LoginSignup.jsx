@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import api from "../utils/api";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogAction } from '../components/ui/dialog';
-import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
+import api from "../../utils/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogAction } from '../../components/ui/dialog';
+import { Alert, AlertTitle, AlertDescription } from '../../components/ui/alert';
 import { useNavigate } from 'react-router-dom';
 
 const LoginSignup = () => {

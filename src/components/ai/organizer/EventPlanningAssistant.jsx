@@ -12,8 +12,8 @@ import {
   Wand2,
   AlertCircle,
 } from "lucide-react";
-import AIBadge from "../AIBadge";
-import AILoadingSpinner from "../AILoadingSpinner";
+import AIBadge from "../user/AIBadge";
+import AILoadingSpinner from "../user/AILoadingSpinner";
 
 /**
  * EventPlanningAssistant

@@ -20,7 +20,7 @@ import {
   Award,
   Target
 } from 'lucide-react';
-import AIBadge from '../AIBadge';
+import AIBadge from '../user/AIBadge';
 import adminAIService from '../../../services/adminAIService';
 
 const CohortAnalysisView = ({ timeframe = '6months' }) => {

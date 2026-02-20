@@ -10,7 +10,7 @@ import {
   PieChart
 } from 'lucide-react';
 import adminAIService from '../../../services/adminAIService';
-import AILoadingSpinner from '../AILoadingSpinner';
+import AILoadingSpinner from '../user/AILoadingSpinner';
 
 // Note: In a real app, you'd use a charting library like recharts or chart.js
 // This is a simplified version with placeholder charts

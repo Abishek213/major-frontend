@@ -33,8 +33,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
 import { useChatAssistant } from '../../../../hooks/useChatAssistant';
-import AIBadge from '../../../../components/ai/AIBadge';
-import AILoadingSpinner from '../../../../components/ai/AILoadingSpinner';
+import AIBadge from '../../../../components/ai/user/AIBadge';
+import AILoadingSpinner from '../../../../components/ai/user/AILoadingSpinner';
 
 // ... rest of the component code
 const BookingFailed = () => {

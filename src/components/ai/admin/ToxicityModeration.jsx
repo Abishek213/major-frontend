@@ -23,7 +23,7 @@ import {
   Users,
   MessageCircle
 } from 'lucide-react';
-import AIBadge from '../AIBadge';
+import AIBadge from '../user/AIBadge';
 import adminAIService from '../../../services/adminAIService';
 
 const ToxicityModeration = () => {

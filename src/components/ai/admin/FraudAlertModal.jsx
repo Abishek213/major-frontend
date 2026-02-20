@@ -25,7 +25,7 @@ import {
   Ban,
   Activity
 } from 'lucide-react';
-import AILoadingSpinner from '../AILoadingSpinner';
+import AILoadingSpinner from '../user/AILoadingSpinner';
 
 const FraudAlertModal = ({ isOpen, onClose, alert, onBlock }) => {
   const [blockReason, setBlockReason] = useState('');
