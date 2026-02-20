@@ -82,7 +82,7 @@ import {
   WifiOff
 } from 'lucide-react';
 import { useAdminAI } from '../../../hooks/useAdminAI';
-import AIBadge from '../../../components/ai/AIBadge';
+import AIBadge from '../../../components/ai/user/AIBadge';
 import { 
   LineChart as RechartsLineChart, 
   Line, 

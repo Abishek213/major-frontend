@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Eye, Edit, Trash2, Calendar, MapPin, DollarSign, Users, 
   AlertTriangle, Sparkles, TrendingUp, RefreshCw, Clock, Target, 
@@ -8,10 +9,11 @@ import {
 import { format } from 'date-fns';
 import api from '../../../utils/api';
 import { getToken } from '../../../utils/auth';
-import AIBadge from '../../../components/ai/AIBadge';
+import AIBadge from '../../../components/ai/user/AIBadge';
 import { useOrganizerAI } from '../../../hooks/useOrganizerAI';
 
 const MyEvents = () => {
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -20,8 +22,8 @@ const MyEvents = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showAIAnalytics, setShowAIAnalytics] = useState(false);
   const [eventInsights, setEventInsights] = useState({});
-  const [filterType, setFilterType] = useState('all'); // all, upcoming, past
-  const [sortBy, setSortBy] = useState('date'); // date, attendees, revenue
+  const [filterType, setFilterType] = useState('all');
+  const [sortBy, setSortBy] = useState('date');
 
   const { 
     getEventPerformance, 
@@ -56,7 +58,6 @@ const MyEvents = () => {
         const eventsResponse = await api.get(`/events/user/${userData._id}`);
         setEvents(eventsResponse.data);
         
-        // Generate insights for each event
         generateEventInsights(eventsResponse.data);
       } catch (err) {
         console.error("Error fetching events:", err);
@@ -86,7 +87,6 @@ const MyEvents = () => {
       const fillRate = (attendees / event.totalSlots) * 100;
       const daysUntilEvent = Math.ceil((new Date(event.event_date) - new Date()) / (1000 * 60 * 60 * 24));
       
-      // Fill rate insights
       if (fillRate >= 80) {
         eventInsight.push({
           type: 'success',
@@ -110,7 +110,6 @@ const MyEvents = () => {
         });
       }
 
-      // Timing insights
       if (daysUntilEvent < 0) {
         eventInsight.push({
           type: 'info',
@@ -134,7 +133,6 @@ const MyEvents = () => {
         });
       }
 
-      // Revenue insights
       const revenue = event.price * attendees;
       if (revenue > 5000) {
         eventInsight.push({
@@ -145,7 +143,6 @@ const MyEvents = () => {
         });
       }
 
-      // Rating insights (if available)
       if (event.averageRating) {
         if (event.averageRating >= 4.5) {
           eventInsight.push({
@@ -191,17 +188,23 @@ const MyEvents = () => {
     setShowAIAnalytics(true);
   };
 
+  const handleEditEvent = (eventId) => {
+    navigate(`/orgdb/edit-event/${eventId}`);
+  };
+
+  const handleViewEvent = (eventId) => {
+    window.open(`/event/${eventId}`, '_blank');
+  };
+
   const getFilteredAndSortedEvents = () => {
     let filtered = [...events];
     
-    // Apply filter
     if (filterType === 'upcoming') {
       filtered = filtered.filter(e => new Date(e.event_date) > new Date());
     } else if (filterType === 'past') {
       filtered = filtered.filter(e => new Date(e.event_date) <= new Date());
     }
     
-    // Apply sorting
     filtered.sort((a, b) => {
       switch(sortBy) {
         case 'date':
@@ -216,21 +219,6 @@ const MyEvents = () => {
     });
     
     return filtered;
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'upcoming':
-        return 'from-emerald-500 to-green-500';
-      case 'ongoing':
-        return 'from-blue-500 to-cyan-500';
-      case 'completed':
-        return 'from-gray-500 to-gray-700';
-      case 'cancelled':
-        return 'from-rose-500 to-pink-500';
-      default:
-        return 'from-gray-500 to-gray-700';
-    }
   };
 
   const StatCard = ({ title, value, icon: Icon, color = "blue" }) => {
@@ -317,7 +305,6 @@ const MyEvents = () => {
   const totalRevenue = events.reduce((sum, event) => 
     sum + (event.price * (event.attendees?.length || 0)), 0);
 
-  // Calculate insights summary
   const highDemandEvents = upcomingEvents.filter(e => 
     ((e.attendees?.length || 0) / e.totalSlots) * 100 >= 80
   ).length;
@@ -381,7 +368,7 @@ const MyEvents = () => {
               Refresh
             </button>
             <button
-              onClick={() => window.location.href = '/orgdb/create-event'}
+              onClick={() => navigate('/orgdb/create-event')}
               className="group px-6 py-3 rounded-xl font-medium flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -537,6 +524,8 @@ const MyEvents = () => {
                         event={event} 
                         onDelete={handleDeleteEvent}
                         onViewAI={handleViewAIAnalytics}
+                        onEdit={handleEditEvent}
+                        onView={handleViewEvent}
                         insights={eventInsights[event._id] || []}
                       />
                     ))}
@@ -560,6 +549,8 @@ const MyEvents = () => {
                         event={event} 
                         onDelete={handleDeleteEvent}
                         onViewAI={handleViewAIAnalytics}
+                        onEdit={handleEditEvent}
+                        onView={handleViewEvent}
                         insights={eventInsights[event._id] || []}
                         isPast={true}
                       />
@@ -580,7 +571,7 @@ const MyEvents = () => {
                 : "You haven't created any events yet. Start your journey by creating your first event!"}
             </p>
             <button
-              onClick={() => window.location.href = '/orgdb/create-event'}
+              onClick={() => navigate('/orgdb/create-event')}
               className="group px-8 py-4 rounded-xl font-bold flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 mx-auto"
             >
               <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
@@ -593,27 +584,41 @@ const MyEvents = () => {
   );
 };
 
-const EventCard = ({ event, onDelete, onViewAI, insights = [], isPast = false }) => {
-  const [isHovered, setIsHovered] = useState(false);
+const EventCard = ({ event, onDelete, onViewAI, onEdit, onView, insights = [], isPast = false }) => {
   const [showInsights, setShowInsights] = useState(false);
 
   const fillRate = ((event.attendees?.length || 0) / event.totalSlots) * 100;
   const daysUntilEvent = Math.ceil((new Date(event.event_date) - new Date()) / (1000 * 60 * 60 * 24));
   const revenue = event.price * (event.attendees?.length || 0);
 
+  // Get the correct image URL
+  const getImageUrl = () => {
+    if (!event.image) return "/default-event.jpg";
+    
+    // If it's already a full URL
+    if (event.image.startsWith('http')) return event.image;
+    
+    // If it's a relative path from uploads
+    if (event.image.includes('/uploads/')) {
+      const filename = event.image.split('/').pop();
+      return `/uploads/events/${filename}`;
+    }
+    
+    // If it's just a filename
+    return `/uploads/events/${event.image}`;
+  };
+
   return (
-    <div 
-      className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-br from-white to-gray-50 shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <div className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-br from-white to-gray-50 shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]">
       {/* Status Badge */}
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${
           event.status === 'upcoming' ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 
-          'bg-gradient-to-r from-gray-500 to-gray-700'
+          event.status === 'ongoing' ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
+          event.status === 'completed' ? 'bg-gradient-to-r from-gray-500 to-gray-700' :
+          'bg-gradient-to-r from-rose-500 to-pink-500'
         } text-white`}>
-          {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+          {event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : 'Draft'}
         </span>
         
         {/* AI Insight Badge */}
@@ -631,9 +636,13 @@ const EventCard = ({ event, onDelete, onViewAI, insights = [], isPast = false })
       {/* Event Image */}
       <div className="relative h-48 overflow-hidden">
         <img
-          src={event.image ? `/uploads/events/${event.image.split('/').pop()}` : "/default-event.jpg"}
+          src={getImageUrl()}
           alt={event.event_name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "/default-event.jpg";
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         
@@ -732,13 +741,7 @@ const EventCard = ({ event, onDelete, onViewAI, insights = [], isPast = false })
 
         {/* Action Buttons */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-          <button 
-            onClick={() => window.location.href = `/event/${event._id}`}
-            className="group/view px-4 py-2 rounded-lg font-medium flex items-center gap-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 shadow-sm hover:shadow transition-all duration-300"
-          >
-            <Eye className="w-4 h-4" />
-            View
-          </button>
+        
           
           <div className="flex items-center gap-2">
             <button 
@@ -749,13 +752,7 @@ const EventCard = ({ event, onDelete, onViewAI, insights = [], isPast = false })
               <BarChart3 className="w-5 h-5" />
             </button>
             
-            <button 
-              onClick={() => window.location.href = `/event/edit/${event._id}`}
-              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors duration-300 hover:scale-110"
-              title="Edit Event"
-            >
-              <Edit className="w-5 h-5" />
-            </button>
+            
             
             {event.status === 'upcoming' && (
               <button 
@@ -779,7 +776,6 @@ const EventAIAnalytics = ({ event }) => {
   const revenue = event.price * attendees;
   const daysUntilEvent = Math.ceil((new Date(event.event_date) - new Date()) / (1000 * 60 * 60 * 24));
 
-  // Generate recommendations
   const recommendations = [];
 
   if (fillRate < 50 && daysUntilEvent > 7) {
@@ -816,7 +812,6 @@ const EventAIAnalytics = ({ event }) => {
 
   return (
     <div className="space-y-6">
-      {/* Performance Metrics */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl">
           <p className="text-xs text-blue-600 mb-1">Performance Score</p>
@@ -838,7 +833,6 @@ const EventAIAnalytics = ({ event }) => {
         </div>
       </div>
 
-      {/* AI Recommendations */}
       {recommendations.length > 0 && (
         <div>
           <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -860,7 +854,6 @@ const EventAIAnalytics = ({ event }) => {
         </div>
       )}
 
-      {/* Sentiment Analysis Preview */}
       <div>
         <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
           <MessageCircle className="w-4 h-4 text-purple-500" />
@@ -890,7 +883,6 @@ const EventAIAnalytics = ({ event }) => {
         </div>
       </div>
 
-      {/* Export Options */}
       <div className="pt-4 border-t border-gray-200">
         <button className="w-full py-2 px-4 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
           <Download className="w-4 h-4" />
@@ -901,7 +893,6 @@ const EventAIAnalytics = ({ event }) => {
   );
 };
 
-// Missing Minus component
 const Minus = (props) => (
   <svg 
     {...props}

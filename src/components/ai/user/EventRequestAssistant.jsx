@@ -1,6 +1,6 @@
 import { MessageSquare, Wand2, User, Building, MapPin, Calendar, Search, Star, Clock, RefreshCw, AlertCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import eventRequestService from '../../services/eventRequestService';
+import eventRequestService from '../../../services/eventRequestService';
 
 // ─── Helper: pull display-friendly entities from the AI response ──────────────
 const parseAIEntities = (aiInsights, fallbackText = '') => {

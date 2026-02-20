@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import NegotiationAssistant from "../../../components/ai/organizer/NegotiationAssistant";
 import OfferCompetitorAnalysis from "../../../components/ai/organizer/OfferCompetitorAnalysis";
-import AIBadge from "../../../components/ai/AIBadge";
+import AIBadge from "../../../components/ai/user/AIBadge";
 import { useNegotiation } from "../../../hooks/useOrganizerAI";
 
 const EventRequest = () => {
@@ -29,6 +29,14 @@ const EventRequest = () => {
   
   const { submitOffer, getCompetitorAnalysis, loading: aiLoading } = useNegotiation(selectedRequest?._id);
 
+  // Helper function to safely parse budget values
+  const parseBudget = (budget) => {
+    if (budget === null || budget === undefined) return 0;
+    const budgetStr = budget.toString();
+    const numericValue = budgetStr.replace(/[^0-9]/g, '');
+    return parseInt(numericValue) || 0;
+  };
+
   const handleProposedBudgetChange = (eventId, value) => {
     setProposedBudget((prevState) => ({
       ...prevState,
@@ -39,7 +47,7 @@ const EventRequest = () => {
     if (value && eventRequests.find(r => r._id === eventId)) {
       const request = eventRequests.find(r => r._id === eventId);
       const budgetNum = parseInt(value);
-      const requestBudget = parseInt(request.budget?.replace(/[^0-9]/g, '') || 0);
+      const requestBudget = parseBudget(request.budget);
       
       if (budgetNum > requestBudget * 1.2) {
         setAiSuggestions(prev => ({
@@ -262,7 +270,7 @@ const EventRequest = () => {
   const getWinProbability = (request, proposedPrice) => {
     if (!proposedPrice) return null;
     
-    const requestBudget = parseInt(request.budget?.replace(/[^0-9]/g, '') || 0);
+    const requestBudget = parseBudget(request.budget);
     const priceRatio = proposedPrice / requestBudget;
     
     if (priceRatio <= 0.9) return { value: 'High', color: 'text-green-600', bg: 'bg-green-100' };
@@ -381,8 +389,7 @@ const EventRequest = () => {
   const pendingRequests = eventRequests.filter(r => r.status === 'open').length;
   const acceptedRequests = eventRequests.filter(r => r.status === 'deal_done').length;
   const revenuePotential = eventRequests.reduce((sum, r) => {
-    const budgetValue = parseInt(r.budget?.replace(/[^0-9]/g, '') || 0);
-    return sum + budgetValue;
+    return sum + parseBudget(r.budget);
   }, 0);
 
   return (
@@ -412,7 +419,7 @@ const EventRequest = () => {
                 requestDetails={{
                   eventType: selectedRequest.eventType,
                   preferredDate: selectedRequest.date,
-                  budget: parseInt(selectedRequest.budget?.replace(/[^0-9]/g, '') || 0)
+                  budget: parseBudget(selectedRequest.budget)
                 }}
               />
             </div>

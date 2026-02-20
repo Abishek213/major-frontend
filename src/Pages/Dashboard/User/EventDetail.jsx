@@ -9,8 +9,8 @@ import {
 import api from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { useRecommendations } from '@/hooks/useRecommendations';
-import AIBadge from '@/components/ai/AIBadge';
-import AILoadingSpinner from '@/components/ai/AILoadingSpinner';
+import AIBadge from "@/components/ai/user/AIBadge";
+import AILoadingSpinner from "@/components/ai/user/AILoadingSpinner";
 
 const EventDetails = () => {
   const { id } = useParams();

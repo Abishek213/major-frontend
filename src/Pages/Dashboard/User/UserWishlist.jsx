@@ -9,8 +9,8 @@ import {
 import api from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { useRecommendations } from '@/hooks/useRecommendations';
-import AILoadingSpinner from '@/components/ai/AILoadingSpinner';
-import AIBadge from '@/components/ai/AIBadge';
+import AILoadingSpinner from "@/components/ai/user/AILoadingSpinner";
+import AIBadge from "@/components/ai/user/AIBadge";
 
 const EnhancedWishlist = () => {
   const { user } = useAuth();
@@ -359,13 +359,10 @@ const EnhancedWishlist = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
-                  <Brain className="w-6 h-6 text-white" />
-                </div>
-                AI-Powered Smart Wishlist
+              
+                Wishlist
               </h1>
               <p className="text-gray-600 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-500" />
                 Personalized insights, price alerts, and smart recommendations
               </p>
             </div>

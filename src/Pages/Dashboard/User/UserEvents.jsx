@@ -10,8 +10,8 @@ import {
 import api from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { useRecommendations } from '@/hooks/useRecommendations';
-import AILoadingSpinner from '@/components/ai/AILoadingSpinner';
-import AIBadge from '@/components/ai/AIBadge';
+import AILoadingSpinner from "@/components/ai/user/AILoadingSpinner";
+import AIBadge from "@/components/ai/user/AIBadge";
 const UserEvents = ({ user }) => {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
@@ -597,7 +597,6 @@ const UserEvents = ({ user }) => {
                           onClick={() => handleSaveEvent(event._id)}
                           className="absolute bottom-4 right-4 p-2 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/40 transition-all"
                         >
-                          <Heart className="w-5 h-5 text-white" />
                         </button>
                       </div>
 

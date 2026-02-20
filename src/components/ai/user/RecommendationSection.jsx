@@ -1,11 +1,11 @@
 import { Sparkles, RefreshCw, Filter, Calendar, MapPin, DollarSign, Tag, ThumbsUp, Brain, Star, TrendingUp, Clock, Award, Target, Zap, Users, Music, Briefcase, GraduationCap, Film, Utensils, Gamepad2, Heart, Shield, AlertTriangle, CheckCircle, XCircle, Info, ChevronRight, ChevronDown, Sliders, X } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from "@/context/AuthContext"; // Fixed: using @ alias
 import AILoadingSpinner from './AILoadingSpinner';
 import AIBadge, { AIAgentBadge, AIScoreBadge, AICompactBadge } from './AIBadge';
-import recommendationService from '../../services/recommendationService';
-import { useRecommendations } from '../../hooks/useRecommendations';
-import { getConfidenceLevel } from '../../utils/aiHelpers';
+import recommendationService from "@/services/recommendationService"; // Fixed: using @ alias
+import { useRecommendations } from "@/hooks/useRecommendations"; // Fixed: using @ alias
+import { getConfidenceLevel } from "@/utils/aiHelpers"; // Fixed: using @ alias
 
 const RecommendationSection = () => {
   const { user } = useAuth();
@@ -21,12 +21,12 @@ const RecommendationSection = () => {
     priceRange: 'any',
     location: '',
     dateRange: 'anytime',
-    sortBy: 'relevance', // relevance, price-low, price-high, date, popularity
-    eventType: 'all', // all, virtual, in-person, hybrid
+    sortBy: 'relevance',
+    eventType: 'all',
     minRating: 0,
-    maxDistance: 50, // miles
+    maxDistance: 50,
     tags: [],
-    aiPreferences: true // Use AI to refine results
+    aiPreferences: true
   });
 
   const [availableCategories] = useState([
@@ -295,7 +295,8 @@ const RecommendationSection = () => {
         { name: 'Tech Conferences', growth: 32 },
         { name: 'Workshops', growth: 28 }
       ],
-      summary: `Found ${filtered.length} personalized recommendations based on your profile`
+      summary: `Found ${filtered.length} personalized recommendations based on your profile`,
+      recommendations: filtered.length
     };
 
     return { recommendations: filtered, insights };
@@ -477,13 +478,24 @@ const RecommendationSection = () => {
                 {availableCategories.map(cat => {
                   const Icon = cat.icon;
                   const isSelected = filters.categories.includes(cat.id);
+                  const colorClasses = {
+                    blue: 'from-blue-500 to-blue-600',
+                    purple: 'from-purple-500 to-purple-600',
+                    green: 'from-green-500 to-green-600',
+                    pink: 'from-pink-500 to-pink-600',
+                    orange: 'from-orange-500 to-orange-600',
+                    red: 'from-red-500 to-red-600',
+                    indigo: 'from-indigo-500 to-indigo-600',
+                    yellow: 'from-yellow-500 to-yellow-600'
+                  };
+                  
                   return (
                     <button
                       key={cat.id}
                       onClick={() => handleCategoryToggle(cat.id)}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                         isSelected
-                          ? `bg-gradient-to-r from-${cat.color}-500 to-${cat.color}-600 text-white shadow-sm`
+                          ? `bg-gradient-to-r ${colorClasses[cat.color]} text-white shadow-sm`
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
@@ -585,12 +597,12 @@ const RecommendationSection = () => {
                   <select 
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     value={filters.minRating}
-                    onChange={(e) => handleFilterChange('minRating', e.target.value)}
+                    onChange={(e) => handleFilterChange('minRating', parseInt(e.target.value))}
                   >
-                    <option value="0">Any Rating</option>
-                    <option value="4">4+ Stars</option>
-                    <option value="4.5">4.5+ Stars</option>
-                    <option value="4.8">4.8+ Stars</option>
+                    <option value={0}>Any Rating</option>
+                    <option value={4}>4+ Stars</option>
+                    <option value={4.5}>4.5+ Stars</option>
+                    <option value={4.8}>4.8+ Stars</option>
                   </select>
                 </div>
 
@@ -599,12 +611,12 @@ const RecommendationSection = () => {
                   <select 
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     value={filters.maxDistance}
-                    onChange={(e) => handleFilterChange('maxDistance', e.target.value)}
+                    onChange={(e) => handleFilterChange('maxDistance', parseInt(e.target.value))}
                   >
-                    <option value="10">Within 10 miles</option>
-                    <option value="25">Within 25 miles</option>
-                    <option value="50">Within 50 miles</option>
-                    <option value="100">Within 100 miles</option>
+                    <option value={10}>Within 10 miles</option>
+                    <option value={25}>Within 25 miles</option>
+                    <option value={50}>Within 50 miles</option>
+                    <option value={100}>Within 100 miles</option>
                   </select>
                 </div>
               </div>
@@ -632,7 +644,7 @@ const RecommendationSection = () => {
                 <div className="w-24 h-2 bg-gray-200 rounded-full">
                   <div 
                     className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
-                    style={{ width: `${Math.min(100, recommendations.reduce((acc, r) => acc + r.confidence, 0) / recommendations.length)}%` }}
+                    style={{ width: `${Math.min(100, recommendations.reduce((acc, r) => acc + (r.confidence || 0), 0) / recommendations.length)}%` }}
                   />
                 </div>
               </div>

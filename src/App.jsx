@@ -7,13 +7,13 @@ import {
 } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import Layout from "./components/Layout";
-import Home from "./Pages/Home";
-import PublicEvent from "./Pages/PublicEvent";
-import About from "./Pages/About";
-import Contact from "./Pages/Contact";
-import LoginSignup from "./Pages/LoginSignup";
-import Userprofile from "./Pages/Userprofile";
-import Usersettings from "./Pages/UserSettings";
+import Home from "@/Pages/Landing/Home";
+import About from "@/Pages/Landing/About";
+import PublicEvent from "@/Pages/Landing/PublicEvent";
+import LoginSignup from "@/Pages/Landing/LoginSignup";
+import Contact from "@/Pages/Landing/Contact";
+import Userprofile from "@/Pages/Landing/Userprofile";
+import UserSettings from "@/Pages/Landing/UserSettings";
 import PrivateRoute from "./components/PrivateRoute";
 import Dashboard from "./components/Dashboard";
 import {
@@ -45,7 +45,7 @@ const App = () => {
           <Route path="/contact" element={<Contact />} />
           <Route path="/loginsignup" element={<LoginSignup />} />
           <Route path="/profile" element={<Userprofile />} />
-          <Route path="/settings" element={<Usersettings />} />
+          <Route path="/settings" element={<UserSettings />} />
 
           {/* Protected Routes */}
           <Route

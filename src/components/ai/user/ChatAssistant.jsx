@@ -42,7 +42,7 @@ import {
   ThumbsDown
 } from 'lucide-react';
 import AIBadge, { AIAgentBadge, AIRiskBadge, AISentimentBadge } from './AIBadge';
-import chatAssistantService from '../../services/chatAssistantService'; // Import the service
+import chatAssistantService from "../../../services/chatAssistantService";
 
 const ChatAssistant = () => {
   const [messages, setMessages] = useState([

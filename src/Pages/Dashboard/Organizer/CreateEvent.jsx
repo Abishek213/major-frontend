@@ -34,7 +34,7 @@ import EventPlanningAssistant from "../../../components/ai/organizer/EventPlanni
 import PriceSuggestion from "../../../components/ai/organizer/PriceSuggestion";
 import TagRecommender from "../../../components/ai/organizer/TagRecommender";
 import { useOrganizerAI } from "../../../hooks/useOrganizerAI";
-import AIBadge from "../../../components/ai/AIBadge";
+import AIBadge from "../../../components/ai/user/AIBadge";
 
 const organizeCategories = (categories) => {
   const findChildren = (parentId) =>

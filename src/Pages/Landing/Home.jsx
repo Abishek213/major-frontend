@@ -1,10 +1,10 @@
 // src/Pages/Home.jsx
-import EventCategories from './Landing/Components/EventCategories'
-import EventContainer from './Landing/Components/EventContainer'
-import HeroSection from './Landing/Components/HeroSection'
-import TopEvents from './Landing/Components/TopEvents'
+import EventCategories from './HomeComponents/EventCategories'
+import EventContainer from './HomeComponents/EventContainer'
+import HeroSection from './HomeComponents/HeroSection'
+import TopEvents from './HomeComponents/TopEvents'
 import { useAuth } from '@/context/AuthContext'
-import { RecommendationSection } from '@/components/ai' // Fixed: Import from the main ai index file
+import RecommendationSection from "@/components/ai/user/RecommendationSection";
 
 const Home = () => {
   const { user } = useAuth()

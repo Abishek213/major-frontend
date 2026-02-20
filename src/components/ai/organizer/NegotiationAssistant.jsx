@@ -7,8 +7,8 @@ import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { Badge } from '../../ui/badge';
 import { MessageSquare, TrendingUp, Users, Clock, CheckCircle, XCircle } from 'lucide-react';
-import AIBadge from '../AIBadge';
-import AILoadingSpinner from '../AILoadingSpinner';
+import AIBadge from '../user/AIBadge';
+import AILoadingSpinner from '../user/AILoadingSpinner';
 
 const NegotiationAssistant = ({ requestId, requestDetails }) => {
   const { competitors, loading, error, submitOffer, getCompetitorAnalysis } = useNegotiation(requestId);

@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown.jsx";
 import api from '../../../utils/api';
-import AIBadge from '../../../components/ai/AIBadge';
+import AIBadge from '../../../components/ai/user/AIBadge';
 import { useAdminAI } from '../../../hooks/useAdminAI';
 import { getSentimentColor, formatAIResponse } from '../../../utils/aiHelpers';
 
