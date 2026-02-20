@@ -1,14 +1,19 @@
-// src/components/NotificationDropdown.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useNotifications } from '@/context/NotificationContext';
-import { formatDistance } from 'date-fns';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useNotifications } from "@/context/NotificationContext";
+import { formatDistance } from "date-fns";
 import {
-  Bell, Check, Loader, 
-  X, Settings, Clock,
-  AlertCircle, Calendar,
-  Eye, EyeOff
-} from 'lucide-react';
+  Bell,
+  Check,
+  Loader,
+  X,
+  Settings,
+  Clock,
+  AlertCircle,
+  Calendar,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 
 const NotificationDropdown = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -16,7 +21,7 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
   const [showSettings, setShowSettings] = useState(false);
   const observerTarget = useRef(null);
   const dropdownRef = useRef(null);
-  const userRole = localStorage.getItem('role');
+  const userRole = localStorage.getItem("role");
 
   const {
     notifications,
@@ -26,45 +31,47 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
     markAllAsRead,
     deleteNotification,
     fetchNotifications,
-    isLoading,
+    loading,
     error,
-    pagination,
+    hasMore,
     unreadCount,
   } = useNotifications();
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isOpen && 
-          dropdownRef.current && 
-          !dropdownRef.current.contains(event.target) &&
-          !event.target.closest('.notifications-dropdown')) {
+      if (
+        isOpen &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        !event.target.closest(".notifications-dropdown")
+      ) {
         onClose();
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen, onClose]);
 
-  // Reset to first page when filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [filter]);
 
-  // Fetch notifications when component mounts or filter changes
   useEffect(() => {
     if (isOpen) {
-      fetchNotifications(1, filter);
+      fetchNotifications(true);
     }
-  }, [isOpen, filter, fetchNotifications]);
+  }, [isOpen, fetchNotifications]);
 
   const getNotificationIcon = (type) => {
     const iconMap = {
       event: Calendar,
-      default: Bell
+      event_request: Calendar,
+      event_response: Calendar,
+      event_update: Calendar,
+      default: Bell,
     };
     const Icon = iconMap[type] || iconMap.default;
     return <Icon className="w-4 h-4" />;
@@ -72,22 +79,33 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
 
   const getNotificationColor = (type) => {
     const colorMap = {
-      event: 'text-purple-600 bg-purple-100',
-      default: 'text-gray-600 bg-gray-100'
+      event: "text-purple-600 bg-purple-100",
+      event_request: "text-purple-600 bg-purple-100",
+      event_response: "text-blue-600 bg-blue-100",
+      event_update: "text-indigo-600 bg-indigo-100",
+      system_notification: "text-gray-600 bg-gray-100",
+      profile_update: "text-green-600 bg-green-100",
+      default: "text-gray-600 bg-gray-100",
     };
     return colorMap[type] || colorMap.default;
   };
 
   const formatTimestamp = (notification) => {
     try {
-      const timestamp = notification.createdAt || notification.timestamp || notification.created_at;
-      if (!timestamp) return 'Just now';
+      const timestamp =
+        notification.createdAt ||
+        notification.timestamp ||
+        notification.created_at;
+      if (!timestamp) return "Just now";
 
       const date = new Date(timestamp);
-      if (isNaN(date.getTime())) return 'Recently';
+      if (isNaN(date.getTime())) return "Recently";
 
       const timeAgo = formatDistance(date, new Date(), { addSuffix: true });
-      const exactTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const exactTime = date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 
       return (
         <div className="flex items-center gap-1">
@@ -97,15 +115,17 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
         </div>
       );
     } catch (error) {
-      return 'Recently';
+      return "Recently";
     }
   };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !isLoading && pagination?.totalPages && currentPage < pagination.totalPages) {
-          fetchNotifications(currentPage + 1, filter).then(() => setCurrentPage(prev => prev + 1));
+        if (entry.isIntersecting && !loading && hasMore) {
+          fetchNotifications(false).then(() => {
+            setCurrentPage((prev) => prev + 1);
+          });
         }
       },
       { threshold: 0.5 }
@@ -113,17 +133,19 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
 
     if (observerTarget.current) observer.observe(observerTarget.current);
     return () => observer.disconnect();
-  }, [currentPage, filter, isLoading, pagination?.totalPages, fetchNotifications]);
+  }, [loading, hasMore, fetchNotifications]);
 
   const handleNotificationClick = async (notification) => {
     try {
-      if (!notification._id.startsWith('temp-')) {
+      if (
+        !notification._id.startsWith("temp-") &&
+        notification.status !== "read"
+      ) {
         await markAsRead(notification._id);
       }
-      // You'll need to define navigationMap
-      onClose(); // Close dropdown after clicking
+      onClose();
     } catch (error) {
-      console.error('Notification click error:', error);
+      console.error("Notification click error:", error);
     }
   };
 
@@ -134,29 +156,36 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
 
   const NotificationItem = ({ notification }) => {
     const [isHovered, setIsHovered] = useState(false);
+    const isUnread = notification.status !== "read";
 
     return (
       <div
         className={`px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0 cursor-pointer transition-all duration-200 ${
-          !notification.read ? 'bg-blue-50' : ''
+          isUnread ? "bg-blue-50" : ""
         }`}
         onClick={() => handleNotificationClick(notification)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         <div className="flex items-start gap-3">
-          <div className={`p-2 rounded-lg ${getNotificationColor(notification.type || 'default')}`}>
-            {getNotificationIcon(notification.type || 'default')}
+          <div
+            className={`p-2 rounded-lg ${getNotificationColor(
+              notification.type || "default"
+            )}`}
+          >
+            {getNotificationIcon(notification.type || "default")}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <p className={`text-sm text-gray-800 line-clamp-2 ${
-                !notification.read ? 'font-semibold' : ''
-              }`}>
+              <p
+                className={`text-sm text-gray-800 line-clamp-2 ${
+                  isUnread ? "font-semibold" : ""
+                }`}
+              >
                 {notification.message}
               </p>
               <div className="flex items-center gap-1 flex-shrink-0">
-                {!notification.read && (
+                {isUnread && (
                   <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                 )}
                 {isHovered && (
@@ -177,7 +206,7 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
               <div className="text-xs text-gray-600">
                 {formatTimestamp(notification)}
               </div>
-              {isHovered && (
+              {isHovered && isUnread && (
                 <div className="flex items-center gap-1">
                   <button
                     onClick={(e) => {
@@ -201,15 +230,17 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
   const FilterButtons = () => (
     <div className="p-3 border-b border-gray-200 bg-gray-50">
       <div className="flex items-center justify-between mb-2">
-        <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">FILTERS</h4>
+        <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+          FILTERS
+        </h4>
         <span className="text-xs text-gray-500">
-          {unreadCount > 0 ? `${unreadCount} unread` : 'All read'}
+          {unreadCount > 0 ? `${unreadCount} unread` : "All read"}
         </span>
       </div>
       <div className="flex gap-1 overflow-x-auto pb-1">
         {[
-          { id: 'all', label: 'All', icon: Bell },
-          { id: 'unread', label: 'Unread', icon: EyeOff }
+          { id: "all", label: "All", icon: Bell },
+          { id: "unread", label: "Unread", icon: EyeOff },
         ].map((filterItem) => {
           const Icon = filterItem.icon;
           return (
@@ -217,9 +248,9 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
               key={`filter-${filterItem.id}`}
               onClick={() => handleFilterChange(filterItem.id)}
               className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
-                filter === filterItem.id 
-                  ? 'bg-white shadow-sm border border-gray-300 text-blue-600' 
-                  : 'hover:bg-white hover:shadow-sm text-gray-600'
+                filter === filterItem.id
+                  ? "bg-white shadow-sm border border-gray-300 text-blue-600"
+                  : "hover:bg-white hover:shadow-sm text-gray-600"
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -273,12 +304,15 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
               />
             ))}
           </div>
-          <div ref={observerTarget} className="h-8 flex items-center justify-center">
-            {isLoading ? (
+          <div
+            ref={observerTarget}
+            className="h-8 flex items-center justify-center"
+          >
+            {loading ? (
               <div className="py-4">
                 <Loader className="w-5 h-5 animate-spin mx-auto text-gray-400" />
               </div>
-            ) : currentPage < pagination?.totalPages ? (
+            ) : hasMore ? (
               <div className="py-2 text-xs text-gray-500">
                 Scroll to load more...
               </div>
@@ -296,9 +330,9 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
           </div>
           <p className="text-gray-600 font-medium">No notifications yet</p>
           <p className="text-sm text-gray-500 mt-1">
-            {filter === 'unread' 
-              ? 'All notifications are read' 
-              : 'Your notifications will appear here'}
+            {filter === "unread"
+              ? "All notifications are read"
+              : "Your notifications will appear here"}
           </p>
         </div>
       )}
@@ -308,7 +342,7 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       ref={dropdownRef}
       className="absolute right-0 mt-2 w-96 rounded-lg bg-white shadow-xl border border-gray-200 overflow-hidden z-50"
     >
@@ -340,9 +374,9 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
               }}
               disabled={unreadCount === 0}
               className={`px-3 py-2 rounded-lg flex items-center gap-1 text-sm ${
-                unreadCount > 0 
-                  ? 'bg-green-600 hover:bg-green-700 text-white' 
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                unreadCount > 0
+                  ? "bg-green-600 hover:bg-green-700 text-white"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
             >
               <Check className="w-4 h-4" />
@@ -366,7 +400,11 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
           <AlertCircle className="w-5 h-5 text-red-500" />
           <div className="flex-1">
             <p className="text-sm font-medium text-red-700">Error</p>
-            <p className="text-xs text-red-600">{error.message || 'Failed to load notifications'}</p>
+            <p className="text-xs text-red-600">
+              {typeof error === "string"
+                ? error
+                : error.message || "Failed to load notifications"}
+            </p>
           </div>
         </div>
       )}

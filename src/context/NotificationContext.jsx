@@ -1,291 +1,328 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import api from '../utils/api';
-import websocketManager from '../utils/websocketManager';
-import { useAuth } from './AuthContext';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
+import api from "../utils/api";
+import websocketManager from "../utils/websocketManager";
+import { useAuth } from "./AuthContext";
+
+// Guard against missing audio file producing a broken URI.
+// If src/assets/sounds/notification.mp3 doesn't exist, keep null.
+let notificationSound = null;
+try {
+  const resolved = new URL("../assets/sounds/notification.mp3", import.meta.url)
+    .href;
+  // Vite returns a valid-looking URL even for missing files; verify it ends
+  // with .mp3 (not "undefined") before using it.
+  if (resolved?.endsWith(".mp3")) {
+    notificationSound = resolved;
+  }
+} catch {
+  notificationSound = null;
+}
 
 const NotificationContext = createContext(null);
 
 export const NotificationProvider = ({ children }) => {
-  const { user, isAuthenticated, getToken } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [filter, setFilter] = useState('all');
-  
-  const wsInitialized = useRef(false);
+  const [filter, setFilter] = useState("all");
+
   const audioRef = useRef(null);
   const isMounted = useRef(true);
+  const pageRef = useRef(1);
 
-  // Initialize audio for notifications
+  // THE ROOT FIX (from AuthContext inspection):
+  // getToken() = () => user?.token || getToken()
+  // The token lives directly on the user object. Reading user?.token is always
+  // in sync with the same React render that sets isAuthenticated — zero race.
+  const token = user?.token ?? null;
+
+  // ── Mounted flag ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    // Only create audio in browser environment
-    if (typeof window !== 'undefined') {
-      audioRef.current = new Audio('/src/assets/sounds/notification.mp3');
-      if (audioRef.current) {
-        audioRef.current.volume = 0.5;
-        // Preload audio
-        audioRef.current.load();
-      }
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // ── Audio setup ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window !== "undefined" && notificationSound) {
+      audioRef.current = new Audio(notificationSound);
+      audioRef.current.volume = 0.5;
+      audioRef.current.load();
     }
-    
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
-        audioRef.current.src = '';
+        audioRef.current.src = "";
         audioRef.current = null;
       }
     };
   }, []);
 
-  // Fetch initial notifications
+  // ── Fetch on auth / filter change ────────────────────────────────────────────
   useEffect(() => {
     if (isAuthenticated && user?.id && isMounted.current) {
       fetchNotifications(true);
       fetchUnreadCount();
     }
-    
-    return () => {
-      isMounted.current = false;
-    };
-  }, [isAuthenticated, user?.id]); // Remove filter from dependencies to prevent excessive calls
+  }, [isAuthenticated, user?.id, filter]);
 
-  // Separate effect for filter changes
+  // ── WebSocket lifecycle ───────────────────────────────────────────────────────
+  // Keyed on `token` string (null = logged out, string = logged in).
+  // Handlers registered BEFORE connect() so no message arrives without a handler.
+  // Disconnect only when token becomes null (logout) — never in cleanup, which
+  // would fire on React StrictMode's fake unmount and kill the connection.
   useEffect(() => {
-    if (isAuthenticated && user?.id && isMounted.current) {
-      fetchNotifications(true);
-    }
-  }, [filter]); // Only re-run when filter changes
-
-  // Setup WebSocket connection for real-time notifications
-  useEffect(() => {
-    // Only setup WebSocket if user is authenticated and we haven't initialized yet
-    if (!isAuthenticated || !user?.id || wsInitialized.current || !isMounted.current) {
-      return;
-    }
-
-    const token = getToken();
     if (!token) {
-      console.warn('No token available for WebSocket connection');
+      if (websocketManager.isConnected() || websocketManager.isConnecting) {
+        websocketManager.disconnect();
+      }
       return;
     }
 
-    const setupWebSocket = () => {
-      try {
-        console.log('Setting up WebSocket connection...');
-        websocketManager.connect(token);
-
-        // Handle new notifications
-        const handleNewNotification = (data) => {
-          console.log('New notification received:', data);
-          
-          // Only update if component is mounted
-          if (!isMounted.current) return;
-          
-          // Play sound
-          if (audioRef.current) {
-            audioRef.current.play().catch(e => console.log('Audio play failed:', e));
-          }
-
-          // Add to notifications list (at the beginning)
-          setNotifications(prev => [data.notification, ...prev]);
-          
-          // Update unread count
-          setUnreadCount(prev => prev + 1);
-        };
-
-        // Handle unread count updates
-        const handleUnreadCount = (data) => {
-          console.log('Unread count update:', data);
-          if (isMounted.current) {
-            setUnreadCount(data.count);
-          }
-        };
-
-        // Register handlers
-        websocketManager.on('new_notification', handleNewNotification);
-        websocketManager.on('unread_count', handleUnreadCount);
-        
-        // Subscribe to notification channels with a slight delay
-        const subscriptionTimeout = setTimeout(() => {
-          if (websocketManager.isConnected() && isMounted.current) {
-            websocketManager.subscribeToNotifications();
-            websocketManager.subscribeToUnreadCount();
-            wsInitialized.current = true;
-          }
-        }, 500);
-
-        return () => {
-          clearTimeout(subscriptionTimeout);
-          websocketManager.off('new_notification', handleNewNotification);
-          websocketManager.off('unread_count', handleUnreadCount);
-        };
-      } catch (error) {
-        console.error('Error setting up WebSocket:', error);
-      }
-    };
-
-    const cleanup = setupWebSocket();
-
-    return () => {
-      if (cleanup) cleanup();
-      wsInitialized.current = false;
-    };
-  }, [isAuthenticated, user?.id, getToken]); // Keep dependencies minimal
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      console.log('Cleaning up WebSocket connection...');
-      isMounted.current = false;
-      websocketManager.disconnect();
-      wsInitialized.current = false;
-    };
-  }, []);
-
-  const fetchNotifications = useCallback(async (reset = false) => {
-    // Don't fetch if component is unmounted
     if (!isMounted.current) return;
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const currentPage = reset ? 1 : page;
-      const response = await api.safeGet(`/notifications?page=${currentPage}&limit=10&filter=${filter}`);
-      
-      // Check if component is still mounted before updating state
+
+    // ── Handlers ──────────────────────────────────────────────────────────────
+    const handleIncomingNotification = (data) => {
       if (!isMounted.current) return;
-      
-      if (response.data) {
-        setNotifications(prev => {
-          if (reset) {
-            return response.data.notifications || [];
-          }
-          // Avoid duplicates
-          const newNotifications = (response.data.notifications || []).filter(
-            newNotif => !prev.some(existing => existing._id === newNotif._id)
-          );
-          return [...prev, ...newNotifications];
-        });
-        setHasMore(response.data.hasMore || false);
-        setPage(prev => reset ? 2 : prev + 1);
+      const notification = data.payload?.notification;
+      if (!notification) return;
+      audioRef.current?.play().catch(() => {});
+      setNotifications((prev) => {
+        if (prev.some((n) => n._id === notification._id)) return prev;
+        return [notification, ...prev];
+      });
+      setUnreadCount((prev) => prev + 1);
+    };
+
+    const handleNotificationRead = (data) => {
+      if (!isMounted.current) return;
+      const notificationId = data.payload?.notificationId;
+      if (!notificationId) return;
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n._id === notificationId ? { ...n, status: "read" } : n
+        )
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    };
+
+    const handleAllNotificationsRead = () => {
+      if (!isMounted.current) return;
+      setNotifications((prev) => prev.map((n) => ({ ...n, status: "read" })));
+      setUnreadCount(0);
+    };
+
+    const handleNotificationDeleted = (data) => {
+      if (!isMounted.current) return;
+      const notificationId = data.payload?.notificationId;
+      if (!notificationId) return;
+      setNotifications((prev) => {
+        const deleted = prev.find((n) => n._id === notificationId);
+        if (deleted?.status === "unread") {
+          setUnreadCount((c) => Math.max(0, c - 1));
+        }
+        return prev.filter((n) => n._id !== notificationId);
+      });
+    };
+
+    const handleUnreadCountUpdate = (data) => {
+      if (!isMounted.current) return;
+      const count = data.payload?.count;
+      if (typeof count === "number") setUnreadCount(count);
+    };
+
+    const handleAdminNotificationsUpdate = (data) => {
+      if (!isMounted.current) return;
+      const adminNotifications = data.payload?.notifications;
+      if (!Array.isArray(adminNotifications)) return;
+      setNotifications((prev) => {
+        const existingIds = new Set(prev.map((n) => n._id));
+        const newOnes = adminNotifications.filter(
+          (n) => !existingIds.has(n._id)
+        );
+        return [...newOnes, ...prev];
+      });
+    };
+
+    websocketManager.on("notification", handleIncomingNotification);
+    websocketManager.on("notificationRead", handleNotificationRead);
+    websocketManager.on("allNotificationsRead", handleAllNotificationsRead);
+    websocketManager.on("notificationDeleted", handleNotificationDeleted);
+    websocketManager.on("unreadCountUpdate", handleUnreadCountUpdate);
+    websocketManager.on(
+      "adminNotificationsUpdate",
+      handleAdminNotificationsUpdate
+    );
+
+    // FIX: Only call subscribeToNotifications() — NOT subscribeToUnreadCount().
+    // Backend's handleSubscribe("notifications") already calls
+    // handleUnreadCountSubscription internally, so calling subscribeToUnreadCount
+    // separately causes the server to send unreadCountUpdate TWICE per connection.
+    const onConnected = () => {
+      if (!isMounted.current) return;
+      websocketManager.subscribeToNotifications();
+      // ✗ Do NOT add subscribeToUnreadCount() here — backend already sends it
+      //   as part of the "notifications" channel subscription above.
+    };
+
+    websocketManager.connect(token, onConnected);
+
+    // Only deregister handlers on cleanup — never disconnect.
+    return () => {
+      websocketManager.off("notification", handleIncomingNotification);
+      websocketManager.off("notificationRead", handleNotificationRead);
+      websocketManager.off("allNotificationsRead", handleAllNotificationsRead);
+      websocketManager.off("notificationDeleted", handleNotificationDeleted);
+      websocketManager.off("unreadCountUpdate", handleUnreadCountUpdate);
+      websocketManager.off(
+        "adminNotificationsUpdate",
+        handleAdminNotificationsUpdate
+      );
+    };
+  }, [token]);
+
+  // ── API helpers ───────────────────────────────────────────────────────────────
+  const fetchNotifications = useCallback(
+    async (reset = true) => {
+      if (!isMounted.current) return;
+      try {
+        setLoading(true);
+        setError(null);
+        const currentPage = reset ? 1 : pageRef.current;
+        const response = await api.safeGet(
+          `/notifications?page=${currentPage}&limit=10&filter=${filter}`
+        );
+        if (!isMounted.current) return;
+        if (response.data) {
+          const fetched = response.data.data?.notifications || [];
+          const pagination = response.data.data?.pagination || {};
+          setNotifications((prev) => {
+            if (reset) return fetched;
+            const newOnes = fetched.filter(
+              (n) => !prev.some((e) => e._id === n._id)
+            );
+            return [...prev, ...newOnes];
+          });
+          pageRef.current = reset ? 2 : pageRef.current + 1;
+          setHasMore(currentPage < (pagination.totalPages || 1));
+        }
+      } catch (err) {
+        if (isMounted.current)
+          setError(err.message || "Failed to fetch notifications");
+      } finally {
+        if (isMounted.current) setLoading(false);
       }
-    } catch (err) {
-      if (isMounted.current) {
-        setError(err.message || 'Failed to fetch notifications');
-      }
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-    }
-  }, [page, filter]); // Add page and filter as dependencies
+    },
+    [filter]
+  );
 
   const fetchUnreadCount = useCallback(async () => {
     if (!isMounted.current) return;
-    
     try {
-      const response = await api.safeGet('/notifications/count');
+      const response = await api.safeGet("/notifications/count");
       if (isMounted.current && response.data) {
-        setUnreadCount(response.data.count);
+        setUnreadCount(response.data.data?.totalUnread ?? 0);
       }
     } catch (err) {
-      console.error('Failed to fetch unread count:', err);
+      console.error("Failed to fetch unread count:", err);
     }
   }, []);
 
   const markAsRead = useCallback(async (notificationId) => {
     if (!isMounted.current) return;
-    
     try {
       await api.safePatch(`/notifications/${notificationId}/read`);
-      
       if (!isMounted.current) return;
-      
-      setNotifications(prev =>
-        prev.map(n =>
-          n._id === notificationId ? { ...n, read: true } : n
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n._id === notificationId ? { ...n, status: "read" } : n
         )
       );
-      
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
-      console.error('Failed to mark notification as read:', err);
+      console.error("Failed to mark notification as read:", err);
     }
   }, []);
 
   const markAllAsRead = useCallback(async () => {
     if (!isMounted.current) return;
-    
     try {
-      await api.safePatch('/notifications/read-all');
-      
+      await api.safePatch("/notifications/read-all");
       if (!isMounted.current) return;
-      
-      setNotifications(prev =>
-        prev.map(n => ({ ...n, read: true }))
-      );
-      
+      setNotifications((prev) => prev.map((n) => ({ ...n, status: "read" })));
       setUnreadCount(0);
     } catch (err) {
-      console.error('Failed to mark all notifications as read:', err);
+      console.error("Failed to mark all notifications as read:", err);
     }
   }, []);
 
   const deleteNotification = useCallback(async (notificationId) => {
     if (!isMounted.current) return;
-    
     try {
       await api.safeDelete(`/notifications/${notificationId}`);
-      
       if (!isMounted.current) return;
-      
-      setNotifications(prev => {
-        const deleted = prev.find(n => n._id === notificationId);
-        if (deleted && !deleted.read) {
-          setUnreadCount(prevCount => Math.max(0, prevCount - 1));
+      setNotifications((prev) => {
+        const deleted = prev.find((n) => n._id === notificationId);
+        if (deleted?.status === "unread") {
+          setUnreadCount((c) => Math.max(0, c - 1));
         }
-        return prev.filter(n => n._id !== notificationId);
+        return prev.filter((n) => n._id !== notificationId);
       });
     } catch (err) {
-      console.error('Failed to delete notification:', err);
+      console.error("Failed to delete notification:", err);
     }
   }, []);
 
-  const refreshNotifications = useCallback(() => {
-    fetchNotifications(true);
-  }, [fetchNotifications]);
+  const refreshNotifications = useCallback(
+    () => fetchNotifications(true),
+    [fetchNotifications]
+  );
 
-  // Memoize the context value to prevent unnecessary re-renders
-  const value = useMemo(() => ({
-    notifications,
-    unreadCount,
-    loading,
-    error,
-    hasMore,
-    filter,
-    setFilter,
-    fetchNotifications,
-    refreshNotifications,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-  }), [
-    notifications,
-    unreadCount,
-    loading,
-    error,
-    hasMore,
-    filter,
-    fetchNotifications,
-    refreshNotifications,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-  ]);
+  const value = useMemo(
+    () => ({
+      notifications,
+      unreadCount,
+      loading,
+      error,
+      hasMore,
+      filter,
+      setFilter,
+      fetchNotifications,
+      refreshNotifications,
+      markAsRead,
+      markAllAsRead,
+      deleteNotification,
+      fetchUnreadCount,
+    }),
+    [
+      notifications,
+      unreadCount,
+      loading,
+      error,
+      hasMore,
+      filter,
+      fetchNotifications,
+      refreshNotifications,
+      markAsRead,
+      markAllAsRead,
+      deleteNotification,
+      fetchUnreadCount,
+    ]
+  );
 
   return (
     <NotificationContext.Provider value={value}>
@@ -297,7 +334,9 @@ export const NotificationProvider = ({ children }) => {
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
+    throw new Error(
+      "useNotifications must be used within a NotificationProvider"
+    );
   }
   return context;
 };

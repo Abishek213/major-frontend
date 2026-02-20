@@ -1,17 +1,19 @@
-import React from 'react';
+import React from "react";
 import { AlertCircle, WifiOff } from "lucide-react";
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const ConnectionStatus = ({ 
-  isConnected, 
-  reconnectAttempts, 
+const ConnectionStatus = ({
+  isConnected,
+  reconnectAttempts,
   maxReconnectAttempts,
-  className = ""
+  className = "",
 }) => {
-  
-  if (isConnected) return null;
-  
   const isMaxAttempts = reconnectAttempts >= maxReconnectAttempts;
+  const isActuallyReconnecting = !isConnected && reconnectAttempts > 0;
+
+  if (isConnected || (!isActuallyReconnecting && !isMaxAttempts)) {
+    return null;
+  }
 
   return (
     <Alert
@@ -25,11 +27,13 @@ const ConnectionStatus = ({
         ${className}
       `}
     >
-       <AlertDescription className="text-gray-700">
+      <AlertDescription className="text-gray-700">
         {isMaxAttempts ? (
           <div className="flex flex-col gap-1">
             <span className="font-medium">Connection lost</span>
-            <span className="text-sm opacity-90">Please refresh the page to reconnect</span>
+            <span className="text-sm opacity-90">
+              Please refresh the page to reconnect
+            </span>
           </div>
         ) : (
           <div className="flex flex-col gap-1">

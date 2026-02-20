@@ -30,14 +30,11 @@ import {
   DialogDescription,
   DialogAction,
 } from "@/components/ui/dialog";
-import websocketManager from "@/utils/websocketManager";
 import EventPlanningAssistant from "../../../components/ai/organizer/EventPlanningAssistant";
 import PriceSuggestion from "../../../components/ai/organizer/PriceSuggestion";
 import TagRecommender from "../../../components/ai/organizer/TagRecommender";
 import { useOrganizerAI } from "../../../hooks/useOrganizerAI";
 import AIBadge from "../../../components/ai/AIBadge";
-
-// ─── helpers ──────────────────────────────────────────────────────────────────
 
 const organizeCategories = (categories) => {
   const findChildren = (parentId) =>
@@ -70,8 +67,6 @@ const renderCategoryOptions = (category, level = 0) => {
   );
 };
 
-// ─── component ────────────────────────────────────────────────────────────────
-
 const CreateEvent = () => {
   const navigate = useNavigate();
   const formRef = useRef(null);
@@ -85,8 +80,6 @@ const CreateEvent = () => {
   const [pendingEventDetails, setPendingEventDetails] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
-
-  // Controlled form state — single source of truth synced with the <form>
   const [formData, setFormData] = useState({
     event_name: "",
     description: "",
@@ -106,8 +99,6 @@ const CreateEvent = () => {
     slotSuggestion,
     loading: aiLoading,
   } = useOrganizerAI();
-
-  // ── initial data fetch ──────────────────────────────────────────────────────
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -137,8 +128,6 @@ const CreateEvent = () => {
     fetchInitialData();
   }, []);
 
-  // ── form helpers ────────────────────────────────────────────────────────────
-
   const updateField = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -148,17 +137,12 @@ const CreateEvent = () => {
     updateField(name, type === "checkbox" ? checked : value);
   };
 
-  // ── AI suggestion application ───────────────────────────────────────────────
-  // Called by EventPlanningAssistant, PriceSuggestion, and TagRecommender.
-  // Updates state (controlled inputs) — no DOM querySelector hacks needed.
-
   const handleApplySuggestion = (type, value) => {
     switch (type) {
       case "price":
         updateField("price", String(value));
         break;
       case "tag": {
-        // Single tag from EventPlanningAssistant tab
         setFormData((prev) => {
           if (prev.tags.includes(value)) return prev;
           return { ...prev, tags: [...prev.tags, value] };
@@ -166,7 +150,6 @@ const CreateEvent = () => {
         break;
       }
       case "tags":
-        // Full tag array from TagRecommender
         updateField("tags", Array.isArray(value) ? value : [value]);
         break;
       case "slots":
@@ -186,8 +169,6 @@ const CreateEvent = () => {
       tags: prev.tags.filter((t) => t !== tag),
     }));
   };
-
-  // ── form submission ─────────────────────────────────────────────────────────
 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
@@ -226,8 +207,6 @@ const CreateEvent = () => {
 
       if (response.data) {
         const eventId = response.data.event._id;
-
-        // Image upload
         const imageFile = formRef.current?.querySelector('[name="eventImage"]')
           ?.files?.[0];
         if (imageFile) await uploadEventImage(eventId, imageFile);
@@ -272,15 +251,7 @@ const CreateEvent = () => {
         userId: userData._id,
         type: "event_request",
       };
-      const res = await api.safePost("/notifications/events", payload);
-      if (
-        [200, 201].includes(res.status) &&
-        websocketManager?.ws?.readyState === WebSocket.OPEN
-      ) {
-        websocketManager
-          .send("notification", { type: "event_request", ...payload })
-          .catch(() => {});
-      }
+      await api.safePost("/notifications/events", payload);
     } catch (err) {
       console.error("sendAdminNotification error:", err);
     }
@@ -308,8 +279,6 @@ const CreateEvent = () => {
     setError("");
   };
 
-  // ── loading screen ──────────────────────────────────────────────────────────
-
   if (loading && !categories.length && !userData) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -320,8 +289,6 @@ const CreateEvent = () => {
       </div>
     );
   }
-
-  // ── guide / tips data ───────────────────────────────────────────────────────
 
   const guideSteps = [
     {
@@ -366,8 +333,6 @@ const CreateEvent = () => {
     "Allow sufficient time between registration deadline and event date",
   ];
 
-  // ── render ──────────────────────────────────────────────────────────────────
-
   return (
     <div className="space-y-8 p-4 md:p-6">
       <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
@@ -405,7 +370,7 @@ const CreateEvent = () => {
             </div>
           </div>
 
-          {/* AI Assistant Panel — passes real categories */}
+          {/* AI Assistant Panel */}
           {showAIAssistant && (
             <div className="mb-8">
               <EventPlanningAssistant
@@ -551,7 +516,7 @@ const CreateEvent = () => {
                   </div>
                 )}
 
-                {/* Inline AI panels — only show when relevant fields are filled */}
+                {/* Inline AI panels */}
                 {formData.category && formData.location && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <PriceSuggestion

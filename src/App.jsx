@@ -1,17 +1,26 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
-import Layout from './components/Layout';
-import Home from './Pages/Home';
-import PublicEvent from './Pages/PublicEvent';
-import About from './Pages/About';
-import Contact from './Pages/Contact';
-import LoginSignup from './Pages/LoginSignup';
-import Userprofile from './Pages/Userprofile';
-import Usersettings from './Pages/UserSettings';
-import PrivateRoute from './components/PrivateRoute';
-import Dashboard from './components/Dashboard';
-import { organizerDashboardConfig, adminDashboardConfig, userDashboardConfig } from './config/dashboardConfig';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
+import Layout from "./components/Layout";
+import Home from "./Pages/Home";
+import PublicEvent from "./Pages/PublicEvent";
+import About from "./Pages/About";
+import Contact from "./Pages/Contact";
+import LoginSignup from "./Pages/LoginSignup";
+import Userprofile from "./Pages/Userprofile";
+import Usersettings from "./Pages/UserSettings";
+import PrivateRoute from "./components/PrivateRoute";
+import Dashboard from "./components/Dashboard";
+import {
+  organizerDashboardConfig,
+  adminDashboardConfig,
+  userDashboardConfig,
+} from "./config/dashboardConfig";
 
 const App = () => {
   const { loading } = useAuth();
@@ -21,7 +30,12 @@ const App = () => {
   }
 
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true, // Wraps state updates in React.startTransition
+        v7_relativeSplatPath: true, // Fixes relative route resolution inside splat routes
+      }}
+    >
       <Layout>
         <Routes>
           {/* Public Routes */}
@@ -34,36 +48,36 @@ const App = () => {
           <Route path="/settings" element={<Usersettings />} />
 
           {/* Protected Routes */}
-<Route 
-  path="/admindb/*" 
-  element={
-    <PrivateRoute 
-      element={Dashboard}
-      requiredRole="Admin"
-      config={adminDashboardConfig}
-    />
-  }
-/>
-<Route 
-  path="/orgdb/*" 
-  element={
-    <PrivateRoute 
-      element={Dashboard}
-      requiredRole="Organizer"
-      config={organizerDashboardConfig}
-    />
-  }
-/>
-<Route 
-  path="/userdb/*" 
-  element={
-    <PrivateRoute 
-      element={Dashboard}
-      requiredRole="User"
-      config={userDashboardConfig}
-    />
-  }
-/>
+          <Route
+            path="/admindb/*"
+            element={
+              <PrivateRoute
+                element={Dashboard}
+                requiredRole="Admin"
+                config={adminDashboardConfig}
+              />
+            }
+          />
+          <Route
+            path="/orgdb/*"
+            element={
+              <PrivateRoute
+                element={Dashboard}
+                requiredRole="Organizer"
+                config={organizerDashboardConfig}
+              />
+            }
+          />
+          <Route
+            path="/userdb/*"
+            element={
+              <PrivateRoute
+                element={Dashboard}
+                requiredRole="User"
+                config={userDashboardConfig}
+              />
+            }
+          />
 
           {/* Default Route */}
           <Route path="*" element={<Navigate to="/" />} />
