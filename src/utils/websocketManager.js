@@ -1,3 +1,91 @@
+// ─── Browser Logger ───────────────────────────────────────────────────────────
+const LOG_PREFIX = "[WS]";
+
+const style = {
+  tag: "color:#7c3aed;font-weight:bold",
+  info: "color:#2563eb;font-weight:bold",
+  success: "color:#16a34a;font-weight:bold",
+  warn: "color:#d97706;font-weight:bold",
+  error: "color:#dc2626;font-weight:bold",
+  meta: "color:#6b7280;font-size:0.85em",
+  reset: "color:inherit;font-weight:normal",
+};
+
+const ts = () => new Date().toLocaleTimeString("en-US", { hour12: false });
+
+const logger = {
+  info(tag, msg, meta = "") {
+    console.log(
+      `%c${LOG_PREFIX}%c ${ts()} %c${tag.padEnd(16)}%c ${msg}  %c${meta}`,
+      style.tag,
+      style.reset,
+      style.info,
+      style.reset,
+      style.meta
+    );
+  },
+  success(tag, msg, meta = "") {
+    console.log(
+      `%c${LOG_PREFIX}%c ${ts()} %c${tag.padEnd(16)}%c ${msg}  %c${meta}`,
+      style.tag,
+      style.reset,
+      style.success,
+      style.reset,
+      style.meta
+    );
+  },
+  warn(tag, msg, meta = "") {
+    console.warn(
+      `%c${LOG_PREFIX}%c ${ts()} %c${tag.padEnd(16)}%c ${msg}  %c${meta}`,
+      style.tag,
+      style.reset,
+      style.warn,
+      style.reset,
+      style.meta
+    );
+  },
+  error(tag, msg, meta = "") {
+    console.error(
+      `%c${LOG_PREFIX}%c ${ts()} %c${tag.padEnd(16)}%c ${msg}  %c${meta}`,
+      style.tag,
+      style.reset,
+      style.error,
+      style.reset,
+      style.meta
+    );
+  },
+  divider(label) {
+    console.log(
+      `%c${LOG_PREFIX}%c ─────────── ${label} ───────────`,
+      style.tag,
+      style.meta
+    );
+  },
+  table(data) {
+    console.table(data);
+  },
+};
+
+// ─── Close code descriptions ──────────────────────────────────────────────────
+const CLOSE_REASONS = {
+  1000: "Normal closure",
+  1001: "Server going away / shutting down",
+  1005: "No status received",
+  1006: "Abnormal closure — no close frame (network drop?)",
+  1011: "Internal server error",
+  4001: "Auth required — no token sent",
+  4002: "Connection error on server",
+  4003: "Token expired — please log in again",
+  4004: "Invalid token or bad user ID",
+  4005: "User or role not found",
+};
+
+const closeReason = (code) =>
+  CLOSE_REASONS[code]
+    ? `${CLOSE_REASONS[code]} (${code})`
+    : `Unknown close code (${code})`;
+
+// ─── WebSocketManager ─────────────────────────────────────────────────────────
 class WebSocketManager {
   constructor() {
     this.socket = null;
@@ -8,208 +96,235 @@ class WebSocketManager {
     this.token = null;
     this.isConnecting = false;
     this.reconnectTimer = null;
-    this.heartbeatInterval = null;
-    this.lastHeartbeat = null;
+    this.onConnectedCallback = null;
+    this._connectedAt = null;
   }
 
-  connect(token) {
-    // Don't try to connect without a token
+  // ── connect ──────────────────────────────────────────────────────────────────
+  connect(token, onConnected = null) {
     if (!token) {
-      console.warn('WebSocket connection skipped: No token provided');
+      logger.warn("CONNECT", "Skipped — no token provided");
       return;
     }
 
-    // Clear any pending reconnect timer
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
 
-    // Don't create multiple connection attempts
     if (this.isConnecting) {
-      console.log('WebSocket connection already in progress');
+      // FIX: React StrictMode runs effects twice — the second connect() call
+      // hits this branch. Log at debug level so it doesn't clutter the console.
+      console.debug(
+        `${LOG_PREFIX} CONNECT already in progress — skipped (StrictMode double-invoke)`
+      );
       return;
     }
 
-    // Don't reconnect if already connected or connecting
-    if (this.socket?.readyState === WebSocket.OPEN || 
-        this.socket?.readyState === WebSocket.CONNECTING) {
-      console.log('WebSocket already connected or connecting');
+    if (
+      this.socket?.readyState === WebSocket.OPEN ||
+      this.socket?.readyState === WebSocket.CONNECTING
+    ) {
+      console.debug(`${LOG_PREFIX} CONNECT already open — skipped`);
+      if (onConnected && this.socket?.readyState === WebSocket.OPEN) {
+        onConnected();
+      }
       return;
     }
 
     this.token = token;
     this.isConnecting = true;
+    if (onConnected) this.onConnectedCallback = onConnected;
 
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:4001';
-    console.log('Connecting to WebSocket...');
-    
+    const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:4001";
+
+    logger.divider("Connecting");
+    logger.info("CONNECT", "Opening WebSocket…", `url=${wsUrl}`);
+
     try {
       this.socket = new WebSocket(`${wsUrl}?token=${token}`);
-
-      this.socket.onopen = () => {
-        console.log('WebSocket connected successfully');
-        this.isConnecting = false;
-        this.reconnectAttempts = 0;
-        
-        // Start heartbeat
-        this.startHeartbeat();
-        
-        // Subscribe to default channels
-        this.subscribeToNotifications();
-      };
-
-      this.socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          this.handleMessage(data);
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-        }
-      };
-
-      this.socket.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason);
-        this.isConnecting = false;
-        this.stopHeartbeat();
-        
-        // Clean up socket reference
-        if (this.socket) {
-          this.socket.onopen = null;
-          this.socket.onmessage = null;
-          this.socket.onclose = null;
-          this.socket.onerror = null;
-          this.socket = null;
-        }
-        
-        // Attempt to reconnect if not a normal closure and we have a token
-        if (event.code !== 1000 && event.code !== 1005 && this.token) {
-          this.attemptReconnect();
-        }
-      };
-
-      this.socket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        // Don't set isConnecting to false here - let onclose handle it
-      };
     } catch (error) {
-      console.error('WebSocket connection error:', error);
+      logger.error(
+        "CONNECT",
+        "WebSocket constructor threw",
+        `err=${error.message}`
+      );
       this.isConnecting = false;
-    }
-  }
-
-  handleMessage(data) {
-    const handlers = this.messageHandlers.get(data.type) || [];
-    
-    if (handlers.length === 0) {
-      // Silent ignore for common subscription messages
-      const silentTypes = [
-        'unread_count_subscription',
-        'ping',
-        'pong',
-        'heartbeat',
-        'heartbeat_ack',
-        'subscription_confirmed',
-        'subscription_acknowledged',
-        'subscription_success',
-        'connected',
-        'welcome'
-      ];
-      
-      if (!silentTypes.includes(data.type)) {
-        console.debug(`No handlers registered for message type: ${data.type}`);
-      }
-      
-      // Handle heartbeat response
-      if (data.type === 'pong' || data.type === 'heartbeat_ack') {
-        this.lastHeartbeat = Date.now();
-      }
-      
       return;
     }
 
-    handlers.forEach(handler => {
+    // ── onopen ────────────────────────────────────────────────────────────────
+    this.socket.onopen = () => {
+      this._connectedAt = Date.now();
+      this.isConnecting = false;
+      this.reconnectAttempts = 0;
+
+      logger.divider("Connected ✓");
+      logger.success("CONNECTED", "🟢 WebSocket is OPEN", `url=${wsUrl}`);
+      logger.table(this.getStats());
+
+      if (this.onConnectedCallback) {
+        logger.info("CONNECT", "Sending subscriptions…");
+        this.onConnectedCallback();
+      }
+    };
+
+    // ── onmessage ─────────────────────────────────────────────────────────────
+    this.socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        logger.info(
+          "MSG ↓ IN",
+          `Received: ${data.type}`,
+          `correlationId=${data.payload?.correlationId || "—"}`
+        );
+        this.handleMessage(data);
+      } catch (error) {
+        logger.error(
+          "MSG ↓ IN",
+          "Failed to parse message",
+          `err=${error.message}`
+        );
+      }
+    };
+
+    // ── onclose ───────────────────────────────────────────────────────────────
+    this.socket.onclose = (event) => {
+      const uptime = this._connectedAt
+        ? `${((Date.now() - this._connectedAt) / 1000).toFixed(1)}s`
+        : "—";
+
+      logger.divider("Disconnected ✗");
+
+      if (event.code === 1000 || event.code === 1005) {
+        logger.info(
+          "CLOSED",
+          "🔴 Closed normally",
+          `code=${event.code}  reason="${closeReason(
+            event.code
+          )}"  uptime=${uptime}`
+        );
+      } else {
+        logger.warn(
+          "CLOSED",
+          "🔴 Closed unexpectedly",
+          `code=${event.code}  reason="${closeReason(
+            event.code
+          )}"  uptime=${uptime}`
+        );
+      }
+
+      this.isConnecting = false;
+      this._connectedAt = null;
+
+      if (this.socket) {
+        this.socket.onopen = null;
+        this.socket.onmessage = null;
+        this.socket.onclose = null;
+        this.socket.onerror = null;
+        this.socket = null;
+      }
+
+      if (event.code !== 1000 && event.code !== 1005 && this.token) {
+        this.attemptReconnect();
+      } else {
+        logger.info("CLOSED", "No reconnect — clean closure or no token");
+      }
+    };
+
+    // ── onerror ───────────────────────────────────────────────────────────────
+    this.socket.onerror = () => {
+      logger.error(
+        "SOCKET ERR",
+        "WebSocket error fired",
+        `readyState=${this.socket?.readyState ?? "?"} — check Network tab`
+      );
+    };
+  }
+
+  // ── handleMessage ─────────────────────────────────────────────────────────────
+  handleMessage(data) {
+    const handlers = this.messageHandlers.get(data.type) || [];
+
+    if (handlers.length === 0) {
+      const silentTypes = [
+        "subscription_confirmed",
+        "subscription_acknowledged",
+        "subscription_success",
+        "connected",
+        "welcome",
+      ];
+      if (!silentTypes.includes(data.type)) {
+        logger.warn(
+          "MSG HANDLE",
+          `No handlers for type: ${data.type}`,
+          "register with websocketManager.on(...)"
+        );
+      }
+      return;
+    }
+
+    handlers.forEach((handler) => {
       try {
         handler(data);
       } catch (error) {
-        console.error(`Error in handler for ${data.type}:`, error);
+        logger.error(
+          "MSG HANDLE",
+          `Handler threw for: ${data.type}`,
+          `err=${error.message}`
+        );
       }
     });
   }
 
-  startHeartbeat() {
-    this.stopHeartbeat();
-    this.lastHeartbeat = Date.now();
-    
-    // Send heartbeat every 30 seconds
-    this.heartbeatInterval = setInterval(() => {
-      if (this.isConnected()) {
-        this.send({ type: 'ping', timestamp: Date.now() });
-        
-        // Check if we haven't received a response in 45 seconds
-        if (this.lastHeartbeat && Date.now() - this.lastHeartbeat > 45000) {
-          console.log('No heartbeat response, reconnecting...');
-          this.reconnect();
-        }
-      } else {
-        this.stopHeartbeat();
-      }
-    }, 30000);
-  }
-
-  stopHeartbeat() {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-    }
-  }
-
-  reconnect() {
-    if (this.socket) {
-      this.socket.close(1000, 'Reconnecting');
-    }
-    this.attemptReconnect();
-  }
-
+  // ── send helpers ──────────────────────────────────────────────────────────────
   subscribeToNotifications() {
-    this.send({
-      type: 'subscribe',
-      channel: 'notifications'
-    });
+    logger.info("SUB", "Subscribing to channel: notifications");
+    this.send({ type: "subscribe", channel: "notifications" });
   }
 
+  // NOTE: subscribeToNotifications() already triggers unread count on the
+  // backend (handleSubscribe → handleUnreadCountSubscription). Only call this
+  // directly if you need an isolated unread count refresh.
   subscribeToUnreadCount() {
-    this.send({
-      type: 'subscribe',
-      channel: 'unread_count'
-    });
+    logger.info("SUB", "Subscribing to channel: unread_count");
+    this.send({ type: "subscribe", channel: "unread_count" });
   }
 
   subscribeToChannel(channel) {
-    this.send({
-      type: 'subscribe',
-      channel: channel
-    });
+    logger.info("SUB", `Subscribing to channel: ${channel}`);
+    this.send({ type: "subscribe", channel });
   }
 
   unsubscribeFromChannel(channel) {
-    this.send({
-      type: 'unsubscribe',
-      channel: channel
-    });
+    logger.info("UNSUB", `Unsubscribing from channel: ${channel}`);
+    this.send({ type: "unsubscribe", channel });
   }
 
   send(data) {
     if (this.socket?.readyState === WebSocket.OPEN) {
       try {
         this.socket.send(JSON.stringify(data));
+        logger.info(
+          "MSG ↑ OUT",
+          `Sent: ${data.type}`,
+          data.channel ? `channel=${data.channel}` : ""
+        );
         return true;
       } catch (error) {
-        console.error('Error sending WebSocket message:', error);
+        logger.error(
+          "MSG ↑ OUT",
+          `Failed to send: ${data.type}`,
+          `err=${error.message}`
+        );
         return false;
       }
     } else {
-      console.debug('WebSocket not connected, message not sent:', data.type);
+      logger.warn(
+        "MSG ↑ OUT",
+        `Cannot send — socket not open`,
+        `type=${data.type}  state=${this.getConnectionState()}`
+      );
       return false;
     }
   }
@@ -217,7 +332,8 @@ class WebSocketManager {
   sendWithAck(data, timeout = 5000) {
     return new Promise((resolve, reject) => {
       if (!this.isConnected()) {
-        reject(new Error('WebSocket not connected'));
+        logger.error("SEND ACK", "Cannot send — not connected");
+        reject(new Error("WebSocket not connected"));
         return;
       }
 
@@ -225,23 +341,38 @@ class WebSocketManager {
       const messageWithId = { ...data, id: messageId };
 
       const timeoutId = setTimeout(() => {
-        this.off('ack', ackHandler);
-        reject(new Error('Acknowledgement timeout'));
+        this.off("ack", ackHandler);
+        logger.warn(
+          "SEND ACK",
+          `Ack timeout for: ${data.type}`,
+          `id=${messageId}`
+        );
+        reject(new Error("Acknowledgement timeout"));
       }, timeout);
 
       const ackHandler = (ackData) => {
         if (ackData.id === messageId) {
           clearTimeout(timeoutId);
-          this.off('ack', ackHandler);
+          this.off("ack", ackHandler);
+          logger.success(
+            "SEND ACK",
+            `Ack received for: ${data.type}`,
+            `id=${messageId}`
+          );
           resolve(ackData);
         }
       };
 
-      this.on('ack', ackHandler);
+      this.on("ack", ackHandler);
       this.send(messageWithId);
     });
   }
 
+  // ── handler registry ──────────────────────────────────────────────────────────
+  // FIX: Handler registration/deregistration is now logged at debug level.
+  // Previously logged at info level, which caused visual noise from React
+  // StrictMode's intentional double-invoke (register → cleanup → register).
+  // Functional logs (connect, disconnect, messages) stay at info/warn/error.
   on(messageType, handler) {
     if (!this.messageHandlers.has(messageType)) {
       this.messageHandlers.set(messageType, []);
@@ -249,19 +380,22 @@ class WebSocketManager {
     const handlers = this.messageHandlers.get(messageType);
     if (!handlers.includes(handler)) {
       handlers.push(handler);
+      console.debug(
+        `${LOG_PREFIX} HANDLER REG  ${messageType}  total=${handlers.length}`
+      );
     }
   }
 
   off(messageType, handler) {
     if (!this.messageHandlers.has(messageType)) return;
-    
     const handlers = this.messageHandlers.get(messageType);
     const index = handlers.indexOf(handler);
     if (index !== -1) {
       handlers.splice(index, 1);
+      console.debug(
+        `${LOG_PREFIX} HANDLER DEL  ${messageType}  remaining=${handlers.length}`
+      );
     }
-    
-    // Clean up empty handler arrays
     if (handlers.length === 0) {
       this.messageHandlers.delete(messageType);
     }
@@ -270,102 +404,172 @@ class WebSocketManager {
   removeAllHandlers(messageType) {
     if (messageType) {
       this.messageHandlers.delete(messageType);
+      logger.warn("HANDLER DEL", `All handlers cleared for: ${messageType}`);
     } else {
       this.messageHandlers.clear();
+      logger.warn("HANDLER DEL", "All message handlers cleared");
     }
   }
 
+  // ── reconnect ─────────────────────────────────────────────────────────────────
   attemptReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
-      this.token = null; // Clear token to stop further reconnection attempts
+      logger.error(
+        "RECONNECT",
+        `❌ Max attempts (${this.maxReconnectAttempts}) reached — giving up`,
+        "Refresh the page to reconnect"
+      );
+      this.token = null;
       return;
     }
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    
-    console.log(`Attempting to reconnect in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-    
+    logger.warn(
+      "RECONNECT",
+      `⏳ Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms…`
+    );
+
     this.reconnectTimer = setTimeout(() => {
       if (this.token && this.reconnectAttempts <= this.maxReconnectAttempts) {
-        this.connect(this.token);
+        logger.info(
+          "RECONNECT",
+          "Retrying…",
+          `attempt=${this.reconnectAttempts}`
+        );
+        this.connect(this.token, this.onConnectedCallback);
       }
       this.reconnectTimer = null;
     }, delay);
   }
 
+  // ── disconnect ────────────────────────────────────────────────────────────────
   disconnect() {
-    console.log('Disconnecting WebSocket...');
-    
-    // Clear timers
+    logger.divider("Disconnecting");
+    logger.info("DISCONNECT", "Manual disconnect requested");
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
+      logger.info("DISCONNECT", "Reconnect timer cancelled");
     }
-    
-    this.stopHeartbeat();
-    
+
     if (this.socket) {
-      // Remove all event listeners before closing
       this.socket.onopen = null;
       this.socket.onmessage = null;
       this.socket.onclose = null;
       this.socket.onerror = null;
-      
-      if (this.socket.readyState === WebSocket.OPEN || 
-          this.socket.readyState === WebSocket.CONNECTING) {
+
+      if (
+        this.socket.readyState === WebSocket.OPEN ||
+        this.socket.readyState === WebSocket.CONNECTING
+      ) {
         try {
-          this.socket.close(1000, 'Normal closure');
+          this.socket.close(1000, "Normal closure");
+          logger.info("DISCONNECT", "Socket closed cleanly");
         } catch (error) {
-          console.error('Error closing WebSocket:', error);
+          logger.error(
+            "DISCONNECT",
+            "Error closing socket",
+            `err=${error.message}`
+          );
         }
       }
       this.socket = null;
     }
-    
+
     this.isConnecting = false;
     this.messageHandlers.clear();
+    this.onConnectedCallback = null;
     this.token = null;
     this.reconnectAttempts = 0;
+    this._connectedAt = null;
+
+    logger.info(
+      "DISCONNECT",
+      "🔴 WebSocket fully disconnected and state reset"
+    );
   }
 
+  // ── state helpers ─────────────────────────────────────────────────────────────
   isConnected() {
     return this.socket?.readyState === WebSocket.OPEN;
   }
 
   getConnectionState() {
-    if (!this.socket) return 'disconnected';
+    if (!this.socket) return "disconnected";
     switch (this.socket.readyState) {
-      case WebSocket.CONNECTING: return 'connecting';
-      case WebSocket.OPEN: return 'connected';
-      case WebSocket.CLOSING: return 'closing';
-      case WebSocket.CLOSED: return 'closed';
-      default: return 'unknown';
+      case WebSocket.CONNECTING:
+        return "connecting";
+      case WebSocket.OPEN:
+        return "connected";
+      case WebSocket.CLOSING:
+        return "closing";
+      case WebSocket.CLOSED:
+        return "closed";
+      default:
+        return "unknown";
     }
   }
 
   getStats() {
     return {
-      connected: this.isConnected(),
       state: this.getConnectionState(),
+      connected: this.isConnected(),
+      isConnecting: this.isConnecting,
       reconnectAttempts: this.reconnectAttempts,
       maxReconnectAttempts: this.maxReconnectAttempts,
-      isConnecting: this.isConnecting,
       hasToken: !!this.token,
-      handlersCount: this.messageHandlers.size,
-      lastHeartbeat: this.lastHeartbeat
+      registeredHandlers: this.messageHandlers.size,
+      uptimeSeconds: this._connectedAt
+        ? ((Date.now() - this._connectedAt) / 1000).toFixed(1)
+        : null,
     };
+  }
+
+  // Call from browser console anytime: __wsManager.debug()
+  debug() {
+    logger.divider("Debug Snapshot");
+    logger.table(this.getStats());
+    const handlers = {};
+    this.messageHandlers.forEach((arr, key) => {
+      handlers[key] = arr.length;
+    });
+    if (Object.keys(handlers).length) {
+      console.log("%c[WS] Registered handlers:", style.tag, handlers);
+    }
   }
 }
 
-// Create singleton instance
+// ─── Singleton ────────────────────────────────────────────────────────────────
 const websocketManager = new WebSocketManager();
 
-// Prevent multiple instances in development with HMR
+// Expose to browser console: __wsManager.debug()
+if (typeof window !== "undefined") {
+  window.__wsManager = websocketManager;
+}
+
+// ─── Vite HMR — close socket only, preserve token & callbacks ─────────────────
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
-    websocketManager.disconnect();
+    console.debug(
+      `${LOG_PREFIX} HMR reload — closing socket without full disconnect`
+    );
+    if (websocketManager.socket) {
+      websocketManager.socket.onopen = null;
+      websocketManager.socket.onmessage = null;
+      websocketManager.socket.onclose = null;
+      websocketManager.socket.onerror = null;
+      try {
+        websocketManager.socket.close(1000, "HMR reload");
+      } catch (_) {}
+      websocketManager.socket = null;
+    }
+    if (websocketManager.reconnectTimer) {
+      clearTimeout(websocketManager.reconnectTimer);
+      websocketManager.reconnectTimer = null;
+    }
+    websocketManager.isConnecting = false;
   });
 }
 

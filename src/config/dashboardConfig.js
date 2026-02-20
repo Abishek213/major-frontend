@@ -1,4 +1,4 @@
-import { 
+import {
   // Core UI Icons
   Activity,
   AlertCircle,
@@ -7,7 +7,7 @@ import {
   ArrowDown,
   ArrowUp,
   Award,
-  
+
   // Badge icons
   Badge,
   BadgeAlert,
@@ -18,322 +18,322 @@ import {
   BadgePercent,
   BadgePlus,
   BadgeX,
-  
+
   // Bar chart icons
   BarChart,
   BarChart3,
-  
+
   // Bell icons
   Bell,
   BellOff,
   BellRing,
-  
+
   // Book icons
   BookOpen,
-  
+
   // Bot icons
-  Bot,  
+  Bot,
   // Brain icons
   Brain,
-  
+
   // Briefcase
   Briefcase,
-  
+
   // Brush
   Brush,
-  
+
   // Calendar
   Calendar,
-  
+
   // Camera
   Camera,
   CameraOff,
-  
+
   // Check icons
   Check,
   CheckCircle,
-  
+
   // Clock icons
   Clock,
-  
+
   // Cloud icons
   Cloud,
   CloudLightning,
   CloudRain,
   CloudSnow,
-  
+
   // Coffee
   Coffee,
-  
+
   // Compass
   Compass,
-  
+
   // Cpu
   Cpu,
-  
+
   // Crown
   Crown,
-  
+
   // Database
   Database,
-  
+
   // DollarSign
   DollarSign,
-  
+
   // Download
   Download,
-  
+
   // Droplets
   Droplets,
-  
+
   // Eye icons
   Eye,
   EyeOff,
-  
+
   // FileText
   FileText,
-  
+
   // Filter
   Filter,
-  
+
   // Fingerprint
   Fingerprint,
-  
+
   // Flag
   Flag,
-  
+
   // Flower2
   Flower2,
-  
+
   // FolderTree
   FolderTree,
-  
+
   // Gamepad2
   Gamepad2,
-  
+
   // Gauge
   Gauge,
-  
+
   // Gift
   Gift,
-  
+
   // Globe icons
   Globe,
   Globe2,
-  
+
   // GraduationCap
   GraduationCap,
-  
+
   // HardDrive
   HardDrive,
-  
+
   // Headphones
   Headphones,
-  
+
   // Headset
   Headset,
-  
+
   // Heart
   Heart,
-  
+
   // HelpCircle
   HelpCircle,
-  
+
   // Hourglass
   Hourglass,
-  
+
   // Info
   Info,
-  
+
   // Joystick
   Joystick,
-  
+
   // Key
   Key,
-  
+
   // Languages
   Languages,
-  
+
   // Layout
   Layout,
-  
+
   // Leaf
   Leaf,
-  
+
   // Lightbulb
   Lightbulb,
-  
+
   // LineChart
   LineChart,
-  
+
   // List
   List,
-  
+
   // Lock
   Lock,
-  
+
   // Mail
   Mail,
-  
+
   // Map icons
   Map,
   MapPin,
-  
+
   // Medal
   Medal,
-  
+
   // Megaphone
   Megaphone,
-  
+
   // MessageCircle
   MessageCircle,
-  
+
   // MessageSquare
   MessageSquare,
-  
+
   // Mic icons
   Mic,
   MicOff,
-  
+
   // Minus
   Minus,
-  
+
   // Monitor icons
   Monitor,
   MonitorPlay,
   MonitorSmartphone,
-  
+
   // Moon icons
   Moon,
   MoonStar,
-  
+
   // Mountain
   Mountain,
-  
+
   // Music
   Music,
-  
+
   // Navigation
   Navigation,
-  
+
   // Network
   Network,
-  
+
   // Palette
   Palette,
-  
+
   // PartyPopper
   PartyPopper,
-  
+
   // PenTool
   PenTool,
-  
+
   // PenSquare
   PenSquare,
-  
+
   // Percent
   Percent,
-  
+
   // Phone
   Phone,
-  
+
   // PieChart
   PieChart,
-  
+
   // Plus
   Plus,
-  
+
   // Podcast
   Podcast,
-  
+
   // Puzzle
   Puzzle,
-  
+
   // Radio
   Radio,
-  
+
   // RefreshCw
   RefreshCw,
-  
+
   // Rocket
   Rocket,
-  
+
   // Ruler
   Ruler,
-  
+
   // Satellite
   Satellite,
-  
+
   // Server
   Server,
-  
+
   // Settings
   Settings as SettingsIcon,
-  
+
   // Share2
   Share2,
-  
+
   // Shield icons
   Shield,
   ShieldCheck,
-  
+
   // Sliders
   Sliders,
-  
+
   // Smartphone
   Smartphone,
-  
+
   // Sparkle icons
   Sparkle,
   Sparkles,
-  
+
   // Speaker
   Speaker,
-  
+
   // Star
   Star,
-  
+
   // Sun icons
   Sun,
   SunDim,
-  
+
   // Sunrise
   Sunrise,
-  
+
   // Sunset
   Sunset,
-  
+
   // Tablet
   Tablet,
-  
+
   // Tag
   Tag,
-  
+
   // Target
   Target,
-  
+
   // Thermometer
   Thermometer,
-  
+
   // Ticket
   Ticket,
-  
+
   // Timer
   Timer,
-  
+
   // TreePine
   TreePine,
-  
+
   // Trending icons
   TrendingDown,
   TrendingUp,
-  
+
   // Trophy
   Trophy,
-  
+
   // Tv
   Tv,
-  
+
   // User icons
   User,
   UserCheck,
@@ -344,41 +344,41 @@ import {
   UserX,
   Users,
   Users2,
-  
+
   // Utensils
   Utensils,
-  
+
   // Video icons
   Video,
   VideoOff,
-  
+
   // Volume icons
   Volume2,
   VolumeX,
-  
+
   // Watch
   Watch,
-  
+
   // Waves
   Waves,
-  
+
   // Wifi icons
   Wifi,
   WifiOff,
-  
+
   // Wind
   Wind,
-  
+
   // Wine
   Wine,
-  
+
   // X
   X,
-  
+
   // Zap icons
   Zap,
   ZapOff,
-  
+
   // Original icons with specific naming
   Dices,
   Film,
@@ -401,69 +401,68 @@ import {
   UserCircle as UserCircleIcon,
   Users as UsersIcon,
   X as XIcon,
-  Zap as ZapIcon
-  
-} from 'lucide-react';
+  Zap as ZapIcon,
+} from "lucide-react";
 
 // Rest of your imports (components) remain the same...
-import Overview from '../Pages/Landing/Organizer/Overview';
-import CreateEvent from '../Pages/Landing/Organizer/CreateEvent';
-import MyEvents from '../Pages/Landing/Organizer/MyEvents';
-import EventRequestorg from '../Pages/Landing/Organizer/EventRequest';
-import MarketingHub from '../Pages/Landing/Organizer/MarketingHub';
-import SmartPricing from '../Pages/Landing/Organizer/SmartPricing';
+import Overview from "../Pages/Landing/Organizer/Overview";
+import CreateEvent from "../Pages/Landing/Organizer/CreateEvent";
+import MyEvents from "../Pages/Landing/Organizer/MyEvents";
+import EventRequestorg from "../Pages/Landing/Organizer/EventRequest";
+import MarketingHub from "../Pages/Landing/Organizer/MarketingHub";
+import SmartPricing from "../Pages/Landing/Organizer/SmartPricing";
 
 // Import Admin components
-import AdminOverview from '../Pages/Landing/Admin/Overview';
-import EventsManagement from '../Pages/Landing/Admin/EventsManagement';
-import UsersManagement from '../Pages/Landing/Admin/UsersManagement';
-import PermissionsManagement from '../Pages/Landing/Admin/PermissionsManagement';
-import CategoriesManagement from '../Pages/Landing/Admin/CategoriesManagement';
-import Settings from '../Pages/Landing/Admin/Settings';
-import FraudDetection from '../Pages/Landing/Admin/FraudDetection';
-import TrendsAnalytics from '../Pages/Landing/Admin/TrendsAnalytics';
+import AdminOverview from "../Pages/Landing/Admin/Overview";
+import EventsManagement from "../Pages/Landing/Admin/EventsManagement";
+import UsersManagement from "../Pages/Landing/Admin/UsersManagement";
+import PermissionsManagement from "../Pages/Landing/Admin/PermissionsManagement";
+import CategoriesManagement from "../Pages/Landing/Admin/CategoriesManagement";
+import Settings from "../Pages/Landing/Admin/Settings";
+import FraudDetection from "../Pages/Landing/Admin/FraudDetection";
+import TrendsAnalytics from "../Pages/Landing/Admin/TrendsAnalytics";
 
 // Import User components
-import UserEvents from '../Pages/Landing/User/UserEvents';
-import EventDetails from '../Pages/Landing/User/EventDetail';
-import EventRequest from '../Pages/Landing/User/EventRequest';
-import InterestedOrganizers from '../Pages/Landing/User/IntrestedOrganizers';
-import UserWishlist from '../Pages/Landing/User/UserWishlist';
-import UserBookings from '../Pages/Landing/User/UserBookings';
-import BookingSuccess from '../Pages/Landing/User/booking/BookingSuccess';
-import BookingFailed from '../Pages/Landing/User/booking/BookingFailed';
+import UserEvents from "../Pages/Landing/User/UserEvents";
+import EventDetails from "../Pages/Landing/User/EventDetail";
+import EventRequest from "../Pages/Landing/User/EventRequest";
+import InterestedOrganizers from "../Pages/Landing/User/IntrestedOrganizers";
+import UserWishlist from "../Pages/Landing/User/UserWishlist";
+import UserBookings from "../Pages/Landing/User/UserBookings";
+import BookingSuccess from "../Pages/Landing/User/booking/BookingSuccess";
+import BookingFailed from "../Pages/Landing/User/booking/BookingFailed";
 
 // Import AI components
-import RecommendationSection from '../components/ai/RecommendationSection';
-import ChatAssistant from '../components/ai/ChatAssistant';
-import FAQViewer from '../components/ai/FAQViewer';
-import EventRequestAssistant from '../components/ai/EventRequestAssistant';
-import AIBadge from '../components/ai/AIBadge';
+import RecommendationSection from "../components/ai/RecommendationSection";
+import ChatAssistant from "../components/ai/ChatAssistant";
+import FAQViewer from "../components/ai/FAQViewer";
+import EventRequestAssistant from "../components/ai/EventRequestAssistant";
+import AIBadge from "../components/ai/AIBadge";
 
 // Import AI-specific components for each dashboard
-import EventPlanningAssistant from '../components/ai/organizer/EventPlanningAssistant';
-import NegotiationAssistant from '../components/ai/organizer/NegotiationAssistant';
-import OrganizerDashboardAI from '../components/ai/organizer/OrganizerDashboardAI';
-import PriceSuggestion from '../components/ai/organizer/PriceSuggestion';
-import TagRecommender from '../components/ai/organizer/TagRecommender';
-import OfferCompetitorAnalysis from '../components/ai/organizer/OfferCompetitorAnalysis';
+import EventPlanningAssistant from "../components/ai/organizer/EventPlanningAssistant";
+import NegotiationAssistant from "../components/ai/organizer/NegotiationAssistant";
+import OrganizerDashboardAI from "../components/ai/organizer/OrganizerDashboardAI";
+import PriceSuggestion from "../components/ai/organizer/PriceSuggestion";
+import TagRecommender from "../components/ai/organizer/TagRecommender";
+import OfferCompetitorAnalysis from "../components/ai/organizer/OfferCompetitorAnalysis";
 
-import FraudDetectionPanel from '../components/ai/admin/FraudDetectionPanel';
-import FraudAlertModal from '../components/ai/admin/FraudAlertModal';
-import AnalyticsDashboardAI from '../components/ai/admin/AnalyticsDashboardAI';
-import TrendVisualization from '../components/ai/admin/TrendVisualization';
-import SentimentAnalysisPanel from '../components/ai/admin/SentimentAnalysisPanel';
-import ToxicityModeration from '../components/ai/admin/ToxicityModeration';
-import CohortAnalysisView from '../components/ai/admin/CohortAnalysisView';
+import FraudDetectionPanel from "../components/ai/admin/FraudDetectionPanel";
+import FraudAlertModal from "../components/ai/admin/FraudAlertModal";
+import AnalyticsDashboardAI from "../components/ai/admin/AnalyticsDashboardAI";
+import TrendVisualization from "../components/ai/admin/TrendVisualization";
+import SentimentAnalysisPanel from "../components/ai/admin/SentimentAnalysisPanel";
+import ToxicityModeration from "../components/ai/admin/ToxicityModeration";
+import CohortAnalysisView from "../components/ai/admin/CohortAnalysisView";
 
 // ============================================
 // AI-POWERED USER DASHBOARD CONFIGURATION
 // ============================================
 
 export const userDashboardConfig = {
-  basePath: '/userdb',
-  defaultTab: 'events',
-  
+  basePath: "/userdb",
+  defaultTab: "events",
+
   // AI Personalization Settings
   aiFeatures: {
     enabled: true,
@@ -486,56 +485,56 @@ export const userDashboardConfig = {
     transportationPlanning: true,
     weatherIntegration: true,
     dietaryPreferences: true,
-    accessibilityFeatures: true
+    accessibilityFeatures: true,
   },
 
   // AI Agent Configuration
   aiAgents: {
     recommendations: {
-      id: 'user-recommendations',
-      name: 'Personalized Recommendations',
+      id: "user-recommendations",
+      name: "Personalized Recommendations",
       icon: Brain,
       component: RecommendationSection,
       enabled: true,
-      priority: 1
+      priority: 1,
     },
     assistant: {
-      id: 'user-assistant',
-      name: 'AI Assistant',
+      id: "user-assistant",
+      name: "AI Assistant",
       icon: Bot,
       component: ChatAssistant,
       enabled: true,
-      priority: 2
+      priority: 2,
     },
     eventRequest: {
-      id: 'event-request',
-      name: 'Event Request Assistant',
+      id: "event-request",
+      name: "Event Request Assistant",
       icon: MessageSquare,
       component: EventRequestAssistant,
       enabled: true,
-      priority: 3
+      priority: 3,
     },
     faq: {
-      id: 'faq-agent',
-      name: 'FAQ Assistant',
+      id: "faq-agent",
+      name: "FAQ Assistant",
       icon: BookOpen,
       component: FAQViewer,
       enabled: true,
-      priority: 4
-    }
+      priority: 4,
+    },
   },
 
   // User Dashboard Tabs with AI Enhancements
   tabs: {
     // AI-POWERED EVENTS TAB
     events: {
-      title: 'Recommended Events',
-      description: 'Personalized event recommendations powered by AI',
+      title: "Recommended Events",
+      description: "Personalized event recommendations powered by AI",
       component: UserEvents,
-      permissions: ['VIEW_USER_EVENTS'],
+      permissions: ["VIEW_USER_EVENTS"],
       icon: Sparkles,
       aiEnabled: true,
-      aiAgent: 'recommendations',
+      aiAgent: "recommendations",
       aiFeatures: {
         smartSorting: true,
         personalizedRanking: true,
@@ -550,32 +549,32 @@ export const userDashboardConfig = {
         socialRecommendations: true,
         groupCompatibility: true,
         scheduleIntegration: true,
-        weatherConsiderations: true
+        weatherConsiderations: true,
       },
       stats: {
         showEngagement: true,
         showRecommendations: true,
         showPersonalizedTips: true,
         showMatchScores: true,
-        showTrending: true
+        showTrending: true,
       },
       widgets: [
-        { name: 'trendingNow', enabled: true },
-        { name: 'personalizedPicks', enabled: true },
-        { name: 'similarToYourLikes', enabled: true },
-        { name: 'basedOnYourCalendar', enabled: true }
-      ]
+        { name: "trendingNow", enabled: true },
+        { name: "personalizedPicks", enabled: true },
+        { name: "similarToYourLikes", enabled: true },
+        { name: "basedOnYourCalendar", enabled: true },
+      ],
     },
 
     // AI-POWERED EVENT REQUEST TAB
     eventrequest: {
-      title: ' Event Assistant',
-      description: 'Describe your event naturally - AI handles the rest',
+      title: " Event Assistant",
+      description: "Describe your event naturally - AI handles the rest",
       component: EventRequest,
-      permissions: ['CREATE_EVENT_REQUEST'],
+      permissions: ["CREATE_EVENT_REQUEST"],
       icon: Bot,
       aiEnabled: true,
-      aiAgent: 'eventRequest',
+      aiAgent: "eventRequest",
       aiFeatures: {
         naturalLanguageProcessing: true,
         entityExtraction: true,
@@ -587,31 +586,63 @@ export const userDashboardConfig = {
         timelineGeneration: true,
         costBreakdown: true,
         contingencyPlanning: true,
-        negotiationStrategy: true
+        negotiationStrategy: true,
       },
       quickActions: [
-        { label: 'Wedding Planning', icon: Heart, prompt: 'Plan my wedding with 200 guests' },
-        { label: 'Tech Conference', icon: Cpu, prompt: 'Organize a tech conference for 500 attendees' },
-        { label: 'Music Festival', icon: Music, prompt: 'Create a 2-day music festival' },
-        { label: 'Workshop', icon: PenTool, prompt: 'Plan a coding workshop for beginners' }
+        {
+          label: "Wedding Planning",
+          icon: Heart,
+          prompt: "Plan my wedding with 200 guests",
+        },
+        {
+          label: "Tech Conference",
+          icon: Cpu,
+          prompt: "Organize a tech conference for 500 attendees",
+        },
+        {
+          label: "Music Festival",
+          icon: Music,
+          prompt: "Create a 2-day music festival",
+        },
+        {
+          label: "Workshop",
+          icon: PenTool,
+          prompt: "Plan a coding workshop for beginners",
+        },
       ],
       templates: [
-        { name: 'Wedding', icon: Heart, fields: ['venue', 'catering', 'photography'] },
-        { name: 'Corporate', icon: Briefcase, fields: ['speakers', 'sponsors', 'networking'] },
-        { name: 'Social', icon: PartyPopper, fields: ['entertainment', 'food', 'drinks'] },
-        { name: 'Educational', icon: GraduationCap, fields: ['curriculum', 'materials', 'certification'] }
-      ]
+        {
+          name: "Wedding",
+          icon: Heart,
+          fields: ["venue", "catering", "photography"],
+        },
+        {
+          name: "Corporate",
+          icon: Briefcase,
+          fields: ["speakers", "sponsors", "networking"],
+        },
+        {
+          name: "Social",
+          icon: PartyPopper,
+          fields: ["entertainment", "food", "drinks"],
+        },
+        {
+          name: "Educational",
+          icon: GraduationCap,
+          fields: ["curriculum", "materials", "certification"],
+        },
+      ],
     },
 
     // AI-POWERED INTERESTED ORGANIZERS TAB
     interestedorganizers: {
-      title: 'Organizer Matches',
-      description: 'Smart organizer recommendations based on your requirements',
+      title: "Organizer Matches",
+      description: "Smart organizer recommendations based on your requirements",
       component: InterestedOrganizers,
-      permissions: ['VIEW_INTERESTED_ORGANIZERS'],
+      permissions: ["VIEW_INTERESTED_ORGANIZERS"],
       icon: Brain,
       aiEnabled: true,
-      aiAgent: 'assistant',
+      aiAgent: "assistant",
       aiFeatures: {
         matchScoring: true,
         reputationAnalysis: true,
@@ -624,26 +655,26 @@ export const userDashboardConfig = {
         communicationStyle: true,
         reliabilityScore: true,
         pastPerformance: true,
-        specializationMatch: true
+        specializationMatch: true,
       },
       insights: {
         showMatchScores: true,
         showComparison: true,
         showRecommendations: true,
         showSuccessPredictions: true,
-        showPriceTrends: true
-      }
+        showPriceTrends: true,
+      },
     },
 
     // AI-POWERED WISHLIST TAB
     wishlist: {
-      title: 'Smart Wishlist',
-      description: 'Intelligent tracking with price alerts and recommendations',
+      title: "Smart Wishlist",
+      description: "Intelligent tracking with price alerts and recommendations",
       component: UserWishlist,
-      permissions: ['VIEW_USER_WISHLIST'],
+      permissions: ["VIEW_USER_WISHLIST"],
       icon: Heart,
       aiEnabled: true,
-      aiAgent: 'assistant',
+      aiAgent: "assistant",
       aiFeatures: {
         priceDropAlerts: true,
         availabilityAlerts: true,
@@ -656,7 +687,7 @@ export const userDashboardConfig = {
         alternativeDates: true,
         groupDiscounts: true,
         loyaltyRewards: true,
-        earlyBirdDetection: true
+        earlyBirdDetection: true,
       },
       notifications: {
         priceDrop: true,
@@ -665,25 +696,25 @@ export const userDashboardConfig = {
         soldOut: true,
         backInStock: true,
         limitedTime: true,
-        exclusiveOffers: true
+        exclusiveOffers: true,
       },
       widgets: [
-        { name: 'priceDropAlert', enabled: true },
-        { name: 'similarEvents', enabled: true },
-        { name: 'bundleDeals', enabled: true },
-        { name: 'wishlistAnalytics', enabled: true }
-      ]
+        { name: "priceDropAlert", enabled: true },
+        { name: "similarEvents", enabled: true },
+        { name: "bundleDeals", enabled: true },
+        { name: "wishlistAnalytics", enabled: true },
+      ],
     },
 
     // AI-POWERED BOOKINGS TAB
     bookings: {
-      title: 'Booking Analytics',
-      description: 'Smart insights and predictions from your booking history',
+      title: "Booking Analytics",
+      description: "Smart insights and predictions from your booking history",
       component: UserBookings,
-      permissions: ['VIEW_USER_BOOKINGS'],
+      permissions: ["VIEW_USER_BOOKINGS"],
       icon: TrendingUp,
       aiEnabled: true,
-      aiAgent: 'assistant',
+      aiAgent: "assistant",
       aiFeatures: {
         spendingAnalysis: true,
         categoryPreferences: true,
@@ -696,7 +727,7 @@ export const userDashboardConfig = {
         priceSensitivity: true,
         cancellationRisk: true,
         upgradeOpportunities: true,
-        referralPotential: true
+        referralPotential: true,
       },
       analytics: {
         showTrends: true,
@@ -704,20 +735,25 @@ export const userDashboardConfig = {
         showRecommendations: true,
         showSpendingBreakdown: true,
         showCategoryDistribution: true,
-        showSeasonalPatterns: true
+        showSeasonalPatterns: true,
       },
-      charts: ['spendingTrend', 'categoryPie', 'bookingHeatmap', 'predictionTimeline']
+      charts: [
+        "spendingTrend",
+        "categoryPie",
+        "bookingHeatmap",
+        "predictionTimeline",
+      ],
     },
 
     // AI CHAT SUPPORT TAB
-    'ai-support': {
-      title: 'Support Assistant',
-      description: '24/7 multilingual support for all your questions',
+    "ai-support": {
+      title: "Support Assistant",
+      description: "24/7 multilingual support for all your questions",
       component: ChatAssistant,
-      permissions: ['VIEW_SUPPORT'],
+      permissions: ["VIEW_SUPPORT"],
       icon: MessageSquare,
       aiEnabled: true,
-      aiAgent: 'assistant',
+      aiAgent: "assistant",
       aiFeatures: {
         multilingual: true,
         faqSearch: true,
@@ -730,23 +766,29 @@ export const userDashboardConfig = {
         proactiveAssistance: true,
         ticketCreation: true,
         knowledgeBase: true,
-        learningSystem: true
+        learningSystem: true,
       },
-      languages: ['en', 'es', 'fr', 'de', 'hi', 'ne', 'zh', 'ja', 'ar', 'pt'],
-      responseTime: '<5s',
-      availability: '24/7',
-      capabilities: ['FAQ', 'Booking Help', 'Troubleshooting', 'Account Support', 'Event Info']
+      languages: ["en", "es", "fr", "de", "hi", "ne", "zh", "ja", "ar", "pt"],
+      responseTime: "<5s",
+      availability: "24/7",
+      capabilities: [
+        "FAQ",
+        "Booking Help",
+        "Troubleshooting",
+        "Account Support",
+        "Event Info",
+      ],
     },
 
     // AI FAQ TAB
-    'ai-faq': {
-      title: 'Smart FAQ',
-      description: 'Answers to frequently asked questions',
+    "ai-faq": {
+      title: "Smart FAQ",
+      description: "Answers to frequently asked questions",
       component: FAQViewer,
-      permissions: ['VIEW_FAQ'],
+      permissions: ["VIEW_FAQ"],
       icon: BookOpen,
       aiEnabled: true,
-      aiAgent: 'faq',
+      aiAgent: "faq",
       aiFeatures: {
         semanticSearch: true,
         contextualAnswers: true,
@@ -757,26 +799,26 @@ export const userDashboardConfig = {
         videoTutorials: true,
         communityAnswers: true,
         expertVerified: true,
-        translationSupport: true
+        translationSupport: true,
       },
       categories: [
-        'Booking',
-        'Payments',
-        'Cancellations',
-        'Refunds',
-        'Account',
-        'Technical',
-        'Events',
-        'Organizers'
-      ]
-    }
+        "Booking",
+        "Payments",
+        "Cancellations",
+        "Refunds",
+        "Account",
+        "Technical",
+        "Events",
+        "Organizers",
+      ],
+    },
   },
 
   // AI-Enhanced Additional Routes
   additionalRoutes: {
-    'events/:eventName': {
+    "events/:eventName": {
       component: EventDetails,
-      permissions: ['VIEW_EVENT_DETAILS'],
+      permissions: ["VIEW_EVENT_DETAILS"],
       aiFeatures: {
         similarEvents: true,
         priceHistory: true,
@@ -789,12 +831,12 @@ export const userDashboardConfig = {
         accessibilityInfo: true,
         eventHighlights: true,
         speakerInfo: true,
-        agendaOptimization: true
-      }
+        agendaOptimization: true,
+      },
     },
-    'booking/success': {
+    "booking/success": {
       component: BookingSuccess,
-      permissions: ['VIEW_BOOKING_DETAILS'],
+      permissions: ["VIEW_BOOKING_DETAILS"],
       aiFeatures: {
         qrGeneration: true,
         calendarIntegration: true,
@@ -805,12 +847,12 @@ export const userDashboardConfig = {
         transportBooking: true,
         accommodationSuggestions: true,
         eventChecklist: true,
-        networkingOpportunities: true
-      }
+        networkingOpportunities: true,
+      },
     },
-    'booking/failed': {
+    "booking/failed": {
       component: BookingFailed,
-      permissions: ['VIEW_BOOKING_DETAILS'],
+      permissions: ["VIEW_BOOKING_DETAILS"],
       aiFeatures: {
         errorAnalysis: true,
         paymentRetry: true,
@@ -819,12 +861,12 @@ export const userDashboardConfig = {
         troubleshooting: true,
         savedCart: true,
         priceLock: true,
-        compensationOffers: true
-      }
+        compensationOffers: true,
+      },
     },
-    'ai/recommendations': {
+    "ai/recommendations": {
       component: RecommendationSection,
-      permissions: ['VIEW_RECOMMENDATIONS'],
+      permissions: ["VIEW_RECOMMENDATIONS"],
       aiFeatures: {
         collaborativeFiltering: true,
         contentBased: true,
@@ -833,12 +875,12 @@ export const userDashboardConfig = {
         diversityControl: true,
         serendipity: true,
         contextAware: true,
-        feedbackLoop: true
-      }
+        feedbackLoop: true,
+      },
     },
-    'ai/event-assistant': {
+    "ai/event-assistant": {
       component: EventRequestAssistant,
-      permissions: ['USE_ASSISTANT'],
+      permissions: ["USE_ASSISTANT"],
       aiFeatures: {
         nlpProcessing: true,
         entityExtraction: true,
@@ -846,20 +888,20 @@ export const userDashboardConfig = {
         budgetPlanning: true,
         timelineCreation: true,
         vendorManagement: true,
-        checklistGeneration: true
-      }
+        checklistGeneration: true,
+      },
     },
-    'ai/chat': {
+    "ai/chat": {
       component: ChatAssistant,
-      permissions: ['USE_CHAT'],
+      permissions: ["USE_CHAT"],
       aiFeatures: {
         realTimeChat: true,
         contextMemory: true,
         fileUpload: true,
         voiceInput: true,
-        languageTranslation: true
-      }
-    }
+        languageTranslation: true,
+      },
+    },
   },
 
   // AI User Preferences
@@ -872,7 +914,7 @@ export const userDashboardConfig = {
       preferredDays: [],
       preferredTimes: [],
       excludedCategories: [],
-      preferredOrganizers: []
+      preferredOrganizers: [],
     },
     notifications: {
       email: true,
@@ -883,134 +925,134 @@ export const userDashboardConfig = {
       aiSuggestions: true,
       newEvents: true,
       trendingAlerts: true,
-      friendActivity: true
+      friendActivity: true,
     },
     privacy: {
       shareInteractionData: true,
       receivePersonalizedAds: false,
       publicWishlist: false,
       shareCalendar: false,
-      showAttendance: true
+      showAttendance: true,
     },
     accessibility: {
       highContrast: false,
-      fontSize: 'normal',
+      fontSize: "normal",
       screenReader: false,
       captioning: false,
-      signLanguage: false
-    }
+      signLanguage: false,
+    },
   },
 
   // Quick Actions Menu
   quickActions: [
     {
-      label: 'Assistant',
+      label: "Assistant",
       icon: Bot,
-      path: 'ai/event-assistant',
-      description: 'Describe your event in natural language',
-      aiPowered: true
+      path: "ai/event-assistant",
+      description: "Describe your event in natural language",
+      aiPowered: true,
     },
     {
-      label: 'Smart Search',
+      label: "Smart Search",
       icon: Brain,
-      path: 'events',
-      description: 'AI-powered event discovery',
-      aiPowered: true
+      path: "events",
+      description: "AI-powered event discovery",
+      aiPowered: true,
     },
     {
-      label: 'Price Alerts',
+      label: "Price Alerts",
       icon: Bell,
-      path: 'wishlist',
-      description: 'Get notified of price drops',
-      aiPowered: true
+      path: "wishlist",
+      description: "Get notified of price drops",
+      aiPowered: true,
     },
     {
-      label: '24/7 Support',
+      label: "24/7 Support",
       icon: MessageSquare,
-      path: 'ai-support',
-      description: 'Multilingual AI chat support',
-      aiPowered: true
+      path: "ai-support",
+      description: "Multilingual AI chat support",
+      aiPowered: true,
     },
     {
-      label: 'Plan Event',
+      label: "Plan Event",
       icon: Calendar,
-      path: 'eventrequest',
-      description: 'AI-assisted event planning',
-      aiPowered: true
-    }
+      path: "eventrequest",
+      description: "AI-assisted event planning",
+      aiPowered: true,
+    },
   ],
 
   // Dashboard Insights Cards
   insights: [
     {
-      title: 'Match Score',
+      title: "Match Score",
       icon: Brain,
-      color: 'purple',
-      description: 'Your personalized event compatibility',
+      color: "purple",
+      description: "Your personalized event compatibility",
       aiGenerated: true,
-      value: '92%',
-      trend: '+5%'
+      value: "92%",
+      trend: "+5%",
     },
     {
-      title: 'Smart Budget',
+      title: "Smart Budget",
       icon: DollarSign,
-      color: 'emerald',
-      description: 'Optimized spending recommendations',
+      color: "emerald",
+      description: "Optimized spending recommendations",
       aiGenerated: true,
-      value: '$245',
-      savings: '$120'
+      value: "$245",
+      savings: "$120",
     },
     {
-      title: 'Event Predictions',
+      title: "Event Predictions",
       icon: TrendingUp,
-      color: 'blue',
-      description: 'Upcoming events you might love',
+      color: "blue",
+      description: "Upcoming events you might love",
       aiGenerated: true,
-      value: '12 events',
-      accuracy: '89%'
+      value: "12 events",
+      accuracy: "89%",
     },
     {
-      title: 'Loyalty Tier',
+      title: "Loyalty Tier",
       icon: Award,
-      color: 'amber',
-      description: 'Exclusive perks and benefits',
+      color: "amber",
+      description: "Exclusive perks and benefits",
       aiGenerated: true,
-      value: 'Gold',
-      nextTier: 'Platinum'
-    }
+      value: "Gold",
+      nextTier: "Platinum",
+    },
   ],
 
   // AI Widgets
   widgets: {
     trendingEvents: {
       enabled: true,
-      title: 'Trending Now',
-      description: 'Events gaining popularity',
+      title: "Trending Now",
+      description: "Events gaining popularity",
       icon: TrendingUp,
-      refreshInterval: 300000 // 5 minutes
+      refreshInterval: 300000, // 5 minutes
     },
     personalizedForYou: {
       enabled: true,
-      title: 'Just For You',
-      description: 'Based on your preferences',
+      title: "Just For You",
+      description: "Based on your preferences",
       icon: Sparkles,
-      refreshInterval: 3600000 // 1 hour
+      refreshInterval: 3600000, // 1 hour
     },
     upcomingBookings: {
       enabled: true,
-      title: 'Your Schedule',
-      description: 'Upcoming events',
+      title: "Your Schedule",
+      description: "Upcoming events",
       icon: Calendar,
-      refreshInterval: 60000 // 1 minute
+      refreshInterval: 60000, // 1 minute
     },
     priceAlerts: {
       enabled: true,
-      title: 'Price Drops',
-      description: 'Events with reduced prices',
+      title: "Price Drops",
+      description: "Events with reduced prices",
       icon: Bell,
-      refreshInterval: 300000 // 5 minutes
-    }
-  }
+      refreshInterval: 300000, // 5 minutes
+    },
+  },
 };
 
 // ============================================
@@ -1018,9 +1060,9 @@ export const userDashboardConfig = {
 // ============================================
 
 export const organizerDashboardConfig = {
-  basePath: '/orgdb',
-  defaultTab: 'overview',
-  
+  basePath: "/orgdb",
+  defaultTab: "overview",
+
   aiFeatures: {
     enabled: true,
     eventAnalytics: true,
@@ -1039,71 +1081,71 @@ export const organizerDashboardConfig = {
     sponsorshipSuggestions: true,
     vendorRecommendations: true,
     riskAssessment: true,
-    complianceChecking: true
+    complianceChecking: true,
   },
 
   // AI Agent Configuration
   aiAgents: {
     planning: {
-      id: 'organizer-planning',
-      name: 'Event Planning Agent',
+      id: "organizer-planning",
+      name: "Event Planning Agent",
       icon: Calendar,
       component: EventPlanningAssistant,
       enabled: true,
-      priority: 1
+      priority: 1,
     },
     negotiation: {
-      id: 'organizer-negotiation',
-      name: 'Negotiation Agent',
+      id: "organizer-negotiation",
+      name: "Negotiation Agent",
       icon: DollarSign,
       component: NegotiationAssistant,
       enabled: true,
-      priority: 2
+      priority: 2,
     },
     dashboard: {
-      id: 'organizer-dashboard',
-      name: 'Dashboard Agent',
+      id: "organizer-dashboard",
+      name: "Dashboard Agent",
       icon: Activity,
       component: OrganizerDashboardAI,
       enabled: true,
-      priority: 3
+      priority: 3,
     },
     pricing: {
-      id: 'pricing-agent',
-      name: 'Pricing Optimizer',
+      id: "pricing-agent",
+      name: "Pricing Optimizer",
       icon: TrendingUp,
       component: PriceSuggestion,
       enabled: true,
-      priority: 4
+      priority: 4,
     },
     tags: {
-      id: 'tag-agent',
-      name: 'Tag Recommender',
+      id: "tag-agent",
+      name: "Tag Recommender",
       icon: Tag,
       component: TagRecommender,
       enabled: true,
-      priority: 5
+      priority: 5,
     },
     competitor: {
-      id: 'competitor-agent',
-      name: 'Competitor Analysis',
+      id: "competitor-agent",
+      name: "Competitor Analysis",
       icon: Target,
       component: OfferCompetitorAnalysis,
       enabled: true,
-      priority: 6
-    }
+      priority: 6,
+    },
   },
 
   tabs: {
     // AI-ENHANCED OVERVIEW
     overview: {
-      title: 'Analytics Dashboard',
-      description: 'Smart insights and predictions for your events',
+      title: "Analytics Dashboard",
+      description: "Smart insights and predictions for your events",
       component: Overview,
-      permissions: ['VIEW_DASHBOARD'],
+      permissions: ["VIEW_DASHBOARD"],
       icon: BarChart3,
       aiEnabled: true,
-      aiAgent: 'dashboard',
+      aiAgent: "dashboard",
       aiFeatures: {
         salesForecast: true,
         attendancePrediction: true,
@@ -1116,7 +1158,7 @@ export const organizerDashboardConfig = {
         satisfactionScore: true,
         referralPotential: true,
         repeatRate: true,
-        lifetimeValue: true
+        lifetimeValue: true,
       },
       metrics: {
         predictedRevenue: true,
@@ -1124,26 +1166,26 @@ export const organizerDashboardConfig = {
         engagementScore: true,
         marketPosition: true,
         growthRate: true,
-        customerSatisfaction: true
+        customerSatisfaction: true,
       },
       charts: [
-        'revenueForecast',
-        'attendanceTrend',
-        'categoryPerformance',
-        'competitorComparison',
-        'audienceDemographics'
-      ]
+        "revenueForecast",
+        "attendanceTrend",
+        "categoryPerformance",
+        "competitorComparison",
+        "audienceDemographics",
+      ],
     },
 
     // AI-ENHANCED EVENT CREATION
-    'create-event': {
-      title: 'Event Studio',
-      description: 'Smart tools to create and optimize your events',
+    "create-event": {
+      title: "Event Studio",
+      description: "Smart tools to create and optimize your events",
       component: CreateEvent,
-      permissions: ['CREATE_EVENT'],
+      permissions: ["CREATE_EVENT"],
       icon: Zap,
       aiEnabled: true,
-      aiAgents: ['planning', 'pricing', 'tags'],
+      aiAgents: ["planning", "pricing", "tags"],
       aiFeatures: {
         smartPricing: true,
         dateOptimization: true,
@@ -1159,28 +1201,44 @@ export const organizerDashboardConfig = {
         marketGap: true,
         pricingStrategy: true,
         earlyBirdStrategy: true,
-        groupDiscounts: true
+        groupDiscounts: true,
       },
       templates: [
-        { name: 'Conference', icon: Users, description: 'Multi-track professional event' },
-        { name: 'Workshop', icon: PenTool, description: 'Hands-on learning session' },
-        { name: 'Festival', icon: Music, description: 'Multi-day celebration' },
-        { name: 'Webinar', icon: Video, description: 'Online educational event' },
-        { name: 'Networking', icon: Users2, description: 'Professional networking' },
-        { name: 'Concert', icon: Music, description: 'Live music performance' }
+        {
+          name: "Conference",
+          icon: Users,
+          description: "Multi-track professional event",
+        },
+        {
+          name: "Workshop",
+          icon: PenTool,
+          description: "Hands-on learning session",
+        },
+        { name: "Festival", icon: Music, description: "Multi-day celebration" },
+        {
+          name: "Webinar",
+          icon: Video,
+          description: "Online educational event",
+        },
+        {
+          name: "Networking",
+          icon: Users2,
+          description: "Professional networking",
+        },
+        { name: "Concert", icon: Music, description: "Live music performance" },
       ],
-      suggestions: ['price', 'tags', 'date', 'capacity', 'description']
+      suggestions: ["price", "tags", "date", "capacity", "description"],
     },
 
     // AI-ENHANCED EVENT MANAGEMENT
-    'my-events': {
-      title: 'Event Manager',
-      description: 'Intelligent tools to manage and grow your events',
+    "my-events": {
+      title: "Event Manager",
+      description: "Intelligent tools to manage and grow your events",
       component: MyEvents,
-      permissions: ['VIEW_EVENTS'],
+      permissions: ["VIEW_EVENTS"],
       icon: Brain,
       aiEnabled: true,
-      aiAgent: 'dashboard',
+      aiAgent: "dashboard",
       aiFeatures: {
         performanceAnalytics: true,
         attendeeInsights: true,
@@ -1195,33 +1253,33 @@ export const organizerDashboardConfig = {
         refundPrediction: true,
         satisfactionScore: true,
         npsCalculation: true,
-        referralTracking: true
+        referralTracking: true,
       },
       insights: {
         showRecommendations: true,
         showAlerts: true,
         showOpportunities: true,
         showRisks: true,
-        showTrends: true
+        showTrends: true,
       },
       alerts: [
-        'lowAttendance',
-        'negativeSentiment',
-        'refundSpike',
-        'cancellationTrend',
-        'competitorActivity'
-      ]
+        "lowAttendance",
+        "negativeSentiment",
+        "refundSpike",
+        "cancellationTrend",
+        "competitorActivity",
+      ],
     },
 
     // AI-ENHANCED EVENT REQUESTS
     eventrequest: {
-      title: 'Request Manager',
-      description: 'Smart matching with potential clients',
+      title: "Request Manager",
+      description: "Smart matching with potential clients",
       component: EventRequestorg,
-      permissions: ['CREATE_EVENT_REQUEST'],
+      permissions: ["CREATE_EVENT_REQUEST"],
       icon: Target,
       aiEnabled: true,
-      aiAgent: 'negotiation',
+      aiAgent: "negotiation",
       aiFeatures: {
         leadScoring: true,
         matchProbability: true,
@@ -1234,25 +1292,25 @@ export const organizerDashboardConfig = {
         pricingRecommendations: true,
         timelineSuggestions: true,
         customOffers: true,
-        followUpOptimization: true
+        followUpOptimization: true,
       },
       insights: {
         showMatchScores: true,
         showWinProbability: true,
         showCompetitorCount: true,
-        showMarketRate: true
-      }
+        showMarketRate: true,
+      },
     },
 
     // AI MARKETING TOOLS
     marketing: {
-      title: 'Marketing Hub',
-      description: 'Intelligent promotion and audience targeting',
+      title: "Marketing Hub",
+      description: "Intelligent promotion and audience targeting",
       component: MarketingHub,
-      permissions: ['MANAGE_MARKETING'],
+      permissions: ["MANAGE_MARKETING"],
       icon: Megaphone,
       aiEnabled: true,
-      aiAgent: 'dashboard',
+      aiAgent: "dashboard",
       aiFeatures: {
         audienceSegmentation: true,
         channelOptimization: true,
@@ -1267,21 +1325,21 @@ export const organizerDashboardConfig = {
         competitorAds: true,
         socialMediaInsights: true,
         emailMarketing: true,
-        retargeting: true
+        retargeting: true,
       },
-      channels: ['email', 'social', 'search', 'display', 'partner'],
-      metrics: ['reach', 'engagement', 'conversion', 'roi', 'cac']
+      channels: ["email", "social", "search", "display", "partner"],
+      metrics: ["reach", "engagement", "conversion", "roi", "cac"],
     },
 
     // AI SMART PRICING
     pricing: {
-      title: 'Smart Pricing',
-      description: 'AI-powered dynamic pricing optimization',
+      title: "Smart Pricing",
+      description: "AI-powered dynamic pricing optimization",
       component: SmartPricing,
-      permissions: ['MANAGE_PRICING'],
+      permissions: ["MANAGE_PRICING"],
       icon: DollarSign,
       aiEnabled: true,
-      aiAgent: 'pricing',
+      aiAgent: "pricing",
       aiFeatures: {
         demandForecasting: true,
         competitorTracking: true,
@@ -1296,130 +1354,130 @@ export const organizerDashboardConfig = {
         seasonalPricing: true,
         eventSpecificPricing: true,
         marketAnalysis: true,
-        priceSensitivity: true
+        priceSensitivity: true,
       },
       strategies: [
-        'dynamic',
-        'tiered',
-        'earlyBird',
-        'lastMinute',
-        'group',
-        'seasonal'
+        "dynamic",
+        "tiered",
+        "earlyBird",
+        "lastMinute",
+        "group",
+        "seasonal",
       ],
       alerts: [
-        'priceTooHigh',
-        'priceTooLow',
-        'competitorPriceChange',
-        'demandSpike',
-        'inventoryLow'
-      ]
-    }
+        "priceTooHigh",
+        "priceTooLow",
+        "competitorPriceChange",
+        "demandSpike",
+        "inventoryLow",
+      ],
+    },
   },
 
   quickActions: [
     {
-      label: 'Create with AI',
+      label: "Create with AI",
       icon: Zap,
-      path: 'create-event',
-      description: 'AI-assisted event creation',
-      aiPowered: true
+      path: "create-event",
+      description: "AI-assisted event creation",
+      aiPowered: true,
     },
     {
-      label: 'Smart Analytics',
+      label: "Smart Analytics",
       icon: TrendingUp,
-      path: 'overview',
-      description: 'Real-time AI insights',
-      aiPowered: true
+      path: "overview",
+      description: "Real-time AI insights",
+      aiPowered: true,
     },
     {
-      label: 'Pricing Optimizer',
+      label: "Pricing Optimizer",
       icon: DollarSign,
-      path: 'pricing',
-      description: 'AI price recommendations',
-      aiPowered: true
+      path: "pricing",
+      description: "AI price recommendations",
+      aiPowered: true,
     },
     {
-      label: 'Negotiate',
+      label: "Negotiate",
       icon: Target,
-      path: 'eventrequest',
-      description: 'AI negotiation assistant',
-      aiPowered: true
+      path: "eventrequest",
+      description: "AI negotiation assistant",
+      aiPowered: true,
     },
     {
-      label: 'Marketing AI',
+      label: "Marketing AI",
       icon: Megaphone,
-      path: 'marketing',
-      description: 'Smart campaign tools',
-      aiPowered: true
-    }
+      path: "marketing",
+      description: "Smart campaign tools",
+      aiPowered: true,
+    },
   ],
 
   insights: [
     {
-      title: 'Revenue Forecast',
+      title: "Revenue Forecast",
       icon: TrendingUp,
-      color: 'emerald',
-      description: 'Predicted earnings',
+      color: "emerald",
+      description: "Predicted earnings",
       aiGenerated: true,
-      value: '$45.2K',
-      confidence: '87%'
+      value: "$45.2K",
+      confidence: "87%",
     },
     {
-      title: 'Attendance Prediction',
+      title: "Attendance Prediction",
       icon: Users,
-      color: 'blue',
-      description: 'Expected crowd size',
+      color: "blue",
+      description: "Expected crowd size",
       aiGenerated: true,
-      value: '1,245',
-      accuracy: '92%'
+      value: "1,245",
+      accuracy: "92%",
     },
     {
-      title: 'Market Position',
+      title: "Market Position",
       icon: Target,
-      color: 'purple',
-      description: 'vs. competitors',
+      color: "purple",
+      description: "vs. competitors",
       aiGenerated: true,
-      value: '#3',
-      trend: '+2'
+      value: "#3",
+      trend: "+2",
     },
     {
-      title: 'Growth Opportunities',
+      title: "Growth Opportunities",
       icon: Award,
-      color: 'amber',
-      description: 'Detected trends',
+      color: "amber",
+      description: "Detected trends",
       aiGenerated: true,
-      count: '5',
-      potential: 'High'
-    }
+      count: "5",
+      potential: "High",
+    },
   ],
 
   // AI Widgets for Organizer
   widgets: {
     performanceMetrics: {
       enabled: true,
-      title: 'Event Performance',
+      title: "Event Performance",
       icon: Activity,
-      refreshInterval: 300000 // 5 minutes
+      refreshInterval: 300000, // 5 minutes
     },
     competitorMonitor: {
       enabled: true,
-      title: 'Competitor Activity',
+      title: "Competitor Activity",
       icon: Target,
-      refreshInterval: 3600000 // 1 hour
+      refreshInterval: 3600000, // 1 hour
     },
     audienceInsights: {
       enabled: true,
-      title: 'Audience Analytics',
+      title: "Audience Analytics",
       icon: Users,
-      refreshInterval: 1800000 // 30 minutes
+      refreshInterval: 1800000, // 30 minutes
     },
     revenueTracker: {
       enabled: true,
-      title: 'Revenue Tracker',
+      title: "Revenue Tracker",
       icon: DollarSign,
-      refreshInterval: 60000 // 1 minute
-    }
-  }
+      refreshInterval: 60000, // 1 minute
+    },
+  },
 };
 
 // ============================================
@@ -1427,9 +1485,9 @@ export const organizerDashboardConfig = {
 // ============================================
 
 export const adminDashboardConfig = {
-  basePath: '/admindb',
-  defaultTab: 'overview',
-  
+  basePath: "/admindb",
+  defaultTab: "overview",
+
   aiFeatures: {
     enabled: true,
     fraudDetection: true,
@@ -1449,71 +1507,71 @@ export const adminDashboardConfig = {
     dataGovernance: true,
     incidentPrediction: true,
     rootCauseAnalysis: true,
-    autoRemediation: true
+    autoRemediation: true,
   },
 
   // AI Agent Configuration
   aiAgents: {
     fraud: {
-      id: 'admin-fraud',
-      name: 'Fraud Detection',
+      id: "admin-fraud",
+      name: "Fraud Detection",
       icon: Shield,
       component: FraudDetectionPanel,
       enabled: true,
-      priority: 1
+      priority: 1,
     },
     analytics: {
-      id: 'admin-analytics',
-      name: 'Analytics Agent',
+      id: "admin-analytics",
+      name: "Analytics Agent",
       icon: BarChart3,
       component: AnalyticsDashboardAI,
       enabled: true,
-      priority: 2
+      priority: 2,
     },
     sentiment: {
-      id: 'admin-sentiment',
-      name: 'Sentiment Analysis',
+      id: "admin-sentiment",
+      name: "Sentiment Analysis",
       icon: MessageCircle,
       component: SentimentAnalysisPanel,
       enabled: true,
-      priority: 3
+      priority: 3,
     },
     trends: {
-      id: 'admin-trends',
-      name: 'Trend Visualization',
+      id: "admin-trends",
+      name: "Trend Visualization",
       icon: TrendingUp,
       component: TrendVisualization,
       enabled: true,
-      priority: 4
+      priority: 4,
     },
     toxicity: {
-      id: 'admin-toxicity',
-      name: 'Content Moderation',
+      id: "admin-toxicity",
+      name: "Content Moderation",
       icon: AlertTriangle,
       component: ToxicityModeration,
       enabled: true,
-      priority: 5
+      priority: 5,
     },
     cohorts: {
-      id: 'admin-cohorts',
-      name: 'Cohort Analysis',
+      id: "admin-cohorts",
+      name: "Cohort Analysis",
       icon: Users,
       component: CohortAnalysisView,
       enabled: true,
-      priority: 6
-    }
+      priority: 6,
+    },
   },
 
   tabs: {
     // AI-ENHANCED ADMIN OVERVIEW
     overview: {
-      title: 'System Intelligence',
-      description: 'Smart system-wide analytics and predictions',
+      title: "System Intelligence",
+      description: "Smart system-wide analytics and predictions",
       component: AdminOverview,
-      permissions: ['ADMIN_VIEW_DASHBOARD'],
+      permissions: ["ADMIN_VIEW_DASHBOARD"],
       icon: Brain,
       aiEnabled: true,
-      aiAgent: 'analytics',
+      aiAgent: "analytics",
       aiFeatures: {
         fraudDetection: true,
         anomalyAlert: true,
@@ -1528,7 +1586,7 @@ export const adminDashboardConfig = {
         costAnalysis: true,
         securityScore: true,
         healthScore: true,
-        efficiencyMetrics: true
+        efficiencyMetrics: true,
       },
       metrics: {
         activeUsers: true,
@@ -1537,27 +1595,27 @@ export const adminDashboardConfig = {
         predictedGrowth: true,
         riskScore: true,
         securityStatus: true,
-        performanceIndex: true
+        performanceIndex: true,
       },
       widgets: [
-        'systemHealth',
-        'fraudAlerts',
-        'userGrowth',
-        'revenueForecast',
-        'securityStatus',
-        'performanceMetrics'
-      ]
+        "systemHealth",
+        "fraudAlerts",
+        "userGrowth",
+        "revenueForecast",
+        "securityStatus",
+        "performanceMetrics",
+      ],
     },
 
     // AI-ENHANCED EVENTS MANAGEMENT
     events: {
-      title: 'Event Intelligence',
-      description: 'Smart event monitoring and moderation',
+      title: "Event Intelligence",
+      description: "Smart event monitoring and moderation",
       component: EventsManagement,
-      permissions: ['MANAGE_EVENTS'],
+      permissions: ["MANAGE_EVENTS"],
       icon: Calendar,
       aiEnabled: true,
-      aiAgent: 'analytics',
+      aiAgent: "analytics",
       aiFeatures: {
         automatedModeration: true,
         contentFlagging: true,
@@ -1571,26 +1629,26 @@ export const adminDashboardConfig = {
         policyCompliance: true,
         inappropriateContent: true,
         fakeEventDetection: true,
-        organizerVerification: true
+        organizerVerification: true,
       },
       alerts: [
-        'spamEvents',
-        'fraudulentListings',
-        'policyViolations',
-        'duplicateEvents',
-        'inappropriateContent'
-      ]
+        "spamEvents",
+        "fraudulentListings",
+        "policyViolations",
+        "duplicateEvents",
+        "inappropriateContent",
+      ],
     },
 
     // AI-ENHANCED USERS MANAGEMENT
     users: {
-      title: 'User Analytics',
-      description: 'Smart user behavior analysis and insights',
+      title: "User Analytics",
+      description: "Smart user behavior analysis and insights",
       component: UsersManagement,
-      permissions: ['MANAGE_USERS'],
+      permissions: ["MANAGE_USERS"],
       icon: Users,
       aiEnabled: true,
-      aiAgent: 'analytics',
+      aiAgent: "analytics",
       aiFeatures: {
         behaviorAnalysis: true,
         churnPrediction: true,
@@ -1605,26 +1663,26 @@ export const adminDashboardConfig = {
         supportNeeds: true,
         loyaltyPrediction: true,
         lifetimeValue: true,
-        riskProfiling: true
+        riskProfiling: true,
       },
-      segments: ['active', 'atRisk', 'churned', 'highValue', 'suspicious'],
+      segments: ["active", "atRisk", "churned", "highValue", "suspicious"],
       alerts: [
-        'suspiciousActivity',
-        'botAccounts',
-        'policyViolations',
-        'supportEscalation'
-      ]
+        "suspiciousActivity",
+        "botAccounts",
+        "policyViolations",
+        "supportEscalation",
+      ],
     },
 
     // AI-ENHANCED PERMISSIONS
     permissions: {
-      title: 'Smart Permissions',
-      description: 'Recommended access controls',
+      title: "Smart Permissions",
+      description: "Recommended access controls",
       component: PermissionsManagement,
-      permissions: ['MANAGE_PERMISSIONS'],
+      permissions: ["MANAGE_PERMISSIONS"],
       icon: ShieldCheck,
       aiEnabled: true,
-      aiAgent: 'analytics',
+      aiAgent: "analytics",
       aiFeatures: {
         roleRecommendations: true,
         accessPatterns: true,
@@ -1637,19 +1695,19 @@ export const adminDashboardConfig = {
         accessCertification: true,
         permissionAuditing: true,
         anomalyDetection: true,
-        policyEnforcement: true
-      }
+        policyEnforcement: true,
+      },
     },
 
     // AI-ENHANCED CATEGORIES
     categories: {
-      title: 'Category Manager',
-      description: 'Smart event categorization and taxonomy',
+      title: "Category Manager",
+      description: "Smart event categorization and taxonomy",
       component: CategoriesManagement,
-      permissions: ['MANAGE_CATEGORIES'],
+      permissions: ["MANAGE_CATEGORIES"],
       icon: FolderTree,
       aiEnabled: true,
-      aiAgent: 'analytics',
+      aiAgent: "analytics",
       aiFeatures: {
         autoCategorization: true,
         trendDetection: true,
@@ -1662,19 +1720,19 @@ export const adminDashboardConfig = {
         categorySuggestions: true,
         emergingCategories: true,
         categoryHealth: true,
-        performanceTracking: true
-      }
+        performanceTracking: true,
+      },
     },
 
     // AI-ENHANCED SETTINGS
     settings: {
-      title: 'System Configuration',
-      description: 'Intelligent system settings and optimization',
+      title: "System Configuration",
+      description: "Intelligent system settings and optimization",
       component: Settings,
-      permissions: ['MANAGE_SETTINGS'],
+      permissions: ["MANAGE_SETTINGS"],
       icon: Sliders,
       aiEnabled: true,
-      aiAgent: 'analytics',
+      aiAgent: "analytics",
       aiFeatures: {
         performanceOptimization: true,
         resourceAllocation: true,
@@ -1687,19 +1745,19 @@ export const adminDashboardConfig = {
         rollbackPlanning: true,
         changeManagement: true,
         complianceChecks: true,
-        bestPractices: true
-      }
+        bestPractices: true,
+      },
     },
 
     // AI FRAUD DETECTION
     fraud: {
-      title: 'Fraud Detection',
-      description: 'Smart detection of suspicious activities',
+      title: "Fraud Detection",
+      description: "Smart detection of suspicious activities",
       component: FraudDetection,
-      permissions: ['VIEW_FRAUD_ANALYTICS'],
+      permissions: ["VIEW_FRAUD_ANALYTICS"],
       icon: Shield,
       aiEnabled: true,
-      aiAgent: 'fraud',
+      aiAgent: "fraud",
       aiFeatures: {
         realTimeMonitoring: true,
         patternRecognition: true,
@@ -1713,26 +1771,26 @@ export const adminDashboardConfig = {
         velocityChecking: true,
         blacklistChecking: true,
         machineLearningModels: true,
-        adaptiveThresholds: true
+        adaptiveThresholds: true,
       },
       metrics: [
-        'riskScore',
-        'blockedAttempts',
-        'falsePositives',
-        'investigationTime',
-        'detectionRate'
-      ]
+        "riskScore",
+        "blockedAttempts",
+        "falsePositives",
+        "investigationTime",
+        "detectionRate",
+      ],
     },
 
     // AI TRENDS ANALYTICS
     trends: {
-      title: 'Trend Forecasting',
-      description: 'Predictive analytics for event industry trends',
+      title: "Trend Forecasting",
+      description: "Predictive analytics for event industry trends",
       component: TrendsAnalytics,
-      permissions: ['VIEW_TRENDS'],
+      permissions: ["VIEW_TRENDS"],
       icon: TrendingUp,
       aiEnabled: true,
-      aiAgent: 'trends',
+      aiAgent: "trends",
       aiFeatures: {
         marketPrediction: true,
         seasonalTrends: true,
@@ -1746,21 +1804,21 @@ export const adminDashboardConfig = {
         technologyAdoption: true,
         culturalTrends: true,
         economicImpact: true,
-        sentimentTrends: true
+        sentimentTrends: true,
       },
-      timeframes: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
-      visualizations: ['line', 'bar', 'heatmap', 'scatter', 'choropleth']
+      timeframes: ["daily", "weekly", "monthly", "quarterly", "yearly"],
+      visualizations: ["line", "bar", "heatmap", "scatter", "choropleth"],
     },
 
     // AI SENTIMENT ANALYSIS (NEW)
     sentiment: {
-      title: 'Sentiment Analysis',
-      description: 'Platform-wide sentiment monitoring',
+      title: "Sentiment Analysis",
+      description: "Platform-wide sentiment monitoring",
       component: SentimentAnalysisPanel,
-      permissions: ['VIEW_SENTIMENT'],
+      permissions: ["VIEW_SENTIMENT"],
       icon: MessageCircle,
       aiEnabled: true,
-      aiAgent: 'sentiment',
+      aiAgent: "sentiment",
       aiFeatures: {
         reviewAnalysis: true,
         feedbackMining: true,
@@ -1773,19 +1831,19 @@ export const adminDashboardConfig = {
         satisfactionTracking: true,
         complaintDetection: true,
         praiseIdentification: true,
-        improvementSuggestions: true
-      }
+        improvementSuggestions: true,
+      },
     },
 
     // AI CONTENT MODERATION (NEW)
     moderation: {
-      title: 'Content Moderation',
-      description: 'AI-powered content review',
+      title: "Content Moderation",
+      description: "AI-powered content review",
       component: ToxicityModeration,
-      permissions: ['MODERATE_CONTENT'],
+      permissions: ["MODERATE_CONTENT"],
       icon: AlertTriangle,
       aiEnabled: true,
-      aiAgent: 'toxicity',
+      aiAgent: "toxicity",
       aiFeatures: {
         toxicDetection: true,
         spamFiltering: true,
@@ -1796,19 +1854,19 @@ export const adminDashboardConfig = {
         automatedAction: true,
         appealHandling: true,
         learningSystem: true,
-        accuracyMetrics: true
-      }
+        accuracyMetrics: true,
+      },
     },
 
     // AI COHORT ANALYSIS (NEW)
     cohorts: {
-      title: 'Cohort Analysis',
-      description: 'User behavior patterns',
+      title: "Cohort Analysis",
+      description: "User behavior patterns",
       component: CohortAnalysisView,
-      permissions: ['VIEW_COHORTS'],
+      permissions: ["VIEW_COHORTS"],
       icon: Users,
       aiEnabled: true,
-      aiAgent: 'cohorts',
+      aiAgent: "cohorts",
       aiFeatures: {
         retentionAnalysis: true,
         behaviorSegments: true,
@@ -1819,163 +1877,163 @@ export const adminDashboardConfig = {
         featureAdoption: true,
         userJourney: true,
         cohortComparison: true,
-        trendIdentification: true
-      }
-    }
+        trendIdentification: true,
+      },
+    },
   },
 
   quickActions: [
     {
-      label: 'Risk Scan',
+      label: "Risk Scan",
       icon: Shield,
-      path: 'fraud',
-      description: 'AI fraud detection scan',
-      aiPowered: true
+      path: "fraud",
+      description: "AI fraud detection scan",
+      aiPowered: true,
     },
     {
-      label: 'System Health',
+      label: "System Health",
       icon: Activity,
-      path: 'overview',
-      description: 'AI-powered monitoring',
-      aiPowered: true
+      path: "overview",
+      description: "AI-powered monitoring",
+      aiPowered: true,
     },
     {
-      label: 'Trend Analysis',
+      label: "Trend Analysis",
       icon: TrendingUp,
-      path: 'trends',
-      description: 'Predict market movements',
-      aiPowered: true
+      path: "trends",
+      description: "Predict market movements",
+      aiPowered: true,
     },
     {
-      label: 'Sentiment Check',
+      label: "Sentiment Check",
       icon: MessageCircle,
-      path: 'sentiment',
-      description: 'Analyze user feedback',
-      aiPowered: true
+      path: "sentiment",
+      description: "Analyze user feedback",
+      aiPowered: true,
     },
     {
-      label: 'Moderate Content',
+      label: "Moderate Content",
       icon: AlertTriangle,
-      path: 'moderation',
-      description: 'Review flagged content',
-      aiPowered: true
-    }
+      path: "moderation",
+      description: "Review flagged content",
+      aiPowered: true,
+    },
   ],
 
   insights: [
     {
-      title: 'System Health',
+      title: "System Health",
       icon: Activity,
-      color: 'emerald',
-      description: 'AI-monitored performance',
+      color: "emerald",
+      description: "AI-monitored performance",
       aiGenerated: true,
-      value: '98%',
-      status: 'healthy'
+      value: "98%",
+      status: "healthy",
     },
     {
-      title: 'Risk Score',
+      title: "Risk Score",
       icon: Shield,
-      color: 'amber',
-      description: 'Overall platform risk',
+      color: "amber",
+      description: "Overall platform risk",
       aiGenerated: true,
-      value: '23',
-      level: 'low'
+      value: "23",
+      level: "low",
     },
     {
-      title: 'Growth Rate',
+      title: "Growth Rate",
       icon: TrendingUp,
-      color: 'blue',
-      description: 'Predicted growth',
+      color: "blue",
+      description: "Predicted growth",
       aiGenerated: true,
-      value: '+15%',
-      confidence: '89%'
+      value: "+15%",
+      confidence: "89%",
     },
     {
-      title: 'User Satisfaction',
+      title: "User Satisfaction",
       icon: Star,
-      color: 'purple',
-      description: 'Sentiment analysis',
+      color: "purple",
+      description: "Sentiment analysis",
       aiGenerated: true,
-      value: '4.5',
-      trend: '+0.3'
-    }
+      value: "4.5",
+      trend: "+0.3",
+    },
   ],
 
   // AI Widgets for Admin
   widgets: {
     fraudAlerts: {
       enabled: true,
-      title: 'Fraud Alerts',
+      title: "Fraud Alerts",
       icon: Shield,
-      refreshInterval: 10000 // 10 seconds
+      refreshInterval: 10000, // 10 seconds
     },
     systemMetrics: {
       enabled: true,
-      title: 'System Metrics',
+      title: "System Metrics",
       icon: Activity,
-      refreshInterval: 30000 // 30 seconds
+      refreshInterval: 30000, // 30 seconds
     },
     userActivity: {
       enabled: true,
-      title: 'User Activity',
+      title: "User Activity",
       icon: Users,
-      refreshInterval: 60000 // 1 minute
+      refreshInterval: 60000, // 1 minute
     },
     revenueInsights: {
       enabled: true,
-      title: 'Revenue Analytics',
+      title: "Revenue Analytics",
       icon: DollarSign,
-      refreshInterval: 300000 // 5 minutes
+      refreshInterval: 300000, // 5 minutes
     },
     sentimentOverview: {
       enabled: true,
-      title: 'Sentiment Overview',
+      title: "Sentiment Overview",
       icon: MessageCircle,
-      refreshInterval: 1800000 // 30 minutes
+      refreshInterval: 1800000, // 30 minutes
     },
     trendDetection: {
       enabled: true,
-      title: 'Trend Detection',
+      title: "Trend Detection",
       icon: TrendingUp,
-      refreshInterval: 3600000 // 1 hour
-    }
+      refreshInterval: 3600000, // 1 hour
+    },
   },
 
   // AI Model Configuration
   aiModels: {
     recommendation: {
-      model: 'hybrid',
-      version: '2.1.0',
+      model: "hybrid",
+      version: "2.1.0",
       confidence: 0.85,
-      updateFrequency: 'realtime'
+      updateFrequency: "realtime",
     },
     fraudDetection: {
-      model: 'ensemble',
-      version: '3.0.0',
-      sensitivity: 'adaptive',
+      model: "ensemble",
+      version: "3.0.0",
+      sensitivity: "adaptive",
       alertThreshold: 0.7,
-      falsePositiveTarget: 0.03
+      falsePositiveTarget: 0.03,
     },
     forecasting: {
-      model: 'timeseries',
-      version: '1.5.0',
-      horizon: '30d',
-      granularity: 'daily',
-      accuracy: 0.87
+      model: "timeseries",
+      version: "1.5.0",
+      horizon: "30d",
+      granularity: "daily",
+      accuracy: 0.87,
     },
     sentiment: {
-      model: 'bert-base',
-      version: '2.0.0',
+      model: "bert-base",
+      version: "2.0.0",
       languages: 8,
-      accuracy: 0.91
+      accuracy: 0.91,
     },
     moderation: {
-      model: 'toxicity-detector',
-      version: '1.2.0',
+      model: "toxicity-detector",
+      version: "1.2.0",
       threshold: 0.7,
-      precision: 0.89
-    }
-  }
+      precision: 0.89,
+    },
+  },
 };
 
 // ============================================
@@ -1986,12 +2044,12 @@ export const aiFeatureFlags = {
   // Global AI Settings
   global: {
     enabled: true,
-    developmentMode: process.env.NODE_ENV === 'development',
+    developmentMode: process.env.NODE_ENV === "development",
     analyticsEnabled: true,
     feedbackLoop: true,
-    modelVersion: '2.1.0',
-    environment: process.env.NODE_ENV || 'production',
-    debugMode: process.env.NODE_ENV === 'development'
+    modelVersion: "2.1.0",
+    environment: process.env.NODE_ENV || "production",
+    debugMode: process.env.NODE_ENV === "development",
   },
 
   // User Dashboard AI Features
@@ -2010,7 +2068,7 @@ export const aiFeatureFlags = {
     groupRecommendations: true,
     scheduleOptimization: true,
     weatherIntegration: true,
-    accessibilityFeatures: true
+    accessibilityFeatures: true,
   },
 
   // Organizer Dashboard AI Features
@@ -2029,7 +2087,7 @@ export const aiFeatureFlags = {
     socialMediaInsights: true,
     sponsorshipSuggestions: true,
     vendorRecommendations: true,
-    riskAssessment: true
+    riskAssessment: true,
   },
 
   // Admin Dashboard AI Features
@@ -2048,7 +2106,7 @@ export const aiFeatureFlags = {
     dataGovernance: true,
     incidentPrediction: true,
     rootCauseAnalysis: true,
-    autoRemediation: true
+    autoRemediation: true,
   },
 
   // Experimental Features
@@ -2059,8 +2117,8 @@ export const aiFeatureFlags = {
     realTimeTranslation: false,
     emotionDetection: false,
     predictiveMaintenance: false,
-    autoScaling: false
-  }
+    autoScaling: false,
+  },
 };
 
 // ============================================
@@ -2070,14 +2128,16 @@ export const aiFeatureFlags = {
 // Helper function to get tab data with AI features
 export const getTabData = (config, tabKey) => {
   const tab = config.tabs[tabKey] || config.tabs[config.defaultTab];
-  
+
   // Add AI feature flags to tab data
   if (tab) {
     tab.aiEnabled = config.aiFeatures?.enabled ?? true;
-    tab.supportedFeatures = Object.keys(tab.aiFeatures || {}).filter(key => tab.aiFeatures[key]);
+    tab.supportedFeatures = Object.keys(tab.aiFeatures || {}).filter(
+      (key) => tab.aiFeatures[key]
+    );
     tab.activeAgent = tab.aiAgent ? config.aiAgents?.[tab.aiAgent] : null;
   }
-  
+
   return tab;
 };
 
@@ -2086,9 +2146,9 @@ export const isAIFeatureEnabled = (dashboardType, featureKey) => {
   const config = {
     user: userDashboardConfig,
     organizer: organizerDashboardConfig,
-    admin: adminDashboardConfig
+    admin: adminDashboardConfig,
   }[dashboardType];
-  
+
   return config?.aiFeatures?.[featureKey] ?? false;
 };
 
@@ -2097,9 +2157,9 @@ export const getDashboardInsights = (dashboardType) => {
   const config = {
     user: userDashboardConfig,
     organizer: organizerDashboardConfig,
-    admin: adminDashboardConfig
+    admin: adminDashboardConfig,
   }[dashboardType];
-  
+
   return config?.insights || [];
 };
 
@@ -2108,9 +2168,9 @@ export const getQuickActions = (dashboardType) => {
   const config = {
     user: userDashboardConfig,
     organizer: organizerDashboardConfig,
-    admin: adminDashboardConfig
+    admin: adminDashboardConfig,
   }[dashboardType];
-  
+
   return config?.quickActions || [];
 };
 
@@ -2119,9 +2179,9 @@ export const getAIFeatureStatus = (dashboardType, tabKey, featureKey) => {
   const config = {
     user: userDashboardConfig,
     organizer: organizerDashboardConfig,
-    admin: adminDashboardConfig
+    admin: adminDashboardConfig,
   }[dashboardType];
-  
+
   const tab = config?.tabs[tabKey];
   return tab?.aiFeatures?.[featureKey] ?? false;
 };
@@ -2131,11 +2191,11 @@ export const getEnabledAIAgents = (dashboardType) => {
   const config = {
     user: userDashboardConfig,
     organizer: organizerDashboardConfig,
-    admin: adminDashboardConfig
+    admin: adminDashboardConfig,
   }[dashboardType];
-  
+
   if (!config?.aiAgents) return [];
-  
+
   return Object.entries(config.aiAgents)
     .filter(([_, agent]) => agent.enabled)
     .map(([key, agent]) => ({ key, ...agent }))
@@ -2147,9 +2207,9 @@ export const getAIWidgets = (dashboardType) => {
   const config = {
     user: userDashboardConfig,
     organizer: organizerDashboardConfig,
-    admin: adminDashboardConfig
+    admin: adminDashboardConfig,
   }[dashboardType];
-  
+
   return config?.widgets || {};
 };
 
@@ -2163,9 +2223,9 @@ export const getAIModelConfig = (modelType) => {
   const models = {
     user: userDashboardConfig.aiModels,
     organizer: organizerDashboardConfig.aiModels,
-    admin: adminDashboardConfig.aiModels
+    admin: adminDashboardConfig.aiModels,
   };
-  
+
   return models[modelType] || null;
 };
 
@@ -2184,6 +2244,6 @@ export default {
     getEnabledAIAgents,
     getAIWidgets,
     isExperimentalFeatureEnabled,
-    getAIModelConfig
-  }
+    getAIModelConfig,
+  },
 };
