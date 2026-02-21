@@ -194,9 +194,6 @@ export const NotificationProvider = ({ children }) => {
 
   useEffect(() => {
     if (!token) {
-      if (websocketManager.isConnected() || websocketManager.isConnecting) {
-        websocketManager.disconnect();
-      }
       return;
     }
     if (!isMounted.current) return;
@@ -288,7 +285,10 @@ export const NotificationProvider = ({ children }) => {
       websocketManager.subscribeToNotifications();
     };
 
-    websocketManager.connect(token, onConnected);
+    websocketManager.onConnectedCallback = onConnected;
+    if (websocketManager.isConnected()) {
+      onConnected();
+    }
 
     return () => {
       websocketManager.off("notification", handleIncomingNotification);
@@ -300,6 +300,10 @@ export const NotificationProvider = ({ children }) => {
         "adminNotificationsUpdate",
         handleAdminNotificationsUpdate
       );
+
+      if (websocketManager.onConnectedCallback === onConnected) {
+        websocketManager.onConnectedCallback = null;
+      }
     };
   }, [token, playSound]);
 

@@ -1,50 +1,61 @@
-import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import api from "../../utils/api";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogAction } from '../../components/ui/dialog';
-import { Alert, AlertTitle, AlertDescription } from '../../components/ui/alert';
-import { useNavigate } from 'react-router-dom';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogAction,
+} from "../../components/ui/dialog";
+import { Alert, AlertTitle, AlertDescription } from "../../components/ui/alert";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 const LoginSignup = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
+
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
-    fullname: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    contactNo: '',
-    role: '',
+    fullname: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    contactNo: "",
+    role: "",
     // Organizer specific fields
     organizerDetails: {
-      organizationName: '',
-      organizationEmail: '',
-      organizationPhone: '',
-      organizationAddress: '',
-      organizationWebsite: '',
-      taxId: '',
-      description: ''
-    }
+      organizationName: "",
+      organizationEmail: "",
+      organizationPhone: "",
+      organizationAddress: "",
+      organizationWebsite: "",
+      taxId: "",
+      description: "",
+    },
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showErrorAlert, setShowErrorAlert] = useState(false);
-  
+
   // Add a ref to track if redirect has been attempted
   const redirectAttempted = React.useRef(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    
+
     // Only check and redirect once
     if (!redirectAttempted.current) {
-      const token = localStorage.getItem('token');
-      const role = localStorage.getItem('role');
-      
+      const token = localStorage.getItem("token");
+      const role = localStorage.getItem("role");
+
       if (token && role) {
         redirectAttempted.current = true;
         redirectBasedOnRole(role);
@@ -54,108 +65,100 @@ const LoginSignup = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Handle nested organizer details
-    if (name.startsWith('organizer.')) {
-      const field = name.split('.')[1];
-      setFormData(prev => ({
+    if (name.startsWith("organizer.")) {
+      const field = name.split(".")[1];
+      setFormData((prev) => ({
         ...prev,
         organizerDetails: {
           ...prev.organizerDetails,
-          [field]: value
-        }
+          [field]: value,
+        },
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
-    
+
     // Clear specific field error
-    setErrors(prev => ({
+    setErrors((prev) => ({
       ...prev,
-      [name]: ''
+      [name]: "",
     }));
     setShowErrorAlert(false);
   };
 
   const redirectBasedOnRole = (role) => {
     switch (role) {
-      case 'Admin':
-        navigate('/admindb', { replace: true });
+      case "Admin":
+        navigate("/admindb", { replace: true });
         break;
-      case 'Organizer':
-        navigate('/orgdb', { replace: true });
+      case "Organizer":
+        navigate("/orgdb", { replace: true });
         break;
-      case 'User':
-        navigate('/userdb', { replace: true });
+      case "User":
+        navigate("/userdb", { replace: true });
         break;
       default:
-        setError('Invalid user role');
+        setError("Invalid user role");
         setShowErrorAlert(true);
         // Clear invalid role from localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
     }
   };
 
   const handleLogin = async () => {
     // Clear previous errors
     setErrors({});
-    setError('');
+    setError("");
     setShowErrorAlert(false);
-    
+
     const newErrors = {};
-    
+
     if (!formData.email?.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     }
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       const loginData = {
         email: formData.email.trim(),
-        password: formData.password
+        password: formData.password,
       };
 
       const response = await api.post("/users/login", loginData);
 
       if (response.data?.token && response.data?.user) {
-        // Clear any existing data first
-        localStorage.clear();
-        
-        // Set new data
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('role', response.data.user.role);
-        
-        // Optional: store user data
-        if (response.data.user) {
-          localStorage.setItem('user', JSON.stringify(response.data.user));
-        }
+        const { token, user: userData } = response.data;
+        const role = userData.role;
 
-        setError('');
+        await login(token, role, userData);
+
+        setError("");
         setShowErrorAlert(false);
-        
-        // Use replace to prevent going back to login page
-        redirectBasedOnRole(response.data.user.role);
+
+        redirectBasedOnRole(role);
       } else {
-        setError('Invalid response from server');
+        setError("Invalid response from server");
         setShowErrorAlert(true);
       }
     } catch (error) {
       console.error("Login Error:", error.response?.data || error.message);
-      
-      let errorMessage = 'Invalid email or password';
+
+      let errorMessage = "Invalid email or password";
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
@@ -171,57 +174,68 @@ const LoginSignup = () => {
 
   const validateOrganizerDetails = () => {
     const organizerErrors = {};
-    
-    if (formData.role === 'Organizer') {
+
+    if (formData.role === "Organizer") {
       if (!formData.organizerDetails.organizationName?.trim()) {
-        organizerErrors['organizer.organizationName'] = 'Organization name is required';
+        organizerErrors["organizer.organizationName"] =
+          "Organization name is required";
       }
       if (!formData.organizerDetails.organizationEmail?.trim()) {
-        organizerErrors['organizer.organizationEmail'] = 'Organization email is required';
+        organizerErrors["organizer.organizationEmail"] =
+          "Organization email is required";
       }
       if (!formData.organizerDetails.organizationPhone?.trim()) {
-        organizerErrors['organizer.organizationPhone'] = 'Organization phone is required';
+        organizerErrors["organizer.organizationPhone"] =
+          "Organization phone is required";
       }
       if (!formData.organizerDetails.organizationAddress?.trim()) {
-        organizerErrors['organizer.organizationAddress'] = 'Organization address is required';
+        organizerErrors["organizer.organizationAddress"] =
+          "Organization address is required";
       }
       if (!formData.organizerDetails.taxId?.trim()) {
-        organizerErrors['organizer.taxId'] = 'Tax ID/Business registration is required';
+        organizerErrors["organizer.taxId"] =
+          "Tax ID/Business registration is required";
       }
     }
-    
+
     return organizerErrors;
   };
 
   const handleSignup = async () => {
     // Clear previous errors
     setErrors({});
-    setError('');
+    setError("");
     setShowErrorAlert(false);
-    
+
     const newErrors = {};
-    
+
     // Basic validation
-    if (!formData.fullname?.trim()) newErrors.fullname = 'Full name is required';
-    if (!formData.email?.trim()) newErrors.email = 'Email is required';
-    if (!formData.password) newErrors.password = 'Password is required';
-    if (!formData.confirmPassword) newErrors.confirmPassword = 'Confirm password is required';
-    
-    if (formData.password && formData.confirmPassword && 
-        formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+    if (!formData.fullname?.trim())
+      newErrors.fullname = "Full name is required";
+    if (!formData.email?.trim()) newErrors.email = "Email is required";
+    if (!formData.password) newErrors.password = "Password is required";
+    if (!formData.confirmPassword)
+      newErrors.confirmPassword = "Confirm password is required";
+
+    if (
+      formData.password &&
+      formData.confirmPassword &&
+      formData.password !== formData.confirmPassword
+    ) {
+      newErrors.confirmPassword = "Passwords do not match";
     }
-    
-    if (!formData.contactNo?.trim()) newErrors.contactNo = 'Contact number is required';
-    if (!formData.role) newErrors.role = 'Role is required';
+
+    if (!formData.contactNo?.trim())
+      newErrors.contactNo = "Contact number is required";
+    if (!formData.role) newErrors.role = "Role is required";
 
     // Password strength validation
     if (formData.password && formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     // Add organizer validation if role is Organizer
-    if (formData.role === 'Organizer') {
+    if (formData.role === "Organizer") {
       const organizerErrors = validateOrganizerDetails();
       Object.assign(newErrors, organizerErrors);
     }
@@ -232,7 +246,7 @@ const LoginSignup = () => {
     }
 
     setLoading(true);
-    
+
     try {
       const signupData = {
         fullname: formData.fullname.trim(),
@@ -241,46 +255,46 @@ const LoginSignup = () => {
         contactNo: formData.contactNo.trim(),
         role: formData.role,
         // Include organizerDetails only if role is Organizer
-        ...(formData.role === 'Organizer' && {
-          organizerDetails: formData.organizerDetails
-        })
+        ...(formData.role === "Organizer" && {
+          organizerDetails: formData.organizerDetails,
+        }),
       };
 
       const response = await api.post("/users/signup", signupData);
 
       if (response.data?.user) {
-        setError('');
-        
+        setError("");
+
         // Show success message
-        alert(response.data.message || 'Signup successful! Please login.');
-        
+        alert(response.data.message || "Signup successful! Please login.");
+
         // Switch to login mode and clear form
         setIsLogin(true);
         setFormData({
-          fullname: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-          contactNo: '',
-          role: '',
+          fullname: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+          contactNo: "",
+          role: "",
           organizerDetails: {
-            organizationName: '',
-            organizationEmail: '',
-            organizationPhone: '',
-            organizationAddress: '',
-            organizationWebsite: '',
-            taxId: '',
-            description: ''
-          }
+            organizationName: "",
+            organizationEmail: "",
+            organizationPhone: "",
+            organizationAddress: "",
+            organizationWebsite: "",
+            taxId: "",
+            description: "",
+          },
         });
       } else {
-        setError('Signup failed: Invalid response data');
+        setError("Signup failed: Invalid response data");
         setShowErrorAlert(true);
       }
     } catch (error) {
       console.error("Signup Error:", error.response?.data || error.message);
-      
-      let errorMessage = 'An error occurred during signup';
+
+      let errorMessage = "An error occurred during signup";
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
@@ -304,7 +318,7 @@ const LoginSignup = () => {
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !loading) {
+    if (e.key === "Enter" && !loading) {
       handleSubmit(e);
     }
   };
@@ -312,36 +326,36 @@ const LoginSignup = () => {
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setFormData({
-      fullname: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      contactNo: '',
-      role: '',
+      fullname: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      contactNo: "",
+      role: "",
       organizerDetails: {
-        organizationName: '',
-        organizationEmail: '',
-        organizationPhone: '',
-        organizationAddress: '',
-        organizationWebsite: '',
-        taxId: '',
-        description: ''
-      }
+        organizationName: "",
+        organizationEmail: "",
+        organizationPhone: "",
+        organizationAddress: "",
+        organizationWebsite: "",
+        taxId: "",
+        description: "",
+      },
     });
     setErrors({});
-    setError('');
+    setError("");
     setShowErrorAlert(false);
   };
 
   // Render organizer fields
   const renderOrganizerFields = () => {
-    if (formData.role !== 'Organizer') return null;
+    if (formData.role !== "Organizer") return null;
 
     return (
       <div className="space-y-2 mt-4 pt-4 border-t border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Organization Details</h3>
-        
-        
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">
+          Organization Details
+        </h3>
 
         <div>
           <textarea
@@ -351,11 +365,15 @@ const LoginSignup = () => {
             onChange={handleInputChange}
             rows="2"
             className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm resize-none ${
-              errors['organizer.organizationAddress'] ? 'border-red-500' : 'border-gray-300'
+              errors["organizer.organizationAddress"]
+                ? "border-red-500"
+                : "border-gray-300"
             }`}
           />
-          {errors['organizer.organizationAddress'] && (
-            <p className="text-red-500 text-xs mt-1">{errors['organizer.organizationAddress']}</p>
+          {errors["organizer.organizationAddress"] && (
+            <p className="text-red-500 text-xs mt-1">
+              {errors["organizer.organizationAddress"]}
+            </p>
           )}
         </div>
 
@@ -378,11 +396,13 @@ const LoginSignup = () => {
             value={formData.organizerDetails.taxId}
             onChange={handleInputChange}
             className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-              errors['organizer.taxId'] ? 'border-red-500' : 'border-gray-300'
+              errors["organizer.taxId"] ? "border-red-500" : "border-gray-300"
             }`}
           />
-          {errors['organizer.taxId'] && (
-            <p className="text-red-500 text-xs mt-1">{errors['organizer.taxId']}</p>
+          {errors["organizer.taxId"] && (
+            <p className="text-red-500 text-xs mt-1">
+              {errors["organizer.taxId"]}
+            </p>
           )}
         </div>
 
@@ -397,7 +417,9 @@ const LoginSignup = () => {
           />
         </div>
 
-        <p className="text-xs text-gray-500 mt-2">* Required fields for organizer registration</p>
+        <p className="text-xs text-gray-500 mt-2">
+          * Required fields for organizer registration
+        </p>
       </div>
     );
   };
@@ -428,10 +450,12 @@ const LoginSignup = () => {
           <form onSubmit={handleSubmit} onKeyDown={handleKeyPress}>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                {isLogin ? 'Welcome back!' : 'Create your account'}
+                {isLogin ? "Welcome back!" : "Create your account"}
               </h1>
               <p className="text-gray-600 mb-6 text-sm">
-                {isLogin ? 'Sign in to your account' : 'Fill in your details to get started'}
+                {isLogin
+                  ? "Sign in to your account"
+                  : "Fill in your details to get started"}
               </p>
 
               <div className="space-y-2">
@@ -445,11 +469,13 @@ const LoginSignup = () => {
                       value={formData.fullname}
                       onChange={handleInputChange}
                       className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-                        errors.fullname ? 'border-red-500' : 'border-gray-300'
+                        errors.fullname ? "border-red-500" : "border-gray-300"
                       }`}
                     />
                     {errors.fullname && (
-                      <p className="text-red-500 text-xs mt-1">{errors.fullname}</p>
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.fullname}
+                      </p>
                     )}
                   </div>
                 )}
@@ -463,7 +489,7 @@ const LoginSignup = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-                      errors.email ? 'border-red-500' : 'border-gray-300'
+                      errors.email ? "border-red-500" : "border-gray-300"
                     }`}
                   />
                   {errors.email && (
@@ -480,7 +506,7 @@ const LoginSignup = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm pr-10 ${
-                      errors.password ? 'border-red-500' : 'border-gray-300'
+                      errors.password ? "border-red-500" : "border-gray-300"
                     }`}
                   />
                   <button
@@ -488,10 +514,16 @@ const LoginSignup = () => {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                   {errors.password && (
-                    <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.password}
+                    </p>
                   )}
                 </div>
 
@@ -505,18 +537,28 @@ const LoginSignup = () => {
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
                       className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm pr-10 ${
-                        errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                        errors.confirmPassword
+                          ? "border-red-500"
+                          : "border-gray-300"
                       }`}
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                     {errors.confirmPassword && (
-                      <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.confirmPassword}
+                      </p>
                     )}
                   </div>
                 )}
@@ -531,11 +573,13 @@ const LoginSignup = () => {
                       value={formData.contactNo}
                       onChange={handleInputChange}
                       className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-                        errors.contactNo ? 'border-red-500' : 'border-gray-300'
+                        errors.contactNo ? "border-red-500" : "border-gray-300"
                       }`}
                     />
                     {errors.contactNo && (
-                      <p className="text-red-500 text-xs mt-1">{errors.contactNo}</p>
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.contactNo}
+                      </p>
                     )}
                   </div>
                 )}
@@ -548,10 +592,12 @@ const LoginSignup = () => {
                       value={formData.role}
                       onChange={handleInputChange}
                       className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-                        errors.role ? 'border-red-500' : 'border-gray-300'
+                        errors.role ? "border-red-500" : "border-gray-300"
                       }`}
                     >
-                      <option value="" disabled>Select Role</option>
+                      <option value="" disabled>
+                        Select Role
+                      </option>
                       <option value="User">User</option>
                       <option value="Organizer">Organizer</option>
                       <option value="Admin">Admin</option>
@@ -573,14 +619,32 @@ const LoginSignup = () => {
                 >
                   {loading ? (
                     <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
-                      {isLogin ? 'Logging in...' : 'Creating account...'}
+                      {isLogin ? "Logging in..." : "Creating account..."}
                     </span>
+                  ) : isLogin ? (
+                    "Log in"
                   ) : (
-                    isLogin ? 'Log in' : 'Sign up'
+                    "Sign up"
                   )}
                 </button>
 
@@ -589,7 +653,9 @@ const LoginSignup = () => {
                   <div className="text-center">
                     <button
                       type="button"
-                      onClick={() => alert('Password reset functionality coming soon!')}
+                      onClick={() =>
+                        alert("Password reset functionality coming soon!")
+                      }
                       className="text-blue-600 hover:underline text-xs"
                     >
                       Forgot password?
@@ -604,9 +670,11 @@ const LoginSignup = () => {
                     onClick={toggleMode}
                     className="text-gray-700 hover:underline text-xs"
                   >
-                    {isLogin ? "Don't have an account? " : "Already have an account? "}
+                    {isLogin
+                      ? "Don't have an account? "
+                      : "Already have an account? "}
                     <span className="font-semibold text-blue-600">
-                      {isLogin ? 'Sign up' : 'Log in'}
+                      {isLogin ? "Sign up" : "Log in"}
                     </span>
                   </button>
                 </div>
