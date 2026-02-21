@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNotifications } from "@/context/NotificationContext";
 import { formatDistance } from "date-fns";
@@ -35,14 +35,10 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
     error,
     hasMore,
     unreadCount,
+    preferences = { soundEnabled: true, toastEnabled: true },
+    preferencesLoading,
+    updatePreferences,
   } = useNotifications();
-
-  // ── REMOVED: click-outside handler from here.
-  // NavBar wraps both the bell button AND this dropdown in `notificationRef`.
-  // Having a second click-outside handler on the dropdown div caused a
-  // double-fire bug: clicking the bell triggered onClose() (bell is outside
-  // dropdownRef) AND then toggleNotifications() — net result was reopening.
-  // NavBar's single click-outside handler now exclusively manages closing.
 
   useEffect(() => {
     setCurrentPage(1);
@@ -54,7 +50,7 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
     }
   }, [isOpen, fetchNotifications]);
 
-  // ── Infinite scroll ───────────────────────────────────────────────────────────
+  // Infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -70,7 +66,7 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
     return () => observer.disconnect();
   }, [loading, hasMore, fetchNotifications]);
 
-  // ── Helpers ───────────────────────────────────────────────────────────────────
+  // Helpers
   const getNotificationIcon = (type) => {
     const iconMap = {
       event: Calendar,
@@ -151,7 +147,7 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
     }
   };
 
-  // ── Sub-components ────────────────────────────────────────────────────────────
+  // NotificationItem
   const NotificationItem = ({ notification }) => {
     const [isHovered, setIsHovered] = useState(false);
     const isUnread = notification.status !== "read";
@@ -223,6 +219,7 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
     );
   };
 
+  // FilterButtons
   const FilterButtons = () => (
     <div className="p-3 border-b border-gray-200 bg-gray-50">
       <div className="flex items-center justify-between mb-2">
@@ -258,42 +255,88 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
     </div>
   );
 
-  const SettingsPanel = () => (
-    <div className="absolute inset-0 bg-white z-10">
-      <div className="p-4 border-b border-gray-200 flex items-center gap-3">
-        <button
-          onClick={() => setShowSettings(false)}
-          className="p-2 rounded-full hover:bg-gray-100"
-        >
-          <X className="w-4 h-4" />
-        </button>
-        <h3 className="font-semibold text-gray-800">Notification Settings</h3>
-      </div>
-      <div className="p-4">
-        <div className="text-center py-8 text-gray-500">
-          Notification settings will be available soon.
-        </div>
-        <div className="pt-4 border-t border-gray-200">
-          <button
-            onClick={async () => {
-              await handleMarkAllAsRead();
-              setShowSettings(false);
-            }}
-            disabled={unreadCount === 0 || markingAll}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {markingAll ? (
-              <Loader className="w-4 h-4 animate-spin" />
-            ) : (
-              <Check className="w-4 h-4" />
-            )}
-            Mark All as Read
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  // SettingsPanel with height fix and safe defaults
+  const SettingsPanel = () => {
+    const [localPrefs, setLocalPrefs] = useState(preferences);
 
+    useEffect(() => {
+      setLocalPrefs(preferences);
+    }, [preferences]);
+
+    const handleToggle = (key) => {
+      const current = localPrefs || { soundEnabled: true, toastEnabled: true };
+      const newPrefs = { ...current, [key]: !current[key] };
+      setLocalPrefs(newPrefs);
+      updatePreferences(newPrefs);
+    };
+
+    return (
+      <div className="absolute inset-0 bg-white z-10 overflow-y-auto">
+        <div className="p-4 border-b border-gray-200 flex items-center gap-3 sticky top-0 bg-white">
+          <button
+            onClick={() => setShowSettings(false)}
+            className="p-2 rounded-full hover:bg-gray-100"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <h3 className="font-semibold text-gray-800">Notification Settings</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          {/* Sound toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-gray-700">Sound</p>
+              <p className="text-sm text-gray-500">
+                Play a sound when new notification arrives
+              </p>
+            </div>
+            <button
+              onClick={() => handleToggle("soundEnabled")}
+              className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none ${
+                localPrefs?.soundEnabled ? "bg-blue-600" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`inline-block w-4 h-4 transform transition-transform bg-white rounded-full ${
+                  localPrefs?.soundEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Toast toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-gray-700">Toast Popups</p>
+              <p className="text-sm text-gray-500">
+                Show a temporary notification popup
+              </p>
+            </div>
+            <button
+              onClick={() => handleToggle("toastEnabled")}
+              className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none ${
+                localPrefs?.toastEnabled ? "bg-blue-600" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`inline-block w-4 h-4 transform transition-transform bg-white rounded-full ${
+                  localPrefs?.toastEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+
+          {preferencesLoading && (
+            <div className="flex justify-center py-2">
+              <Loader className="w-5 h-5 animate-spin text-gray-400" />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // NotificationsList
   const NotificationsList = () => (
     <div className="max-h-96 overflow-y-auto">
       {notifications.length > 0 ? (
@@ -345,8 +388,10 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className="absolute right-0 mt-2 w-96 rounded-lg bg-white shadow-xl border border-gray-200 overflow-hidden z-50"
-      onMouseDown={(e) => e.stopPropagation()} // ✅ Prevents outside click handler from closing the dropdown
+      className={`absolute right-0 mt-2 w-96 rounded-lg bg-white shadow-xl border border-gray-200 overflow-hidden z-50 ${
+        showSettings ? "h-[350px]" : ""
+      }`}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       {/* Header */}
       <div className="p-4 border-b border-gray-200 bg-gray-50">
