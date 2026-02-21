@@ -7,25 +7,90 @@ import React, {
   useRef,
   useMemo,
 } from "react";
+import { createPortal } from "react-dom";
 import api from "../utils/api";
 import websocketManager from "../utils/websocketManager";
 import { useAuth } from "./AuthContext";
 
-// Guard against missing audio file producing a broken URI.
-// If src/assets/sounds/notification.mp3 doesn't exist, keep null.
-let notificationSound = null;
+// ─── Audio ────────────────────────────────────────────────────────────────────
+// Try to load mp3. If it doesn't exist, fall back to a Web Audio API beep.
+let notificationSoundUrl = null;
 try {
   const resolved = new URL("../assets/sounds/notification.mp3", import.meta.url)
     .href;
-  // Vite returns a valid-looking URL even for missing files; verify it ends
-  // with .mp3 (not "undefined") before using it.
-  if (resolved?.endsWith(".mp3")) {
-    notificationSound = resolved;
-  }
+  if (resolved?.endsWith(".mp3")) notificationSoundUrl = resolved;
 } catch {
-  notificationSound = null;
+  notificationSoundUrl = null;
 }
 
+// Programmatic beep — works with zero assets
+const playBeep = () => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.type = "sine";
+    oscillator.frequency.value = 880;
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.35);
+  } catch {
+    // AudioContext blocked (e.g. no user gesture yet) — fail silently
+  }
+};
+
+// ─── Toast component (rendered via portal) ────────────────────────────────────
+const NotificationToast = ({ toast, onDismiss }) => {
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, 4000);
+    return () => clearTimeout(timer);
+  }, [toast.id, onDismiss]);
+
+  if (!toast) return null;
+
+  return createPortal(
+    <div
+      className="fixed bottom-6 right-6 z-[9999] max-w-sm animate-slide-up"
+      style={{ animation: "slideUp 0.3s ease-out" }}
+    >
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+      `}</style>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-2xl flex items-start gap-3 p-4">
+        {/* Red pulsing dot */}
+        <span className="mt-1 flex h-3 w-3 flex-shrink-0">
+          <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-800">
+            New Notification
+          </p>
+          <p className="text-sm text-gray-600 mt-0.5 line-clamp-2">
+            {toast.message}
+          </p>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="text-gray-400 hover:text-gray-600 flex-shrink-0 ml-1"
+        >
+          ✕
+        </button>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// ─── Context ──────────────────────────────────────────────────────────────────
 const NotificationContext = createContext(null);
 
 export const NotificationProvider = ({ children }) => {
@@ -38,14 +103,15 @@ export const NotificationProvider = ({ children }) => {
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState("all");
 
+  // Toast state for real-time incoming notifications
+  const [activeToast, setActiveToast] = useState(null);
+
   const audioRef = useRef(null);
   const isMounted = useRef(true);
   const pageRef = useRef(1);
 
-  // THE ROOT FIX (from AuthContext inspection):
-  // getToken() = () => user?.token || getToken()
-  // The token lives directly on the user object. Reading user?.token is always
-  // in sync with the same React render that sets isAuthenticated — zero race.
+  // Token lives directly on user object (confirmed from AuthContext source).
+  // Reading user?.token is always in sync with the same React render as login.
   const token = user?.token ?? null;
 
   // ── Mounted flag ─────────────────────────────────────────────────────────────
@@ -58,8 +124,8 @@ export const NotificationProvider = ({ children }) => {
 
   // ── Audio setup ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (typeof window !== "undefined" && notificationSound) {
-      audioRef.current = new Audio(notificationSound);
+    if (typeof window !== "undefined" && notificationSoundUrl) {
+      audioRef.current = new Audio(notificationSoundUrl);
       audioRef.current.volume = 0.5;
       audioRef.current.load();
     }
@@ -72,6 +138,16 @@ export const NotificationProvider = ({ children }) => {
     };
   }, []);
 
+  // ── Play sound helper ─────────────────────────────────────────────────────────
+  const playSound = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => playBeep());
+    } else {
+      playBeep();
+    }
+  }, []);
+
   // ── Fetch on auth / filter change ────────────────────────────────────────────
   useEffect(() => {
     if (isAuthenticated && user?.id && isMounted.current) {
@@ -81,10 +157,6 @@ export const NotificationProvider = ({ children }) => {
   }, [isAuthenticated, user?.id, filter]);
 
   // ── WebSocket lifecycle ───────────────────────────────────────────────────────
-  // Keyed on `token` string (null = logged out, string = logged in).
-  // Handlers registered BEFORE connect() so no message arrives without a handler.
-  // Disconnect only when token becomes null (logout) — never in cleanup, which
-  // would fire on React StrictMode's fake unmount and kill the connection.
   useEffect(() => {
     if (!token) {
       if (websocketManager.isConnected() || websocketManager.isConnecting) {
@@ -92,19 +164,31 @@ export const NotificationProvider = ({ children }) => {
       }
       return;
     }
-
     if (!isMounted.current) return;
 
-    // ── Handlers ──────────────────────────────────────────────────────────────
+    // ── Handlers (registered BEFORE connect) ─────────────────────────────────
+
     const handleIncomingNotification = (data) => {
       if (!isMounted.current) return;
       const notification = data.payload?.notification;
       if (!notification) return;
-      audioRef.current?.play().catch(() => {});
+
+      // 1. Play sound
+      playSound();
+
+      // 2. Show toast popup
+      setActiveToast({
+        id: Date.now(),
+        message: notification.message || "You have a new notification",
+      });
+
+      // 3. Add to list (deduplicated)
       setNotifications((prev) => {
         if (prev.some((n) => n._id === notification._id)) return prev;
         return [notification, ...prev];
       });
+
+      // 4. Increment red badge
       setUnreadCount((prev) => prev + 1);
     };
 
@@ -168,20 +252,15 @@ export const NotificationProvider = ({ children }) => {
       handleAdminNotificationsUpdate
     );
 
-    // FIX: Only call subscribeToNotifications() — NOT subscribeToUnreadCount().
-    // Backend's handleSubscribe("notifications") already calls
-    // handleUnreadCountSubscription internally, so calling subscribeToUnreadCount
-    // separately causes the server to send unreadCountUpdate TWICE per connection.
     const onConnected = () => {
       if (!isMounted.current) return;
+      // subscribeToNotifications() triggers unreadCount internally on backend —
+      // do NOT also call subscribeToUnreadCount() or count arrives twice.
       websocketManager.subscribeToNotifications();
-      // ✗ Do NOT add subscribeToUnreadCount() here — backend already sends it
-      //   as part of the "notifications" channel subscription above.
     };
 
     websocketManager.connect(token, onConnected);
 
-    // Only deregister handlers on cleanup — never disconnect.
     return () => {
       websocketManager.off("notification", handleIncomingNotification);
       websocketManager.off("notificationRead", handleNotificationRead);
@@ -193,7 +272,7 @@ export const NotificationProvider = ({ children }) => {
         handleAdminNotificationsUpdate
       );
     };
-  }, [token]);
+  }, [token, playSound]);
 
   // ── API helpers ───────────────────────────────────────────────────────────────
   const fetchNotifications = useCallback(
@@ -244,37 +323,45 @@ export const NotificationProvider = ({ children }) => {
 
   const markAsRead = useCallback(async (notificationId) => {
     if (!isMounted.current) return;
+    setNotifications((prev) =>
+      prev.map((n) => (n._id === notificationId ? { ...n, status: "read" } : n))
+    );
+    setUnreadCount((prev) => Math.max(0, prev - 1));
     try {
-      await api.safePatch(`/notifications/${notificationId}/read`);
-      if (!isMounted.current) return;
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n._id === notificationId ? { ...n, status: "read" } : n
-        )
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      await api.safePatch(`/notifications/${notificationId}/read`, {});
     } catch (err) {
       console.error("Failed to mark notification as read:", err);
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n._id === notificationId ? { ...n, status: "unread" } : n
+        )
+      );
+      setUnreadCount((prev) => prev + 1);
     }
   }, []);
 
   const markAllAsRead = useCallback(async () => {
     if (!isMounted.current) return;
+
+    setNotifications((prev) => prev.map((n) => ({ ...n, status: "read" })));
+    setUnreadCount(0);
+
     try {
-      await api.safePatch("/notifications/read-all");
-      if (!isMounted.current) return;
-      setNotifications((prev) => prev.map((n) => ({ ...n, status: "read" })));
-      setUnreadCount(0);
+      await api.safePatch("/notifications/read-all", {});
+
+      websocketManager.send({ type: "markAllAsRead" });
     } catch (err) {
       console.error("Failed to mark all notifications as read:", err);
+      // Revert on failure
+      fetchNotifications(true);
+      fetchUnreadCount();
     }
-  }, []);
+  }, [fetchNotifications, fetchUnreadCount]);
 
-  const deleteNotification = useCallback(async (notificationId) => {
-    if (!isMounted.current) return;
-    try {
-      await api.safeDelete(`/notifications/${notificationId}`);
+  const deleteNotification = useCallback(
+    async (notificationId) => {
       if (!isMounted.current) return;
+      // Optimistic update
       setNotifications((prev) => {
         const deleted = prev.find((n) => n._id === notificationId);
         if (deleted?.status === "unread") {
@@ -282,15 +369,23 @@ export const NotificationProvider = ({ children }) => {
         }
         return prev.filter((n) => n._id !== notificationId);
       });
-    } catch (err) {
-      console.error("Failed to delete notification:", err);
-    }
-  }, []);
+      try {
+        await api.safeDelete(`/notifications/${notificationId}`);
+      } catch (err) {
+        console.error("Failed to delete notification:", err);
+        // Revert — re-fetch
+        fetchNotifications(true);
+      }
+    },
+    [fetchNotifications]
+  );
 
   const refreshNotifications = useCallback(
     () => fetchNotifications(true),
     [fetchNotifications]
   );
+
+  const dismissToast = useCallback(() => setActiveToast(null), []);
 
   const value = useMemo(
     () => ({
@@ -327,6 +422,10 @@ export const NotificationProvider = ({ children }) => {
   return (
     <NotificationContext.Provider value={value}>
       {children}
+      {/* Real-time toast — rendered outside component tree via portal */}
+      {activeToast && (
+        <NotificationToast toast={activeToast} onDismiss={dismissToast} />
+      )}
     </NotificationContext.Provider>
   );
 };

@@ -22,7 +22,6 @@ import {
   Info,
   LayoutDashboard,
 } from "lucide-react";
-
 import { getUserRole, getDashboardUrl } from "@/utils/auth";
 
 const NavBar = () => {
@@ -33,6 +32,8 @@ const NavBar = () => {
   const [wsConnected, setWsConnected] = useState(true);
   const [wsReconnectAttempts, setWsReconnectAttempts] = useState(0);
   const [wsMaxReconnectAttempts, setWsMaxReconnectAttempts] = useState(5);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -40,29 +41,44 @@ const NavBar = () => {
   const { unreadCount } = useNotifications();
 
   const isMounted = useRef(true);
-  const notificationRef = useRef(null);
+  const notificationRef = useRef(null); // wraps BOTH bell button and dropdown
   const profileRef = useRef(null);
   const wsStatusInterval = useRef(null);
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState(null);
-
+  // ── Auth sync ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem("token");
     setIsAuthenticated(!!token);
     setUserRole(getUserRole());
   }, [location.pathname]);
 
-  const themeClasses = {
-    nav: `fixed top-0 z-40 transition-all duration-300 ${
-      sticky ? "bg-white/95 backdrop-blur-lg shadow-sm" : "bg-white"
-    } border-b border-gray-200`,
-    text: "text-gray-800",
-    textMuted: "text-gray-600",
-    button: `bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transition-all duration-300`,
-    dropdownMenu: `absolute right-0 mt-2 w-56 rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden z-50`,
-  };
+  useEffect(() => {
+    if (isAuthenticated) {
+      try {
+        const token = localStorage.getItem("token");
+        const decodedToken = jwtDecode(token);
+        setUser(decodedToken.user);
+      } catch {
+        setUser(null);
+      }
+    } else {
+      setUser(null);
+    }
+  }, [isAuthenticated]);
 
+  // ── Scroll sticky ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const handleScroll = () => setSticky(window.scrollY > 0);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // ── Click outside handler ─────────────────────────────────────────────────────
+  // KEY FIX: This is the ONE AND ONLY click-outside handler for notifications.
+  // `notificationRef` wraps both the bell button and <NotificationDropdown />.
+  // NotificationDropdown no longer has its own click-outside handler —
+  // having two caused: bell mousedown → onClose() fires (bell outside dropdown
+  // ref) → then bell onClick → toggleNotifications() → net: reopened.
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -79,27 +95,7 @@ const NavBar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      try {
-        const token = localStorage.getItem("token");
-        const decodedToken = jwtDecode(token);
-        setUser(decodedToken.user);
-      } catch (error) {
-        console.error("Invalid token:", error);
-        setUser(null);
-      }
-    } else {
-      setUser(null);
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    const handleScroll = () => setSticky(window.scrollY > 0);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
+  // ── WebSocket status polling ──────────────────────────────────────────────────
   useEffect(() => {
     const syncWsStatus = () => {
       if (!isMounted.current) return;
@@ -108,11 +104,8 @@ const NavBar = () => {
       setWsReconnectAttempts(stats.reconnectAttempts);
       setWsMaxReconnectAttempts(stats.maxReconnectAttempts);
     };
-
     syncWsStatus();
-
     wsStatusInterval.current = setInterval(syncWsStatus, 2000);
-
     return () => {
       if (wsStatusInterval.current) {
         clearInterval(wsStatusInterval.current);
@@ -127,6 +120,7 @@ const NavBar = () => {
     };
   }, []);
 
+  // ── Logout ────────────────────────────────────────────────────────────────────
   const handleLogout = useCallback(() => {
     websocketManager.disconnect();
     localStorage.removeItem("token");
@@ -139,10 +133,10 @@ const NavBar = () => {
     setShowNotifications(false);
     setWsConnected(true);
     setWsReconnectAttempts(0);
-
     navigate("/loginsignup");
   }, [navigate]);
 
+  // ── Navigation ────────────────────────────────────────────────────────────────
   const navigationItems = useMemo(() => {
     const items = [];
     if (!isAuthenticated || (userRole && userRole !== "User")) {
@@ -165,18 +159,38 @@ const NavBar = () => {
     const dashboardUrl = getDashboardUrl();
     if (dashboardUrl) {
       const isInDashboard = location.pathname.startsWith(dashboardUrl);
-      if (isInDashboard) {
-        navigate(userRole === "Organizer" ? "/orgdb/overview" : dashboardUrl);
-      } else {
-        navigate(dashboardUrl);
-      }
+      navigate(
+        isInDashboard
+          ? userRole === "Organizer"
+            ? "/orgdb/overview"
+            : dashboardUrl
+          : dashboardUrl
+      );
     }
   }, [userRole, location.pathname, navigate]);
 
+  // FIX: Simple toggle — no conflict because click-outside is handled above
+  // by the ref that wraps both bell + dropdown. If the dropdown is open and
+  // the user clicks the bell, the outside-click handler does NOT fire (bell is
+  // INSIDE notificationRef), so only this toggle runs — correct behaviour.
   const toggleNotifications = useCallback(() => {
     setShowNotifications((prev) => !prev);
   }, []);
 
+  // ── Theme ─────────────────────────────────────────────────────────────────────
+  const themeClasses = {
+    nav: `fixed top-0 z-40 transition-all duration-300 ${
+      sticky ? "bg-white/95 backdrop-blur-lg shadow-sm" : "bg-white"
+    } border-b border-gray-200`,
+    text: "text-gray-800",
+    textMuted: "text-gray-600",
+    button:
+      "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transition-all duration-300",
+    dropdownMenu:
+      "absolute right-0 mt-2 w-56 rounded-xl bg-white shadow-lg border border-gray-200 overflow-hidden z-50",
+  };
+
+  // ── Renderers ─────────────────────────────────────────────────────────────────
   const renderProfileDropdown = () => (
     <div className={themeClasses.dropdownMenu}>
       <div className="p-3 border-b border-gray-200">
@@ -215,21 +229,26 @@ const NavBar = () => {
     </div>
   );
 
+  // notificationRef wraps BOTH the bell button and the dropdown —
+  // this is critical for the single click-outside handler to work correctly.
   const renderNotificationButton = () => (
     <li className="relative" ref={notificationRef}>
       <button
         onClick={toggleNotifications}
         className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors relative"
         aria-label="Notifications"
+        aria-expanded={showNotifications}
       >
         <Bell className="h-4 w-4" />
         <span className="hidden lg:inline">Notifications</span>
+        {/* Red badge — increments on real-time WS notification */}
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[1.1rem] h-[1.1rem] flex items-center justify-center px-1 leading-none font-medium animate-pulse">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
+      {/* Dropdown is inside the same ref — click-outside won't fire for it */}
       {showNotifications && (
         <NotificationDropdown
           isOpen={showNotifications}
@@ -373,18 +392,29 @@ const NavBar = () => {
         ))}
         {isAuthenticated && (
           <>
-            <button
-              onClick={toggleNotifications}
-              className="flex flex-col items-center p-2 text-gray-600 hover:text-blue-600 relative"
-            >
-              <Bell className="w-5 h-5" />
-              <span className="text-xs mt-1">Notifications</span>
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
+            {/* Mobile notification button — also wrapped in notificationRef */}
+            <div ref={notificationRef} className="relative">
+              <button
+                onClick={toggleNotifications}
+                className="flex flex-col items-center p-2 text-gray-600 hover:text-blue-600 relative"
+              >
+                <Bell className="w-5 h-5" />
+                <span className="text-xs mt-1">Alerts</span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full min-w-[1rem] h-4 flex items-center justify-center px-1 leading-none font-medium">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute bottom-14 right-0">
+                  <NotificationDropdown
+                    isOpen={showNotifications}
+                    onClose={() => setShowNotifications(false)}
+                  />
+                </div>
               )}
-            </button>
+            </div>
             <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               className="flex flex-col items-center p-2"

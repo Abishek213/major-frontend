@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNotifications } from "@/context/NotificationContext";
 import { formatDistance } from "date-fns";
@@ -19,8 +19,8 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
   const observerTarget = useRef(null);
-  const dropdownRef = useRef(null);
   const userRole = localStorage.getItem("role");
 
   const {
@@ -37,23 +37,12 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
     unreadCount,
   } = useNotifications();
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        isOpen &&
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target) &&
-        !event.target.closest(".notifications-dropdown")
-      ) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen, onClose]);
+  // ── REMOVED: click-outside handler from here.
+  // NavBar wraps both the bell button AND this dropdown in `notificationRef`.
+  // Having a second click-outside handler on the dropdown div caused a
+  // double-fire bug: clicking the bell triggered onClose() (bell is outside
+  // dropdownRef) AND then toggleNotifications() — net result was reopening.
+  // NavBar's single click-outside handler now exclusively manages closing.
 
   useEffect(() => {
     setCurrentPage(1);
@@ -65,6 +54,23 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
     }
   }, [isOpen, fetchNotifications]);
 
+  // ── Infinite scroll ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !loading && hasMore) {
+          fetchNotifications(false).then(() => {
+            setCurrentPage((prev) => prev + 1);
+          });
+        }
+      },
+      { threshold: 0.5 }
+    );
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => observer.disconnect();
+  }, [loading, hasMore, fetchNotifications]);
+
+  // ── Helpers ───────────────────────────────────────────────────────────────────
   const getNotificationIcon = (type) => {
     const iconMap = {
       event: Calendar,
@@ -97,16 +103,13 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
         notification.timestamp ||
         notification.created_at;
       if (!timestamp) return "Just now";
-
       const date = new Date(timestamp);
       if (isNaN(date.getTime())) return "Recently";
-
       const timeAgo = formatDistance(date, new Date(), { addSuffix: true });
       const exactTime = date.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       });
-
       return (
         <div className="flex items-center gap-1">
           <Clock className="w-3 h-3" />
@@ -114,26 +117,10 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
           <span className="text-xs opacity-75">({exactTime})</span>
         </div>
       );
-    } catch (error) {
+    } catch {
       return "Recently";
     }
   };
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !loading && hasMore) {
-          fetchNotifications(false).then(() => {
-            setCurrentPage((prev) => prev + 1);
-          });
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    if (observerTarget.current) observer.observe(observerTarget.current);
-    return () => observer.disconnect();
-  }, [loading, hasMore, fetchNotifications]);
 
   const handleNotificationClick = async (notification) => {
     try {
@@ -144,8 +131,8 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
         await markAsRead(notification._id);
       }
       onClose();
-    } catch (error) {
-      console.error("Notification click error:", error);
+    } catch (err) {
+      console.error("Notification click error:", err);
     }
   };
 
@@ -154,6 +141,17 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
     setFilter(newFilter);
   };
 
+  const handleMarkAllAsRead = async () => {
+    if (unreadCount === 0 || markingAll) return;
+    setMarkingAll(true);
+    try {
+      await markAllAsRead();
+    } finally {
+      setMarkingAll(false);
+    }
+  };
+
+  // ── Sub-components ────────────────────────────────────────────────────────────
   const NotificationItem = ({ notification }) => {
     const [isHovered, setIsHovered] = useState(false);
     const isUnread = notification.status !== "read";
@@ -169,7 +167,7 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
       >
         <div className="flex items-start gap-3">
           <div
-            className={`p-2 rounded-lg ${getNotificationColor(
+            className={`p-2 rounded-lg flex-shrink-0 ${getNotificationColor(
               notification.type || "default"
             )}`}
           >
@@ -207,18 +205,16 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
                 {formatTimestamp(notification)}
               </div>
               {isHovered && isUnread && (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      markAsRead(notification._id);
-                    }}
-                    className="p-1 rounded text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                    title="Mark as read"
-                  >
-                    <Eye className="w-3 h-3" />
-                  </button>
-                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    markAsRead(notification._id);
+                  }}
+                  className="p-1 rounded text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 flex items-center gap-1"
+                  title="Mark as read"
+                >
+                  <Eye className="w-3 h-3" />
+                </button>
               )}
             </div>
           </div>
@@ -279,12 +275,18 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
         </div>
         <div className="pt-4 border-t border-gray-200">
           <button
-            onClick={() => {
-              markAllAsRead();
+            onClick={async () => {
+              await handleMarkAllAsRead();
               setShowSettings(false);
             }}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            disabled={unreadCount === 0 || markingAll}
+            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
+            {markingAll ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <Check className="w-4 h-4" />
+            )}
             Mark All as Read
           </button>
         </div>
@@ -343,9 +345,10 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
 
   return (
     <div
-      ref={dropdownRef}
       className="absolute right-0 mt-2 w-96 rounded-lg bg-white shadow-xl border border-gray-200 overflow-hidden z-50"
+      onMouseDown={(e) => e.stopPropagation()} // ✅ Prevents outside click handler from closing the dropdown
     >
+      {/* Header */}
       <div className="p-4 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -362,30 +365,38 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="p-2 rounded-full hover:bg-gray-200 text-gray-600"
+              className="p-2 rounded-full hover:bg-gray-200 text-gray-600 transition-colors"
               title="Settings"
             >
               <Settings className="w-5 h-5" />
             </button>
+            {/* Mark All Read button */}
             <button
-              onClick={() => {
-                markAllAsRead();
-                onClose();
-              }}
-              disabled={unreadCount === 0}
-              className={`px-3 py-2 rounded-lg flex items-center gap-1 text-sm ${
-                unreadCount > 0
+              onClick={handleMarkAllAsRead}
+              disabled={unreadCount === 0 || markingAll}
+              className={`px-3 py-2 rounded-lg flex items-center gap-1 text-sm transition-all ${
+                unreadCount > 0 && !markingAll
                   ? "bg-green-600 hover:bg-green-700 text-white"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
+              title={
+                unreadCount === 0
+                  ? "No unread notifications"
+                  : "Mark all as read"
+              }
             >
-              <Check className="w-4 h-4" />
-              <span>Mark All Read</span>
+              {markingAll ? (
+                <Loader className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              <span>{markingAll ? "Marking…" : "Mark All Read"}</span>
             </button>
           </div>
         </div>
       </div>
 
+      {/* Body */}
       {showSettings ? (
         <SettingsPanel />
       ) : (
@@ -395,9 +406,10 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
         </>
       )}
 
+      {/* Error banner */}
       {error && (
         <div className="p-3 bg-red-50 border-t border-red-200 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-500" />
+          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium text-red-700">Error</p>
             <p className="text-xs text-red-600">
