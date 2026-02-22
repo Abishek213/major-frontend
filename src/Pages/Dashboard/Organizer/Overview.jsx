@@ -241,7 +241,7 @@ const Overview = () => {
       if (!userId) throw new Error("Unable to verify user identity");
 
       // Directly fetch user by ID (no email verification)
-      const userResponse = await api.get(`/users/${userId}`);
+      const userResponse = await api.get(`/users/me`);
       const user = userResponse.data.user || userResponse.data;
 
       setUserData(user);
