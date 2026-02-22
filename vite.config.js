@@ -23,13 +23,13 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:4001',
+        target: '${import.meta.env.VITE_API_URL}',
         changeOrigin: true,
         secure: false,
         timeout: 30000
       },
       '/uploads': { 
-        target: 'http://localhost:4001',
+        target: '${import.meta.env.VITE_API_URL}',
         changeOrigin: true,
         secure: false
       }

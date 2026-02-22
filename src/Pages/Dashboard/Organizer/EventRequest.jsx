@@ -81,7 +81,7 @@
         setLoading(true);
         setError("");
         try {
-          const url = `http://localhost:4001/api/v1/eventrequest/event-requests${
+          const url = `${import.meta.env.VITE_API_URL}/eventrequest/event-requests${
             filter ? `?eventType=${filter}` : ""
           }`;
 
@@ -168,7 +168,8 @@
         }
 
         const response = await fetch(
-          `http://localhost:4001/api/v1/eventrequest/event-request/${eventId}/accept`,
+          `${import.meta.env.VITE_API_URL}/eventrequest/event-request/${eventId}/accept`,
+
           {
             method: "PUT",
             headers: {
@@ -229,7 +230,7 @@
         }
 
         const response = await fetch(
-          `http://localhost:4001/api/v1/eventrequest/event-request/${eventId}/reject`,
+          `${import.meta.env.VITE_API_URL}/eventrequest/event-request/${eventId}/reject`,
           {
             method: "PUT",
             headers: {
