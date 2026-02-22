@@ -228,63 +228,77 @@ const Overview = () => {
 
   // ── Fetch core event data ──────────────────────────────────────────────────
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const token = getToken();
-        if (!token) throw new Error("No authentication token found");
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const token = getToken();
+      if (!token) throw new Error("No authentication token found");
 
-        const decodedToken = JSON.parse(atob(token.split(".")[1]));
-        if (!decodedToken.user?.email)
-          throw new Error("Unable to verify user email");
+      // Decode token safely
+      const decodedToken = JSON.parse(atob(token.split(".")[1]));
+      const userId = decodedToken.userId || decodedToken.user?._id || decodedToken.user?.id;
 
-        const userResponse = await api.get(
-          `/users/email/${decodedToken.user.email}`
-        );
-        const user = userResponse.data.user;
-        setUserData(user);
-        if (!user?._id) throw new Error("Unable to verify user credentials");
+      if (!userId) throw new Error("Unable to verify user identity");
 
-        const eventsResponse = await api.get(`/events/user/${user._id}`);
-        const userEvents = eventsResponse.data;
-        setEvents(userEvents);
+      // Directly fetch user by ID (no email verification)
+      const userResponse = await api.get(`/users/${userId}`);
+      const user = userResponse.data.user || userResponse.data;
 
-        const totalEvents = userEvents.length;
-        const upcomingEvents = userEvents.filter(
-          (e) => new Date(e.event_date) > new Date()
-        ).length;
-        const totalAttendees = userEvents.reduce(
-          (s, e) => s + (e.attendees?.length || 0),
-          0
-        );
-        const totalRevenue = userEvents.reduce(
-          (s, e) => s + e.price * (e.attendees?.length || 0),
-          0
-        );
+      setUserData(user);
+      if (!user?._id) throw new Error("Invalid user credentials");
 
-        setStats({ totalEvents, upcomingEvents, totalAttendees, totalRevenue });
+      // Fetch events
+      const eventsResponse = await api.get(`/events/user/${user._id}`);
+      const userEvents = eventsResponse.data;
 
-        const cd = userEvents
-          .filter((e) => new Date(e.event_date) >= new Date())
-          .sort((a, b) => new Date(a.event_date) - new Date(b.event_date))
-          .map((e) => ({
-            name: format(new Date(e.event_date), "MMM d"),
-            attendees: e.attendees?.length || 0,
-            revenue: e.price * (e.attendees?.length || 0),
-            capacity: e.totalSlots,
-            fillRate: pct(e.attendees?.length || 0, e.totalSlots),
-          }));
-        setChartData(cd);
-        setError("");
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError(err.message || "Failed to load dashboard data");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [refreshCount]);
+      setEvents(userEvents);
+
+      const totalEvents = userEvents.length;
+      const upcomingEvents = userEvents.filter(
+        (e) => new Date(e.event_date) > new Date()
+      ).length;
+
+      const totalAttendees = userEvents.reduce(
+        (s, e) => s + (e.attendees?.length || 0),
+        0
+      );
+
+      const totalRevenue = userEvents.reduce(
+        (s, e) => s + e.price * (e.attendees?.length || 0),
+        0
+      );
+
+      setStats({
+        totalEvents,
+        upcomingEvents,
+        totalAttendees,
+        totalRevenue,
+      });
+
+      const cd = userEvents
+        .filter((e) => new Date(e.event_date) >= new Date())
+        .sort((a, b) => new Date(a.event_date) - new Date(b.event_date))
+        .map((e) => ({
+          name: format(new Date(e.event_date), "MMM d"),
+          attendees: e.attendees?.length || 0,
+          revenue: e.price * (e.attendees?.length || 0),
+          capacity: e.totalSlots,
+          fillRate: pct(e.attendees?.length || 0, e.totalSlots),
+        }));
+
+      setChartData(cd);
+      setError("");
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError(err.message || "Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [refreshCount]);
+
 
   // ── Fetch AI dashboard metrics ─────────────────────────────────────────────
   const fetchAIMetrics = useCallback(async (orgId, timeframe) => {
