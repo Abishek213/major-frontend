@@ -38,7 +38,7 @@ const UserProfile = () => {
   const fetchUserData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:4001/api/v1/users/me', {
+      const response = await axios.get('${import.meta.env.VITE_API_URL}/users/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const user = response.data.user;
@@ -53,7 +53,7 @@ const UserProfile = () => {
   const fetchUserEvents = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:4001/api/v1/users/events', {
+      const response = await axios.get('${import.meta.env.VITE_API_URL}/users/events', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBookedEvents(response.data.booked || []);
@@ -96,7 +96,7 @@ const UserProfile = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:4001/api/v1/users/upload-profile-image',
+        '${import.meta.env.VITE_API_URL}/users/upload-profile-image',
         formData,
         {
           headers: {
@@ -156,7 +156,7 @@ const UserProfile = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       await axios.put(
-        'http://localhost:4001/api/v1/users/update',
+        '${import.meta.env.VITE_API_URL}/users/update',
         {
           fullname: userData.fullname,
           contactNo: userData.contactNo,
@@ -189,13 +189,13 @@ const UserProfile = () => {
       const token = localStorage.getItem('token');
       switch (action) {
         case 'cancel':
-          await axios.delete(`http://localhost:4001/api/v1/bookings/${eventId}`, {
+          await axios.delete(`${import.meta.env.VITE_API_URL}/bookings/${eventId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setBookedEvents(prev => prev.filter(event => event._id !== eventId));
           break;
         case 'removeWishlist':
-          await axios.delete(`http://localhost:4001/api/v1/wishlist/${eventId}`, {
+          await axios.delete(`${import.meta.env.VITE_API_URL}/wishlist/${eventId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setWishlistEvents(prev => prev.filter(event => event._id !== eventId));

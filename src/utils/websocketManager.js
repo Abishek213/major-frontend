@@ -300,7 +300,7 @@ class WebSocketManager {
     this.isConnecting = true;
     if (onConnected) this.onConnectedCallback = onConnected;
 
-    const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:4001";
+    const wsUrl = import.meta.env.VITE_WS_URL || "ws:${import.meta.env.VITE_API_URL}";
 
     logger.divider("Connecting");
     logger.info("CONNECT", "Opening WebSocket…", `url=${wsUrl}`);
