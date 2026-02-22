@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   User,
@@ -33,25 +33,25 @@ import {
   Phone,
   MessageCircle,
   ExternalLink,
-  Home,
   ArrowLeft,
   Filter,
   RefreshCw,
   Download,
   Share2,
-  Smartphone  // Add this missing import
-} from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { useChatAssistant } from '@/hooks/useChatAssistant';
+  Smartphone,
+} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useChatAssistant } from "@/hooks/useChatAssistant";
 import FAQViewer from "@/components/ai/user/FAQViewer";
+import AIBadge from "@/components/ai/user/AIBadge";
 
 // Enhanced AI Chat Component
 function AIChatSupport({ isOpen, onClose }) {
   const { user } = useAuth();
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [copiedId, setCopiedId] = useState(null);
   const messagesEndRef = useRef(null);
-  
+
   const {
     messages,
     loading,
@@ -65,24 +65,34 @@ function AIChatSupport({ isOpen, onClose }) {
   } = useChatAssistant();
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       const welcomeMessage = {
         id: Date.now(),
-        from: 'bot',
-        text: `👋 Hello${user?.name ? ' ' + user.name : ''}! I'm your AI support assistant. I can help you with:
+        from: "bot",
+        text: `👋 Hello${
+          user?.name ? " " + user.name : ""
+        }! I'm your AI support assistant. I can help you with:
 • Ticket issues and refunds
 • Event information
 • Account settings
 • Technical support
 • And more!`,
-        sender: 'ai',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        sender: "ai",
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
         isAI: true,
-        suggestions: ['Find my tickets', 'Request refund', 'Contact organizer', 'Transfer tickets']
+        suggestions: [
+          "Find my tickets",
+          "Request refund",
+          "Contact organizer",
+          "Transfer tickets",
+        ],
       };
       setMessages([welcomeMessage]);
     }
@@ -93,7 +103,7 @@ function AIChatSupport({ isOpen, onClose }) {
   const handleSend = async () => {
     if (!message.trim()) return;
     await sendMessage(message);
-    setMessage('');
+    setMessage("");
   };
 
   const handleSuggestionClick = (suggestion) => {
@@ -108,7 +118,10 @@ function AIChatSupport({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed bottom-2 right-6 w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[9999] flex flex-col" style={{ height: '600px' }}>
+    <div
+      className="fixed bottom-2 right-6 w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[9999] flex flex-col"
+      style={{ height: "600px" }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-12 rounded-t-2xl">
         <div className="flex items-center gap-3">
@@ -121,15 +134,13 @@ function AIChatSupport({ isOpen, onClose }) {
           <div>
             <h3 className="font-semibold flex items-center gap-2">
               Support Assistant
-             
             </h3>
             <p className="text-xs text-blue-100">Online • Instant response</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={onClose}
             className="p-1.5 hover:bg-white/20 rounded-lg transition"
           >
@@ -143,10 +154,12 @@ function AIChatSupport({ isOpen, onClose }) {
         {messages.map((msg, index) => (
           <div
             key={msg.id || index}
-            className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${
+              msg.sender === "user" ? "justify-end" : "justify-start"
+            }`}
           >
             <div className="flex items-end gap-2 max-w-[85%]">
-              {msg.sender !== 'user' && (
+              {msg.sender !== "user" && (
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex-shrink-0 flex items-center justify-center">
                   {msg.isAI === false ? (
                     <User className="w-4 h-4 text-white" />
@@ -155,19 +168,19 @@ function AIChatSupport({ isOpen, onClose }) {
                   )}
                 </div>
               )}
-              
+
               <div className="flex flex-col">
                 <div
                   className={`group relative px-4 py-3 rounded-2xl text-sm ${
-                    msg.sender === 'user'
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-none'
+                    msg.sender === "user"
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-none"
                       : msg.isError
-                      ? 'bg-red-100 text-red-800 rounded-bl-none border border-red-200'
-                      : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                      ? "bg-red-100 text-red-800 rounded-bl-none border border-red-200"
+                      : "bg-gray-100 text-gray-800 rounded-bl-none"
                   }`}
                 >
                   <p className="whitespace-pre-wrap break-words">{msg.text}</p>
-                  
+
                   {/* Message Actions */}
                   <div className="absolute -bottom-8 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                     <button
@@ -180,7 +193,7 @@ function AIChatSupport({ isOpen, onClose }) {
                         <Copy className="w-3 h-3 text-gray-600" />
                       )}
                     </button>
-                    {msg.sender !== 'user' && (
+                    {msg.sender !== "user" && (
                       <>
                         <button className="p-1.5 bg-white rounded-lg shadow-md hover:bg-gray-50 transition">
                           <ThumbsUp className="w-3 h-3 text-gray-600" />
@@ -209,17 +222,17 @@ function AIChatSupport({ isOpen, onClose }) {
                 )}
               </div>
 
-              {msg.sender === 'user' && (
+              {msg.sender === "user" && (
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-gray-600 to-gray-700 flex-shrink-0 flex items-center justify-center">
                   <span className="text-white text-xs font-medium">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
                   </span>
                 </div>
               )}
             </div>
           </div>
         ))}
-        
+
         {loading && (
           <div className="flex justify-start">
             <div className="flex items-end gap-2">
@@ -236,7 +249,7 @@ function AIChatSupport({ isOpen, onClose }) {
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -248,7 +261,7 @@ function AIChatSupport({ isOpen, onClose }) {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+          onKeyDown={(e) => e.key === "Enter" && handleSend()}
         />
         <button
           type="button"
@@ -281,8 +294,8 @@ function AIChatSupport({ isOpen, onClose }) {
 export default function Contact() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('attending');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState("attending");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -291,156 +304,168 @@ export default function Contact() {
 
   // Enhanced FAQ database with AI-powered search
   const featuredArticlesAttending = [
-    { 
+    {
       id: 1,
-      title: 'Find your tickets', 
+      title: "Find your tickets",
       icon: Ticket,
-      category: 'tickets',
+      category: "tickets",
       views: 15432,
       helpful: 98,
-      lastUpdated: '2 days ago',
-      content: 'To find your tickets: 1) Log into your account, 2) Go to "My Tickets", 3) Select the event to view your tickets. You can also find tickets in your confirmation email.',
-      tags: ['tickets', 'access', 'login']
+      lastUpdated: "2 days ago",
+      content:
+        'To find your tickets: 1) Log into your account, 2) Go to "My Tickets", 3) Select the event to view your tickets. You can also find tickets in your confirmation email.',
+      tags: ["tickets", "access", "login"],
     },
-    { 
+    {
       id: 2,
-      title: 'Request a refund', 
+      title: "Request a refund",
       icon: DollarSign,
-      category: 'payments',
+      category: "payments",
       views: 12345,
       helpful: 95,
-      lastUpdated: '5 days ago',
-      content: 'To request a refund: Navigate to "My Tickets", select the event, and click "Request Refund". Refunds are processed within 5-7 business days and subject to the event organizer cancellation policy.',
-      tags: ['refund', 'payment', 'cancellation']
+      lastUpdated: "5 days ago",
+      content:
+        'To request a refund: Navigate to "My Tickets", select the event, and click "Request Refund". Refunds are processed within 5-7 business days and subject to the event organizer cancellation policy.',
+      tags: ["refund", "payment", "cancellation"],
     },
-    { 
+    {
       id: 3,
-      title: 'Contact the event organizer', 
+      title: "Contact the event organizer",
       icon: MessageSquare,
-      category: 'support',
+      category: "support",
       views: 8765,
       helpful: 92,
-      lastUpdated: '1 week ago',
-      content: 'To contact an organizer: 1) Go to the event page, 2) Click "Contact Organizer" button, 3) Send your message. Organizers typically respond within 24 hours.',
-      tags: ['organizer', 'contact', 'support']
+      lastUpdated: "1 week ago",
+      content:
+        'To contact an organizer: 1) Go to the event page, 2) Click "Contact Organizer" button, 3) Send your message. Organizers typically respond within 24 hours.',
+      tags: ["organizer", "contact", "support"],
     },
-    { 
+    {
       id: 4,
-      title: 'What is this charge from e-VENTA?', 
+      title: "What is this charge from e-VENTA?",
       icon: FileText,
-      category: 'billing',
+      category: "billing",
       views: 6789,
       helpful: 96,
-      lastUpdated: '3 days ago',
-      content: 'e-VENTA charges appear for ticket purchases, service fees, and event bookings. Check your email for the receipt or view your purchase history in your account.',
-      tags: ['charge', 'billing', 'payment']
+      lastUpdated: "3 days ago",
+      content:
+        "e-VENTA charges appear for ticket purchases, service fees, and event bookings. Check your email for the receipt or view your purchase history in your account.",
+      tags: ["charge", "billing", "payment"],
     },
-    { 
+    {
       id: 5,
-      title: 'Transfer tickets to someone else', 
+      title: "Transfer tickets to someone else",
       icon: Users,
-      category: 'tickets',
+      category: "tickets",
       views: 5678,
       helpful: 94,
-      lastUpdated: '4 days ago',
-      content: 'To transfer tickets: 1) Go to "My Tickets", 2) Select the ticket, 3) Click "Transfer", 4) Enter recipient email. The recipient will receive an email to accept the transfer.',
-      tags: ['transfer', 'tickets', 'share']
+      lastUpdated: "4 days ago",
+      content:
+        'To transfer tickets: 1) Go to "My Tickets", 2) Select the ticket, 3) Click "Transfer", 4) Enter recipient email. The recipient will receive an email to accept the transfer.',
+      tags: ["transfer", "tickets", "share"],
     },
-    { 
+    {
       id: 6,
-      title: 'Edit your order information', 
+      title: "Edit your order information",
       icon: UserCircle,
-      category: 'account',
+      category: "account",
       views: 4567,
       helpful: 91,
-      lastUpdated: '6 days ago',
-      content: 'To edit order information: Go to "My Tickets", find your order, and click "Edit Order". You can update attendee details, contact information, and ticket quantities if available.',
-      tags: ['edit', 'order', 'information']
+      lastUpdated: "6 days ago",
+      content:
+        'To edit order information: Go to "My Tickets", find your order, and click "Edit Order". You can update attendee details, contact information, and ticket quantities if available.',
+      tags: ["edit", "order", "information"],
     },
   ];
 
   const featuredArticlesOrganizing = [
-    { 
+    {
       id: 7,
-      title: 'Create your first event', 
+      title: "Create your first event",
       icon: Calendar,
-      category: 'organizing',
+      category: "organizing",
       views: 3456,
       helpful: 99,
-      lastUpdated: '1 day ago',
-      content: 'To create an event: 1) Click "Create Event", 2) Fill in event details, 3) Set ticket types, 4) Add description and images, 5) Publish. Our team will review within 24 hours.',
-      tags: ['create', 'event', 'organizer']
+      lastUpdated: "1 day ago",
+      content:
+        'To create an event: 1) Click "Create Event", 2) Fill in event details, 3) Set ticket types, 4) Add description and images, 5) Publish. Our team will review within 24 hours.',
+      tags: ["create", "event", "organizer"],
     },
-    { 
+    {
       id: 8,
-      title: 'Set up ticket types', 
+      title: "Set up ticket types",
       icon: Ticket,
-      category: 'organizing',
+      category: "organizing",
       views: 2345,
       helpful: 97,
-      lastUpdated: '2 days ago',
-      content: 'Configure ticket types: General Admission, VIP, Early Bird, etc. Set prices, quantities, and sale periods. You can create multiple tiers and add promo codes.',
-      tags: ['tickets', 'pricing', 'organizer']
+      lastUpdated: "2 days ago",
+      content:
+        "Configure ticket types: General Admission, VIP, Early Bird, etc. Set prices, quantities, and sale periods. You can create multiple tiers and add promo codes.",
+      tags: ["tickets", "pricing", "organizer"],
     },
-    { 
+    {
       id: 9,
-      title: 'Manage attendees', 
+      title: "Manage attendees",
       icon: Users,
-      category: 'organizing',
+      category: "organizing",
       views: 1987,
       helpful: 96,
-      lastUpdated: '3 days ago',
-      content: 'Access your attendee list from the event dashboard. View check-in status, send announcements, and export attendee data for your records.',
-      tags: ['attendees', 'check-in', 'organizer']
+      lastUpdated: "3 days ago",
+      content:
+        "Access your attendee list from the event dashboard. View check-in status, send announcements, and export attendee data for your records.",
+      tags: ["attendees", "check-in", "organizer"],
     },
-    { 
+    {
       id: 10,
-      title: 'Payout and billing', 
+      title: "Payout and billing",
       icon: DollarSign,
-      category: 'organizing',
+      category: "organizing",
       views: 1876,
       helpful: 95,
-      lastUpdated: '4 days ago',
-      content: 'Payouts are processed 5-7 business days after your event ends. View earnings, invoices, and payout history in your organizer dashboard.',
-      tags: ['payout', 'billing', 'organizer']
+      lastUpdated: "4 days ago",
+      content:
+        "Payouts are processed 5-7 business days after your event ends. View earnings, invoices, and payout history in your organizer dashboard.",
+      tags: ["payout", "billing", "organizer"],
     },
-    { 
+    {
       id: 11,
-      title: 'Promote your event', 
+      title: "Promote your event",
       icon: TrendingUp,
-      category: 'organizing',
+      category: "organizing",
       views: 1654,
       helpful: 98,
-      lastUpdated: '2 days ago',
-      content: 'Promote your event using social media, email marketing, and our promotional tools. Create discount codes and track marketing performance.',
-      tags: ['promote', 'marketing', 'organizer']
+      lastUpdated: "2 days ago",
+      content:
+        "Promote your event using social media, email marketing, and our promotional tools. Create discount codes and track marketing performance.",
+      tags: ["promote", "marketing", "organizer"],
     },
-    { 
+    {
       id: 12,
-      title: 'Event analytics', 
+      title: "Event analytics",
       icon: Brain,
-      category: 'organizing',
+      category: "organizing",
       views: 1432,
       helpful: 97,
-      lastUpdated: '5 days ago',
-      content: 'Track ticket sales, attendee demographics, and engagement metrics. Use AI-powered insights to optimize your event strategy.',
-      tags: ['analytics', 'insights', 'organizer']
+      lastUpdated: "5 days ago",
+      content:
+        "Track ticket sales, attendee demographics, and engagement metrics. Use AI-powered insights to optimize your event strategy.",
+      tags: ["analytics", "insights", "organizer"],
     },
   ];
 
   const browseTopics = [
-    { title: 'Buy and register', icon: DollarSign, count: 24 },
-    { title: 'Your tickets', icon: Ticket, count: 18 },
-    { title: 'Your account', icon: UserCircle, count: 15 },
-    { title: 'Terms and policies', icon: ClipboardList, count: 12 },
-    { title: 'Payments & refunds', icon: Shield, count: 20 },
-    { title: 'Technical support', icon: Zap, count: 16 },
-    { title: 'Organizer tools', icon: Calendar, count: 22 },
-    { title: 'Mobile app', icon: Smartphone, count: 8 },
+    { title: "Buy and register", icon: DollarSign, count: 24 },
+    { title: "Your tickets", icon: Ticket, count: 18 },
+    { title: "Your account", icon: UserCircle, count: 15 },
+    { title: "Terms and policies", icon: ClipboardList, count: 12 },
+    { title: "Payments & refunds", icon: Shield, count: 20 },
+    { title: "Technical support", icon: Zap, count: 16 },
+    { title: "Organizer tools", icon: Calendar, count: 22 },
+    { title: "Mobile app", icon: Smartphone, count: 8 },
   ];
 
   const featuredArticles =
-    activeTab === 'attending'
+    activeTab === "attending"
       ? featuredArticlesAttending
       : featuredArticlesOrganizing;
 
@@ -453,22 +478,29 @@ export default function Contact() {
       }
 
       setIsSearching(true);
-      
+
       // Simulate AI search with delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const allArticles = [...featuredArticlesAttending, ...featuredArticlesOrganizing];
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      const allArticles = [
+        ...featuredArticlesAttending,
+        ...featuredArticlesOrganizing,
+      ];
       const query = searchQuery.toLowerCase();
-      
-      const results = allArticles.filter(article => 
-        article.title.toLowerCase().includes(query) ||
-        article.content.toLowerCase().includes(query) ||
-        article.tags.some(tag => tag.toLowerCase().includes(query))
-      ).map(article => ({
-        ...article,
-        relevance: Math.floor(Math.random() * 30) + 70 // Mock relevance score
-      })).sort((a, b) => b.relevance - a.relevance);
-      
+
+      const results = allArticles
+        .filter(
+          (article) =>
+            article.title.toLowerCase().includes(query) ||
+            article.content.toLowerCase().includes(query) ||
+            article.tags.some((tag) => tag.toLowerCase().includes(query))
+        )
+        .map((article) => ({
+          ...article,
+          relevance: Math.floor(Math.random() * 30) + 70, // Mock relevance score
+        }))
+        .sort((a, b) => b.relevance - a.relevance);
+
       setSearchResults(results);
       setIsSearching(false);
     };
@@ -482,45 +514,28 @@ export default function Contact() {
   };
 
   const handleContactSupport = (method) => {
-    if (method === 'chat') {
+    if (method === "chat") {
       setIsChatOpen(true);
-    } else if (method === 'email') {
-      window.location.href = 'mailto:support@eventa.com';
-    } else if (method === 'phone') {
-      window.location.href = 'tel:+1800EVENTA';
+    } else if (method === "email") {
+      window.location.href = "mailto:support@eventa.com";
+    } else if (method === "phone") {
+      window.location.href = "tel:+1800EVENTA";
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Navigation */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
-            >
-              <Home className="w-5 h-5" />
-              <span>Home</span>
-            </button>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-900 font-medium">Help Center</span>
-          </div>
-        </div>
-      </div>
-
       {/* Hero Section with AI Badge */}
       <div className="pb-8 px-4 pt-24">
         <div className="flex justify-center mb-4">
-          <AIBadge 
-            score={98} 
-            reason="24/7 AI Support Available"
-            size="lg"
-          />
+          <AIBadge score={98} reason="24/7 AI Support Available" size="lg" />
         </div>
         <h1 className="text-4xl md:text-5xl font-bold text-center text-[#1e0a3c] mb-8">
-          How can we <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">help</span> you?
+          How can we{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+            help
+          </span>{" "}
+          you?
         </h1>
 
         {/* AI-Powered Search Bar */}
@@ -539,18 +554,21 @@ export default function Contact() {
             )}
             {!isSearching && searchQuery && (
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={() => setSearchQuery("")}
                 className="absolute right-4 top-1/2 -translate-y-1/2"
               >
                 <X className="w-5 h-5 text-gray-400 hover:text-gray-600" />
               </button>
             )}
           </div>
-          
+
           {/* AI Search Tip */}
           <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
             <Brain className="w-4 h-4 text-purple-600" />
-            <span>Try: "How do I get a refund?", "Transfer my ticket", "Event not showing up"</span>
+            <span>
+              Try: "How do I get a refund?", "Transfer my ticket", "Event not
+              showing up"
+            </span>
           </div>
         </div>
 
@@ -561,7 +579,9 @@ export default function Contact() {
               <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-600" />
-                  <h3 className="font-semibold text-gray-900">AI Search Results</h3>
+                  <h3 className="font-semibold text-gray-900">
+                    AI Search Results
+                  </h3>
                   <span className="text-xs text-gray-600 ml-auto">
                     {searchResults.length} articles found
                   </span>
@@ -570,22 +590,35 @@ export default function Contact() {
               <div className="divide-y divide-gray-200">
                 {searchResults.length > 0 ? (
                   searchResults.slice(0, 5).map((result) => (
-                    <div key={result.id} className="p-4 hover:bg-gray-50 transition">
+                    <div
+                      key={result.id}
+                      className="p-4 hover:bg-gray-50 transition"
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3">
                           <result.icon className="w-5 h-5 text-blue-600 mt-0.5" />
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-medium text-gray-900">{result.title}</h4>
+                              <h4 className="font-medium text-gray-900">
+                                {result.title}
+                              </h4>
                               <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">
                                 {result.relevance}% match
                               </span>
                             </div>
-                            <p className="text-sm text-gray-600 line-clamp-2">{result.content}</p>
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {result.content}
+                            </p>
                             <div className="flex items-center gap-4 mt-2">
-                              <span className="text-xs text-gray-500">{result.views} views</span>
-                              <span className="text-xs text-green-600">{result.helpful}% helpful</span>
-                              <span className="text-xs text-gray-500">Updated {result.lastUpdated}</span>
+                              <span className="text-xs text-gray-500">
+                                {result.views} views
+                              </span>
+                              <span className="text-xs text-green-600">
+                                {result.helpful}% helpful
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                Updated {result.lastUpdated}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -603,7 +636,9 @@ export default function Contact() {
                     <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                       <Search className="w-8 h-8 text-gray-400" />
                     </div>
-                    <h4 className="font-medium text-gray-900 mb-2">No results found</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">
+                      No results found
+                    </h4>
                     <p className="text-sm text-gray-600 mb-4">
                       Try different keywords or ask our AI assistant
                     </p>
@@ -625,22 +660,22 @@ export default function Contact() {
           <div className="flex justify-center gap-8 border-b border-gray-200">
             <button
               type="button"
-              onClick={() => setActiveTab('attending')}
+              onClick={() => setActiveTab("attending")}
               className={`pb-4 px-2 text-sm font-medium transition-all ${
-                activeTab === 'attending'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                activeTab === "attending"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               Attending an event
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('organizing')}
+              onClick={() => setActiveTab("organizing")}
               className={`pb-4 px-2 text-sm font-medium transition-all ${
-                activeTab === 'organizing'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                activeTab === "organizing"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               Organizing an event
@@ -673,7 +708,9 @@ export default function Contact() {
       {!searchQuery && (
         <div className="max-w-5xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[#1e0a3c]">Featured articles</h2>
+            <h2 className="text-xl font-bold text-[#1e0a3c]">
+              Featured articles
+            </h2>
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Brain className="w-4 h-4 text-purple-600" />
               <span>AI-curated for you</span>
@@ -696,8 +733,12 @@ export default function Contact() {
                       {article.title}
                     </h3>
                     <div className="flex items-center gap-3 mt-2">
-                      <span className="text-xs text-gray-500">{article.views} views</span>
-                      <span className="text-xs text-green-600">{article.helpful}%</span>
+                      <span className="text-xs text-gray-500">
+                        {article.views} views
+                      </span>
+                      <span className="text-xs text-green-600">
+                        {article.helpful}%
+                      </span>
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
@@ -707,7 +748,9 @@ export default function Contact() {
                 {expandedArticle === article.id && (
                   <div className="absolute left-0 right-0 mt-2 p-4 bg-white border border-blue-200 rounded-xl shadow-xl z-10">
                     <div className="flex items-start justify-between mb-3">
-                      <h4 className="font-semibold text-gray-900">{article.title}</h4>
+                      <h4 className="font-semibold text-gray-900">
+                        {article.title}
+                      </h4>
                       <button
                         onClick={() => setExpandedArticle(null)}
                         className="p-1 hover:bg-gray-100 rounded"
@@ -715,7 +758,9 @@ export default function Contact() {
                         <X className="w-4 h-4" />
                       </button>
                     </div>
-                    <p className="text-sm text-gray-700 mb-4">{article.content}</p>
+                    <p className="text-sm text-gray-700 mb-4">
+                      {article.content}
+                    </p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <button className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
@@ -726,7 +771,9 @@ export default function Contact() {
                         </button>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">Updated {article.lastUpdated}</span>
+                        <span className="text-xs text-gray-500">
+                          Updated {article.lastUpdated}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -740,7 +787,9 @@ export default function Contact() {
       {/* Browse by Topic */}
       {!searchQuery && (
         <div className="max-w-5xl mx-auto px-4 py-8">
-          <h2 className="text-xl font-bold text-[#1e0a3c] mb-6">Browse by topic</h2>
+          <h2 className="text-xl font-bold text-[#1e0a3c] mb-6">
+            Browse by topic
+          </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {browseTopics.map((topic) => (
               <button
@@ -755,7 +804,9 @@ export default function Contact() {
                   <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition">
                     {topic.title}
                   </span>
-                  <p className="text-xs text-gray-500 mt-1">{topic.count} articles</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {topic.count} articles
+                  </p>
                 </div>
               </button>
             ))}
@@ -767,34 +818,44 @@ export default function Contact() {
       {!searchQuery && (
         <div className="max-w-5xl mx-auto px-4 py-8">
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white">
-            <h2 className="text-2xl font-bold mb-6 text-center">Still need help?</h2>
+            <h2 className="text-2xl font-bold mb-6 text-center">
+              Still need help?
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <button
-                onClick={() => handleContactSupport('chat')}
+                onClick={() => handleContactSupport("chat")}
                 className="group flex flex-col items-center gap-3 p-6 bg-white/10 rounded-xl hover:bg-white/20 transition-all duration-300"
               >
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                   <MessageCircle className="w-8 h-8 text-white" />
                 </div>
                 <span className="font-semibold text-lg">Live Chat</span>
-                <span className="text-sm text-blue-100">24/7 AI & Human Support</span>
-                <span className="text-xs text-blue-200 mt-2">Avg. response: 2 min</span>
+                <span className="text-sm text-blue-100">
+                  24/7 AI & Human Support
+                </span>
+                <span className="text-xs text-blue-200 mt-2">
+                  Avg. response: 2 min
+                </span>
               </button>
 
               <button
-                onClick={() => handleContactSupport('email')}
+                onClick={() => handleContactSupport("email")}
                 className="group flex flex-col items-center gap-3 p-6 bg-white/10 rounded-xl hover:bg-white/20 transition-all duration-300"
               >
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Mail className="w-8 h-8 text-white" />
                 </div>
                 <span className="font-semibold text-lg">Email Support</span>
-                <span className="text-sm text-blue-100">support@eventa.com</span>
-                <span className="text-xs text-blue-200 mt-2">Reply within 24h</span>
+                <span className="text-sm text-blue-100">
+                  support@eventa.com
+                </span>
+                <span className="text-xs text-blue-200 mt-2">
+                  Reply within 24h
+                </span>
               </button>
 
               <button
-                onClick={() => handleContactSupport('phone')}
+                onClick={() => handleContactSupport("phone")}
                 className="group flex flex-col items-center gap-3 p-6 bg-white/10 rounded-xl hover:bg-white/20 transition-all duration-300"
               >
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -802,7 +863,9 @@ export default function Contact() {
                 </div>
                 <span className="font-semibold text-lg">Phone Support</span>
                 <span className="text-sm text-blue-100">1-800-EVENTA</span>
-                <span className="text-xs text-blue-200 mt-2">Mon-Fri, 9am-6pm</span>
+                <span className="text-xs text-blue-200 mt-2">
+                  Mon-Fri, 9am-6pm
+                </span>
               </button>
             </div>
           </div>
