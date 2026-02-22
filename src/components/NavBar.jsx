@@ -41,7 +41,11 @@ const NavBar = () => {
   const { unreadCount } = useNotifications();
 
   const isMounted = useRef(true);
-  const notificationRef = useRef(null); // wraps BOTH bell button and dropdown
+  // FIX: Split into two separate refs — one for desktop, one for mobile.
+  // Previously both shared the same ref, so the mobile assignment overwrote
+  // the desktop one, breaking click-outside detection on desktop.
+  const desktopNotificationRef = useRef(null);
+  const mobileNotificationRef = useRef(null);
   const profileRef = useRef(null);
   const wsStatusInterval = useRef(null);
 
@@ -74,19 +78,21 @@ const NavBar = () => {
   }, []);
 
   // ── Click outside handler ─────────────────────────────────────────────────────
-  // KEY FIX: This is the ONE AND ONLY click-outside handler for notifications.
-  // `notificationRef` wraps both the bell button and <NotificationDropdown />.
-  // NotificationDropdown no longer has its own click-outside handler —
-  // having two caused: bell mousedown → onClose() fires (bell outside dropdown
-  // ref) → then bell onClick → toggleNotifications() → net: reopened.
+  // FIX: Now checks BOTH desktop and mobile notification refs so click-outside
+  // works correctly regardless of which one the user is viewing.
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        notificationRef.current &&
-        !notificationRef.current.contains(event.target)
-      ) {
+      const insideDesktopNotif =
+        desktopNotificationRef.current &&
+        desktopNotificationRef.current.contains(event.target);
+      const insideMobileNotif =
+        mobileNotificationRef.current &&
+        mobileNotificationRef.current.contains(event.target);
+
+      if (!insideDesktopNotif && !insideMobileNotif) {
         setShowNotifications(false);
       }
+
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
       }
@@ -169,10 +175,6 @@ const NavBar = () => {
     }
   }, [userRole, location.pathname, navigate]);
 
-  // FIX: Simple toggle — no conflict because click-outside is handled above
-  // by the ref that wraps both bell + dropdown. If the dropdown is open and
-  // the user clicks the bell, the outside-click handler does NOT fire (bell is
-  // INSIDE notificationRef), so only this toggle runs — correct behaviour.
   const toggleNotifications = useCallback(() => {
     setShowNotifications((prev) => !prev);
   }, []);
@@ -229,10 +231,9 @@ const NavBar = () => {
     </div>
   );
 
-  // notificationRef wraps BOTH the bell button and the dropdown —
-  // this is critical for the single click-outside handler to work correctly.
   const renderNotificationButton = () => (
-    <li className="relative" ref={notificationRef}>
+    // FIX: Use desktopNotificationRef instead of the shared notificationRef
+    <li className="relative" ref={desktopNotificationRef}>
       <button
         onClick={toggleNotifications}
         className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors relative"
@@ -241,14 +242,12 @@ const NavBar = () => {
       >
         <Bell className="h-4 w-4" />
         <span className="hidden lg:inline">Notifications</span>
-        {/* Red badge — increments on real-time WS notification */}
         {unreadCount > 0 && (
           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[1.1rem] h-[1.1rem] flex items-center justify-center px-1 leading-none font-medium animate-pulse">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
-      {/* Dropdown is inside the same ref — click-outside won't fire for it */}
       {showNotifications && (
         <NotificationDropdown
           isOpen={showNotifications}
@@ -392,8 +391,8 @@ const NavBar = () => {
         ))}
         {isAuthenticated && (
           <>
-            {/* Mobile notification button — also wrapped in notificationRef */}
-            <div ref={notificationRef} className="relative">
+            {/* FIX: Use mobileNotificationRef instead of the shared notificationRef */}
+            <div ref={mobileNotificationRef} className="relative">
               <button
                 onClick={toggleNotifications}
                 className="flex flex-col items-center p-2 text-gray-600 hover:text-blue-600 relative"
