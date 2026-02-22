@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
-    "axios": "^1.7.9",
+    "axios": "^1.13.5",
     "baseline-browser-mapping": "^2.9.19",
     "caniuse-lite": "^1.0.30001770",
     "chart.js": "^4.5.1",
