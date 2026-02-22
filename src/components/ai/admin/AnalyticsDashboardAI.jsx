@@ -16,8 +16,8 @@ import {
   PieChart,
   Activity
 } from 'lucide-react';
-import AIBadge from '../AIBadge';
-import AILoadingSpinner from '../AILoadingSpinner';
+import AIBadge from '../user/AIBadge';
+import AILoadingSpinner from '../user/AILoadingSpinner';
 import TrendVisualization from './TrendVisualization';
 import CohortAnalysisView from './CohortAnalysisView';
 

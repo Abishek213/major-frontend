@@ -6,8 +6,8 @@ import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { Slider } from "../../ui/slider";
 import { TrendingUp, DollarSign, Info, Zap, CheckCircle } from "lucide-react";
-import AIBadge from "../AIBadge";
-import AILoadingSpinner from "../AILoadingSpinner";
+import AIBadge from "../user/AIBadge";
+import AILoadingSpinner from "../user/AILoadingSpinner";
 import organizerAIService from "../../../services/organizerAIService";
 
 // Only call backend when category is a real MongoDB ObjectId

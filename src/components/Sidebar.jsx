@@ -38,41 +38,27 @@ const Sidebar = ({ user }) => {
   };
 
   return (
-    <div
-      className={`
-        fixed top-0 left-0 h-screen transition-all duration-300 z-50
-        ${isSidebarOpen ? 'w-64' : 'w-16'}
-        bg-white border-r border-gray-200 text-gray-800
-      `}
-    >
-      {/* Header */}
-      <div
-        className={`
-          flex items-center justify-between p-6
-          border-b border-gray-200
-        `}
-      >
-        <h1
-          className={`
-            text-2xl font-semibold transition-all
-            ${isSidebarOpen ? 'block' : 'hidden'}
-            h-8 flex items-center
-          `}
-        >
-          <img
-            src="/images/e-VENTA.png"
-            alt="logo"
-            className="h-12 w-auto"
-          />
-        </h1>
+    <div className={`
+      fixed top-0 left-0 h-screen transition-all duration-300 z-50
+      ${isSidebarOpen ? "w-64" : "w-16"}
+      bg-white border-r border-gray-200 text-gray-800
+    `}>
+     <div className={`
+        flex items-center justify-between p-6
+        border-b border-gray-200
+      `}>
+        {/* Logo Image */}
+        <div className={`
+          transition-all
+          ${isSidebarOpen ? "block" : "hidden"}
+          h-8 flex items-center
+        `}>
 
-        {/* Optional Toggle Button (if you want to use Menu icon) */}
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="text-gray-600 hover:text-black"
-        >
-          <Menu size={20} />
-        </button>
+
+         <img src='/images/e-VENTA.png' alt="logo" className="h-12 w-auto" />
+
+        </div>
+  
       </div>
 
       {/* Navigation tabs */}
