@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Building2, MapPin, Award, DollarSign } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import api from "../../utils/api";
 import {
@@ -32,7 +32,9 @@ const LoginSignup = () => {
     confirmPassword: "",
     contactNo: "",
     role: "",
+    // Combined organizer details from both versions
     organizerDetails: {
+      // Business information (from new version)
       organizationName: "",
       organizationEmail: "",
       organizationPhone: "",
@@ -40,8 +42,28 @@ const LoginSignup = () => {
       organizationWebsite: "",
       taxId: "",
       description: "",
+      
+      // Event organizer specific fields (from old version)
+      businessName: "",
+      contactPerson: "",
+      contactPhone: "",
+      establishedYear: "",
+      expertise: [],
+      serviceAreas: [],
+      pricing: {
+        wedding: { min: "", max: "" },
+        birthday: { min: "", max: "" },
+        corporate: { min: "", max: "" },
+        conference: { min: "", max: "" },
+        party: { min: "", max: "" },
+        anniversary: { min: "", max: "" },
+        workshop: { min: "", max: "" },
+        concert: { min: "", max: "" },
+        festival: { min: "", max: "" }
+      }
     },
   });
+
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -51,7 +73,7 @@ const LoginSignup = () => {
 
   // Verification modal state
   const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [verificationType, setVerificationType] = useState("email"); // 'email' or 'mobile'
+  const [verificationType, setVerificationType] = useState("email");
   const [verificationEmail, setVerificationEmail] = useState("");
   const [verificationMobile, setVerificationMobile] = useState("");
   const [otpValue, setOtpValue] = useState("");
@@ -59,6 +81,31 @@ const LoginSignup = () => {
   const [otpMessage, setOtpMessage] = useState("");
   const [otpError, setOtpError] = useState("");
   const [verifying, setVerifying] = useState(false);
+
+  // City options for Nepal
+  const cityOptions = [
+    'Kathmandu', 'Lalitpur', 'Bhaktapur', 'Pokhara', 'Chitwan',
+    'Biratnagar', 'Butwal', 'Nepalgunj', 'Dharan', 'Other'
+  ];
+
+  // Event type options
+  const eventTypeOptions = [
+    { value: 'wedding', label: 'Wedding' },
+    { value: 'birthday', label: 'Birthday' },
+    { value: 'corporate', label: 'Corporate' },
+    { value: 'conference', label: 'Conference' },
+    { value: 'party', label: 'Party' },
+    { value: 'anniversary', label: 'Anniversary' },
+    { value: 'workshop', label: 'Workshop' },
+    { value: 'concert', label: 'Concert' },
+    { value: 'festival', label: 'Festival' }
+  ];
+
+  // Year options for established year
+  const yearOptions = Array.from(
+    { length: 50 }, 
+    (_, i) => new Date().getFullYear() - i
+  );
 
   const redirectAttempted = React.useRef(false);
 
@@ -77,18 +124,63 @@ const LoginSignup = () => {
   }, []);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
 
+    // Handle nested organizer details
     if (name.startsWith("organizer.")) {
-      const field = name.split(".")[1];
-      setFormData((prev) => ({
+      const path = name.split(".");
+      
+      if (path.length === 2) {
+        // Simple organizer field
+        setFormData((prev) => ({
+          ...prev,
+          organizerDetails: {
+            ...prev.organizerDetails,
+            [path[1]]: value,
+          },
+        }));
+      } else if (path.length === 4 && path[1] === 'pricing') {
+        // Pricing field - organizer.pricing.wedding.min
+        const eventType = path[2];
+        const field = path[3];
+        setFormData(prev => ({
+          ...prev,
+          organizerDetails: {
+            ...prev.organizerDetails,
+            pricing: {
+              ...prev.organizerDetails.pricing,
+              [eventType]: {
+                ...prev.organizerDetails.pricing[eventType],
+                [field]: value
+              }
+            }
+          }
+        }));
+      }
+    } else if (name === 'expertise') {
+      // Handle expertise checkboxes
+      setFormData(prev => ({
         ...prev,
         organizerDetails: {
           ...prev.organizerDetails,
-          [field]: value,
-        },
+          expertise: checked 
+            ? [...prev.organizerDetails.expertise, value]
+            : prev.organizerDetails.expertise.filter(item => item !== value)
+        }
+      }));
+    } else if (name === 'serviceAreas') {
+      // Handle service areas checkboxes
+      setFormData(prev => ({
+        ...prev,
+        organizerDetails: {
+          ...prev.organizerDetails,
+          serviceAreas: checked
+            ? [...prev.organizerDetails.serviceAreas, { city: value }]
+            : prev.organizerDetails.serviceAreas.filter(item => item.city !== value)
+        }
       }));
     } else {
+      // Regular fields
       setFormData((prev) => ({
         ...prev,
         [name]: value,
@@ -114,9 +206,6 @@ const LoginSignup = () => {
         navigate("/userdb", { replace: true });
         break;
       default:
-        // NOTE: Do NOT wipe localStorage here.
-        // AuthContext.login() now always stores a valid role string (never undefined),
-        // so this default case should only be reached for genuinely bad data.
         setError(
           "Sign-in error: could not determine user role. Please try again."
         );
@@ -124,11 +213,6 @@ const LoginSignup = () => {
     }
   };
 
-  /**
-   * Determines whether to show a verification modal or redirect directly.
-   * Uses strict === false so that undefined (field not returned by backend)
-   * is treated as "already verified" and falls through to redirect.
-   */
   const handlePostLoginRedirect = (user) => {
     if (user.isEmailVerified === false) {
       setVerificationEmail(user.email);
@@ -156,13 +240,8 @@ const LoginSignup = () => {
 
       const { token, user } = res.data;
 
-      // login() now always persists a valid role to localStorage
-      // (it defaults to "User" when role is absent from the API response).
       await login(token, user.role, user);
 
-      // FIX: Guard against the localStorage storing the literal string
-      // "undefined" (which was the old bug). AuthContext now prevents this,
-      // but this guard remains as a safety net.
       const storedRole = localStorage.getItem("role");
       const safeStoredRole =
         storedRole && storedRole !== "undefined" ? storedRole : null;
@@ -234,6 +313,7 @@ const LoginSignup = () => {
   const validateOrganizerDetails = () => {
     const organizerErrors = {};
     if (formData.role === "Organizer") {
+      // Business information validation (from new version)
       if (!formData.organizerDetails.organizationName?.trim())
         organizerErrors["organizer.organizationName"] =
           "Organization name is required";
@@ -249,6 +329,27 @@ const LoginSignup = () => {
       if (!formData.organizerDetails.taxId?.trim())
         organizerErrors["organizer.taxId"] =
           "Tax ID/Business registration is required";
+
+      // Event organizer specific validation (from old version)
+      if (!formData.organizerDetails.businessName?.trim()) {
+        organizerErrors['organizer.businessName'] = 'Business name is required';
+      }
+      
+      if (!formData.organizerDetails.contactPerson?.trim()) {
+        organizerErrors['organizer.contactPerson'] = 'Contact person name is required';
+      }
+      
+      if (!formData.organizerDetails.contactPhone?.trim()) {
+        organizerErrors['organizer.contactPhone'] = 'Contact phone is required';
+      }
+      
+      if (formData.organizerDetails.expertise.length === 0) {
+        organizerErrors.expertise = 'Select at least one event type';
+      }
+      
+      if (formData.organizerDetails.serviceAreas.length === 0) {
+        organizerErrors.serviceAreas = 'Select at least one service area';
+      }
     }
     return organizerErrors;
   };
@@ -292,6 +393,17 @@ const LoginSignup = () => {
     setLoading(true);
 
     try {
+      // Clean up pricing data (remove empty values)
+      const cleanedPricing = {};
+      Object.entries(formData.organizerDetails.pricing).forEach(([eventType, range]) => {
+        if (range.min || range.max) {
+          cleanedPricing[eventType] = {
+            min: range.min ? Number(range.min) : 0,
+            max: range.max ? Number(range.max) : 0
+          };
+        }
+      });
+
       const signupData = {
         fullname: formData.fullname.trim(),
         email: formData.email.trim().toLowerCase(),
@@ -299,7 +411,12 @@ const LoginSignup = () => {
         contactNo: formData.contactNo.trim(),
         role: formData.role,
         ...(formData.role === "Organizer" && {
-          organizerDetails: formData.organizerDetails,
+          organizerDetails: {
+            ...formData.organizerDetails,
+            pricing: cleanedPricing,
+            serviceAreas: formData.organizerDetails.serviceAreas,
+            expertise: formData.organizerDetails.expertise
+          }
         }),
       };
 
@@ -324,6 +441,23 @@ const LoginSignup = () => {
             organizationWebsite: "",
             taxId: "",
             description: "",
+            businessName: "",
+            contactPerson: "",
+            contactPhone: "",
+            establishedYear: "",
+            expertise: [],
+            serviceAreas: [],
+            pricing: {
+              wedding: { min: "", max: "" },
+              birthday: { min: "", max: "" },
+              corporate: { min: "", max: "" },
+              conference: { min: "", max: "" },
+              party: { min: "", max: "" },
+              anniversary: { min: "", max: "" },
+              workshop: { min: "", max: "" },
+              concert: { min: "", max: "" },
+              festival: { min: "", max: "" }
+            }
           },
         });
       } else {
@@ -373,6 +507,23 @@ const LoginSignup = () => {
         organizationWebsite: "",
         taxId: "",
         description: "",
+        businessName: "",
+        contactPerson: "",
+        contactPhone: "",
+        establishedYear: "",
+        expertise: [],
+        serviceAreas: [],
+        pricing: {
+          wedding: { min: "", max: "" },
+          birthday: { min: "", max: "" },
+          corporate: { min: "", max: "" },
+          conference: { min: "", max: "" },
+          party: { min: "", max: "" },
+          anniversary: { min: "", max: "" },
+          workshop: { min: "", max: "" },
+          concert: { min: "", max: "" },
+          festival: { min: "", max: "" }
+        }
       },
     });
     setErrors({});
@@ -428,134 +579,306 @@ const LoginSignup = () => {
     if (formData.role !== "Organizer") return null;
 
     return (
-      <div className="space-y-2 mt-4 pt-4 border-t border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">
-          Organization Details
-        </h3>
+      <div className="space-y-4 mt-6 pt-6 border-t-2 border-gray-200">
+        {/* Business Information Section (from new version) */}
+        <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+          <Building2 className="w-5 h-5 mr-2 text-blue-600" />
+          Business Information
+        </h2>
 
-        <div>
-          <input
-            type="text"
-            name="organizer.organizationName"
-            placeholder="Organization Name *"
-            value={formData.organizerDetails.organizationName}
-            onChange={handleInputChange}
-            className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-              errors["organizer.organizationName"]
-                ? "border-red-500"
-                : "border-gray-300"
-            }`}
-          />
-          {errors["organizer.organizationName"] && (
-            <p className="text-red-500 text-xs mt-1">
-              {errors["organizer.organizationName"]}
-            </p>
+        <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
+          <div>
+            <input
+              type="text"
+              name="organizer.organizationName"
+              placeholder="Organization Name *"
+              value={formData.organizerDetails.organizationName}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                errors["organizer.organizationName"]
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {errors["organizer.organizationName"] && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors["organizer.organizationName"]}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="email"
+              name="organizer.organizationEmail"
+              placeholder="Organization Email *"
+              value={formData.organizerDetails.organizationEmail}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                errors["organizer.organizationEmail"]
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {errors["organizer.organizationEmail"] && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors["organizer.organizationEmail"]}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="tel"
+              name="organizer.organizationPhone"
+              placeholder="Organization Phone *"
+              value={formData.organizerDetails.organizationPhone}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                errors["organizer.organizationPhone"]
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {errors["organizer.organizationPhone"] && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors["organizer.organizationPhone"]}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <textarea
+              name="organizer.organizationAddress"
+              placeholder="Organization Address *"
+              value={formData.organizerDetails.organizationAddress}
+              onChange={handleInputChange}
+              rows="2"
+              className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm resize-none ${
+                errors["organizer.organizationAddress"]
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {errors["organizer.organizationAddress"] && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors["organizer.organizationAddress"]}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="text"
+              name="organizer.organizationWebsite"
+              placeholder="Organization Website (optional)"
+              value={formData.organizerDetails.organizationWebsite}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+            />
+          </div>
+
+          <div>
+            <input
+              type="text"
+              name="organizer.taxId"
+              placeholder="Tax ID / Business Registration *"
+              value={formData.organizerDetails.taxId}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                errors["organizer.taxId"] ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors["organizer.taxId"] && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors["organizer.taxId"]}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <textarea
+              name="organizer.description"
+              placeholder="Organization Description (optional)"
+              value={formData.organizerDetails.description}
+              onChange={handleInputChange}
+              rows="3"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Event Organizer Specific Section (from old version) */}
+        <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center mt-6">
+          <Building2 className="w-5 h-5 mr-2 text-blue-600" />
+          Event Organizer Details
+        </h2>
+
+        <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Business Name *
+            </label>
+            <input
+              type="text"
+              name="organizer.businessName"
+              placeholder="Enter your business name"
+              value={formData.organizerDetails.businessName}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                errors['organizer.businessName'] ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors['organizer.businessName'] && (
+              <p className="text-red-500 text-xs mt-1">{errors['organizer.businessName']}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Contact Person Name *
+            </label>
+            <input
+              type="text"
+              name="organizer.contactPerson"
+              placeholder="Enter contact person name"
+              value={formData.organizerDetails.contactPerson}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                errors['organizer.contactPerson'] ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors['organizer.contactPerson'] && (
+              <p className="text-red-500 text-xs mt-1">{errors['organizer.contactPerson']}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Contact Phone *
+            </label>
+            <input
+              type="tel"
+              name="organizer.contactPhone"
+              placeholder="Enter contact phone number"
+              value={formData.organizerDetails.contactPhone}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                errors['organizer.contactPhone'] ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors['organizer.contactPhone'] && (
+              <p className="text-red-500 text-xs mt-1">{errors['organizer.contactPhone']}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Established Year (Optional)
+            </label>
+            <select
+              name="organizer.establishedYear"
+              value={formData.organizerDetails.establishedYear}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+            >
+              <option value="">Select year</option>
+              {yearOptions.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Service Areas */}
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <label className="block text-xs font-medium text-gray-600 mb-2 flex items-center">
+            <MapPin className="w-4 h-4 mr-1 text-blue-600" />
+            Service Areas * (Select cities you serve)
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {cityOptions.map(city => (
+              <label key={city} className="flex items-center space-x-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="serviceAreas"
+                  value={city}
+                  checked={formData.organizerDetails.serviceAreas.some(area => area.city === city)}
+                  onChange={handleInputChange}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span>{city}</span>
+              </label>
+            ))}
+          </div>
+          {errors.serviceAreas && (
+            <p className="text-red-500 text-xs mt-2">{errors.serviceAreas}</p>
           )}
         </div>
 
-        <div>
-          <input
-            type="email"
-            name="organizer.organizationEmail"
-            placeholder="Organization Email *"
-            value={formData.organizerDetails.organizationEmail}
-            onChange={handleInputChange}
-            className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-              errors["organizer.organizationEmail"]
-                ? "border-red-500"
-                : "border-gray-300"
-            }`}
-          />
-          {errors["organizer.organizationEmail"] && (
-            <p className="text-red-500 text-xs mt-1">
-              {errors["organizer.organizationEmail"]}
-            </p>
+        {/* Event Types */}
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <label className="block text-xs font-medium text-gray-600 mb-2 flex items-center">
+            <Award className="w-4 h-4 mr-1 text-blue-600" />
+            Event Types * (Select what you organize)
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {eventTypeOptions.map(event => (
+              <label key={event.value} className="flex items-center space-x-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="expertise"
+                  value={event.value}
+                  checked={formData.organizerDetails.expertise.includes(event.value)}
+                  onChange={handleInputChange}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span>{event.label}</span>
+              </label>
+            ))}
+          </div>
+          {errors.expertise && (
+            <p className="text-red-500 text-xs mt-2">{errors.expertise}</p>
           )}
         </div>
 
-        <div>
-          <input
-            type="tel"
-            name="organizer.organizationPhone"
-            placeholder="Organization Phone *"
-            value={formData.organizerDetails.organizationPhone}
-            onChange={handleInputChange}
-            className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-              errors["organizer.organizationPhone"]
-                ? "border-red-500"
-                : "border-gray-300"
-            }`}
-          />
-          {errors["organizer.organizationPhone"] && (
-            <p className="text-red-500 text-xs mt-1">
-              {errors["organizer.organizationPhone"]}
-            </p>
-          )}
+        {/* Optional Pricing */}
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <label className="block text-xs font-medium text-gray-600 mb-2 flex items-center">
+            <DollarSign className="w-4 h-4 mr-1 text-blue-600" />
+            Pricing (Optional - helps with matching)
+          </label>
+          <p className="text-xs text-gray-500 mb-3">Fill only for event types you selected above</p>
+          
+          {formData.organizerDetails.expertise.map(eventType => {
+            const eventLabel = eventTypeOptions.find(opt => opt.value === eventType)?.label || eventType;
+            return (
+              <div key={eventType} className="mb-3 p-2 bg-white rounded border border-gray-200">
+                <p className="text-sm font-medium mb-2">{eventLabel}</p>
+                <div className="flex space-x-2">
+                  <input
+                    type="number"
+                    name={`organizer.pricing.${eventType}.min`}
+                    placeholder="Min (Rs)"
+                    value={formData.organizerDetails.pricing[eventType]?.min || ''}
+                    onChange={handleInputChange}
+                    className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                  <input
+                    type="number"
+                    name={`organizer.pricing.${eventType}.max`}
+                    placeholder="Max (Rs)"
+                    value={formData.organizerDetails.pricing[eventType]?.max || ''}
+                    onChange={handleInputChange}
+                    className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        <div>
-          <textarea
-            name="organizer.organizationAddress"
-            placeholder="Organization Address *"
-            value={formData.organizerDetails.organizationAddress}
-            onChange={handleInputChange}
-            rows="2"
-            className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm resize-none ${
-              errors["organizer.organizationAddress"]
-                ? "border-red-500"
-                : "border-gray-300"
-            }`}
-          />
-          {errors["organizer.organizationAddress"] && (
-            <p className="text-red-500 text-xs mt-1">
-              {errors["organizer.organizationAddress"]}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <input
-            type="text"
-            name="organizer.organizationWebsite"
-            placeholder="Organization Website (optional)"
-            value={formData.organizerDetails.organizationWebsite}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-          />
-        </div>
-
-        <div>
-          <input
-            type="text"
-            name="organizer.taxId"
-            placeholder="Tax ID / Business Registration *"
-            value={formData.organizerDetails.taxId}
-            onChange={handleInputChange}
-            className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-              errors["organizer.taxId"] ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {errors["organizer.taxId"] && (
-            <p className="text-red-500 text-xs mt-1">
-              {errors["organizer.taxId"]}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <textarea
-            name="organizer.description"
-            placeholder="Organization Description (optional)"
-            value={formData.organizerDetails.description}
-            onChange={handleInputChange}
-            rows="3"
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm resize-none"
-          />
-        </div>
-
-        <p className="text-xs text-gray-500 mt-2">
-          * Required fields for organizer registration
-        </p>
+        <p className="text-xs text-gray-500 mt-2">* Required fields</p>
       </div>
     );
   };

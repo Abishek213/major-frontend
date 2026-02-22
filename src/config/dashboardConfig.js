@@ -419,7 +419,8 @@ import UsersManagement from "../Pages/Dashboard/Admin/UsersManagement";
 import PermissionsManagement from "../Pages/Dashboard/Admin/PermissionsManagement";
 import CategoriesManagement from "../Pages/Dashboard/Admin/CategoriesManagement";
 import Settings from "../Pages/Dashboard/Admin/Settings";
-import FraudDetection from "../Pages/Dashboard/Admin/FraudDetection";
+// Commented out FraudDetection import
+// import FraudDetection from "../Pages/Dashboard/Admin/FraudDetection";
 import TrendsAnalytics from "../Pages/Dashboard/Admin/TrendsAnalytics";
 
 // Import User components
@@ -447,13 +448,14 @@ import PriceSuggestion from "../components/ai/organizer/PriceSuggestion";
 import TagRecommender from "../components/ai/organizer/TagRecommender";
 import OfferCompetitorAnalysis from "../components/ai/organizer/OfferCompetitorAnalysis";
 
-import FraudDetectionPanel from "../components/ai/admin/FraudDetectionPanel";
-import FraudAlertModal from "../components/ai/admin/FraudAlertModal";
-import AnalyticsDashboardAI from "../components/ai/admin/AnalyticsDashboardAI";
-import TrendVisualization from "../components/ai/admin/TrendVisualization";
-import SentimentAnalysisPanel from "../components/ai/admin/SentimentAnalysisPanel";
-import ToxicityModeration from "../components/ai/admin/ToxicityModeration";
-import CohortAnalysisView from "../components/ai/admin/CohortAnalysisView";
+// Commented out Admin AI components
+// import FraudDetectionPanel from "../components/ai/admin/FraudDetectionPanel";
+// import FraudAlertModal from "../components/ai/admin/FraudAlertModal";
+// import AnalyticsDashboardAI from "../components/ai/admin/AnalyticsDashboardAI";
+// import TrendVisualization from "../components/ai/admin/TrendVisualization";
+// import SentimentAnalysisPanel from "../components/ai/admin/SentimentAnalysisPanel";
+// import ToxicityModeration from "../components/ai/admin/ToxicityModeration";
+// import CohortAnalysisView from "../components/ai/admin/CohortAnalysisView";
 
 // ============================================
 // AI-POWERED USER DASHBOARD CONFIGURATION
@@ -1303,75 +1305,75 @@ export const organizerDashboardConfig = {
     },
 
     // AI MARKETING TOOLS
-    marketing: {
-      title: "Marketing Hub",
-      description: "Intelligent promotion and audience targeting",
-      component: MarketingHub,
-      permissions: ["MANAGE_MARKETING"],
-      icon: Megaphone,
-      aiEnabled: true,
-      aiAgent: "dashboard",
-      aiFeatures: {
-        audienceSegmentation: true,
-        channelOptimization: true,
-        contentGeneration: true,
-        campaignPrediction: true,
-        roiForecasting: true,
-        abTesting: true,
-        personalization: true,
-        timingOptimization: true,
-        budgetAllocation: true,
-        performanceTracking: true,
-        competitorAds: true,
-        socialMediaInsights: true,
-        emailMarketing: true,
-        retargeting: true,
-      },
-      channels: ["email", "social", "search", "display", "partner"],
-      metrics: ["reach", "engagement", "conversion", "roi", "cac"],
-    },
+    // marketing: {
+    //   title: "Marketing Hub",
+    //   description: "Intelligent promotion and audience targeting",
+    //   component: MarketingHub,
+    //   permissions: ["MANAGE_MARKETING"],
+    //   icon: Megaphone,
+    //   aiEnabled: true,
+    //   aiAgent: "dashboard",
+    //   aiFeatures: {
+    //     audienceSegmentation: true,
+    //     channelOptimization: true,
+    //     contentGeneration: true,
+    //     campaignPrediction: true,
+    //     roiForecasting: true,
+    //     abTesting: true,
+    //     personalization: true,
+    //     timingOptimization: true,
+    //     budgetAllocation: true,
+    //     performanceTracking: true,
+    //     competitorAds: true,
+    //     socialMediaInsights: true,
+    //     emailMarketing: true,
+    //     retargeting: true,
+    //   },
+    //   channels: ["email", "social", "search", "display", "partner"],
+    //   metrics: ["reach", "engagement", "conversion", "roi", "cac"],
+    // },
 
     // AI SMART PRICING
-    pricing: {
-      title: "Smart Pricing",
-      description: "AI-powered dynamic pricing optimization",
-      component: SmartPricing,
-      permissions: ["MANAGE_PRICING"],
-      icon: DollarSign,
-      aiEnabled: true,
-      aiAgent: "pricing",
-      aiFeatures: {
-        demandForecasting: true,
-        competitorTracking: true,
-        priceElasticity: true,
-        discountOptimization: true,
-        bundleRecommendations: true,
-        dynamicPricing: true,
-        earlyBirdPricing: true,
-        lastMinuteDeals: true,
-        groupDiscounts: true,
-        loyaltyPricing: true,
-        seasonalPricing: true,
-        eventSpecificPricing: true,
-        marketAnalysis: true,
-        priceSensitivity: true,
-      },
-      strategies: [
-        "dynamic",
-        "tiered",
-        "earlyBird",
-        "lastMinute",
-        "group",
-        "seasonal",
-      ],
-      alerts: [
-        "priceTooHigh",
-        "priceTooLow",
-        "competitorPriceChange",
-        "demandSpike",
-        "inventoryLow",
-      ],
-    },
+    // pricing: {
+    //   title: "Smart Pricing",
+    //   description: "AI-powered dynamic pricing optimization",
+    //   component: SmartPricing,
+    //   permissions: ["MANAGE_PRICING"],
+    //   icon: DollarSign,
+    //   aiEnabled: true,
+    //   aiAgent: "pricing",
+    //   aiFeatures: {
+    //     demandForecasting: true,
+    //     competitorTracking: true,
+    //     priceElasticity: true,
+    //     discountOptimization: true,
+    //     bundleRecommendations: true,
+    //     dynamicPricing: true,
+    //     earlyBirdPricing: true,
+    //     lastMinuteDeals: true,
+    //     groupDiscounts: true,
+    //     loyaltyPricing: true,
+    //     seasonalPricing: true,
+    //     eventSpecificPricing: true,
+    //     marketAnalysis: true,
+    //     priceSensitivity: true,
+    //   },
+    //   strategies: [
+    //     "dynamic",
+    //     "tiered",
+    //     "earlyBird",
+    //     "lastMinute",
+    //     "group",
+    //     "seasonal",
+    //   ],
+    //   alerts: [
+    //     "priceTooHigh",
+    //     "priceTooLow",
+    //     "competitorPriceChange",
+    //     "demandSpike",
+    //     "inventoryLow",
+    //   ],
+    // },
   },
 
   quickActions: [
@@ -1490,12 +1492,12 @@ export const adminDashboardConfig = {
 
   aiFeatures: {
     enabled: true,
-    fraudDetection: true,
+    // fraudDetection: true, // Commented out
     systemHealth: true,
     userBehaviorAnalytics: true,
     trendForecasting: true,
     anomalyDetection: true,
-    automatedModeration: true,
+    // automatedModeration: true, // Commented out
     resourceOptimization: true,
     // New AI features
     threatIntelligence: true,
@@ -1510,56 +1512,56 @@ export const adminDashboardConfig = {
     autoRemediation: true,
   },
 
-  // AI Agent Configuration
+  // AI Agent Configuration - Commented out disabled agents
   aiAgents: {
-    fraud: {
-      id: "admin-fraud",
-      name: "Fraud Detection",
-      icon: Shield,
-      component: FraudDetectionPanel,
-      enabled: true,
-      priority: 1,
-    },
-    analytics: {
-      id: "admin-analytics",
-      name: "Analytics Agent",
-      icon: BarChart3,
-      component: AnalyticsDashboardAI,
-      enabled: true,
-      priority: 2,
-    },
-    sentiment: {
-      id: "admin-sentiment",
-      name: "Sentiment Analysis",
-      icon: MessageCircle,
-      component: SentimentAnalysisPanel,
-      enabled: true,
-      priority: 3,
-    },
-    trends: {
-      id: "admin-trends",
-      name: "Trend Visualization",
-      icon: TrendingUp,
-      component: TrendVisualization,
-      enabled: true,
-      priority: 4,
-    },
-    toxicity: {
-      id: "admin-toxicity",
-      name: "Content Moderation",
-      icon: AlertTriangle,
-      component: ToxicityModeration,
-      enabled: true,
-      priority: 5,
-    },
-    cohorts: {
-      id: "admin-cohorts",
-      name: "Cohort Analysis",
-      icon: Users,
-      component: CohortAnalysisView,
-      enabled: true,
-      priority: 6,
-    },
+    // fraud: {
+    //   id: "admin-fraud",
+    //   name: "Fraud Detection",
+    //   icon: Shield,
+    //   component: FraudDetectionPanel,
+    //   enabled: true,
+    //   priority: 1,
+    // },
+    // analytics: {
+    //   id: "admin-analytics",
+    //   name: "Analytics Agent",
+    //   icon: BarChart3,
+    //   component: AnalyticsDashboardAI,
+    //   enabled: true,
+    //   priority: 2,
+    // },
+    // sentiment: {
+    //   id: "admin-sentiment",
+    //   name: "Sentiment Analysis",
+    //   icon: MessageCircle,
+    //   component: SentimentAnalysisPanel,
+    //   enabled: true,
+    //   priority: 3,
+    // },
+    // trends: {
+    //   id: "admin-trends",
+    //   name: "Trend Visualization",
+    //   icon: TrendingUp,
+    //   component: TrendVisualization,
+    //   enabled: true,
+    //   priority: 4,
+    // },
+    // toxicity: {
+    //   id: "admin-toxicity",
+    //   name: "Content Moderation",
+    //   icon: AlertTriangle,
+    //   component: ToxicityModeration,
+    //   enabled: true,
+    //   priority: 5,
+    // },
+    // cohorts: {
+    //   id: "admin-cohorts",
+    //   name: "Cohort Analysis",
+    //   icon: Users,
+    //   component: CohortAnalysisView,
+    //   enabled: true,
+    //   priority: 6,
+    // },
   },
 
   tabs: {
@@ -1571,9 +1573,9 @@ export const adminDashboardConfig = {
       permissions: ["ADMIN_VIEW_DASHBOARD"],
       icon: Brain,
       aiEnabled: true,
-      aiAgent: "analytics",
+      // aiAgent: "analytics", // Commented out
       aiFeatures: {
-        fraudDetection: true,
+        // fraudDetection: true, // Commented out
         anomalyAlert: true,
         growthForecast: true,
         userSegmentation: true,
@@ -1599,7 +1601,7 @@ export const adminDashboardConfig = {
       },
       widgets: [
         "systemHealth",
-        "fraudAlerts",
+        // "fraudAlerts", // Commented out
         "userGrowth",
         "revenueForecast",
         "securityStatus",
@@ -1615,28 +1617,28 @@ export const adminDashboardConfig = {
       permissions: ["MANAGE_EVENTS"],
       icon: Calendar,
       aiEnabled: true,
-      aiAgent: "analytics",
+      // aiAgent: "analytics", // Commented out
       aiFeatures: {
-        automatedModeration: true,
-        contentFlagging: true,
-        fraudDetection: true,
+        // automatedModeration: true, // Commented out
+        // contentFlagging: true, // Commented out
+        // fraudDetection: true, // Commented out
         popularityPrediction: true,
         categoryOptimization: true,
         trendIdentification: true,
         qualityScore: true,
-        spamDetection: true,
+        // spamDetection: true, // Commented out
         duplicateDetection: true,
         policyCompliance: true,
-        inappropriateContent: true,
-        fakeEventDetection: true,
+        // inappropriateContent: true, // Commented out
+        // fakeEventDetection: true, // Commented out
         organizerVerification: true,
       },
       alerts: [
-        "spamEvents",
-        "fraudulentListings",
+        // "spamEvents", // Commented out
+        // "fraudulentListings", // Commented out
         "policyViolations",
         "duplicateEvents",
-        "inappropriateContent",
+        // "inappropriateContent", // Commented out
       ],
     },
 
@@ -1648,7 +1650,7 @@ export const adminDashboardConfig = {
       permissions: ["MANAGE_USERS"],
       icon: Users,
       aiEnabled: true,
-      aiAgent: "analytics",
+      // aiAgent: "analytics", // Commented out
       aiFeatures: {
         behaviorAnalysis: true,
         churnPrediction: true,
@@ -1656,10 +1658,10 @@ export const adminDashboardConfig = {
         segmentRecommendations: true,
         anomalyDetection: true,
         trustScore: true,
-        botDetection: true,
-        fakeAccountDetection: true,
+        // botDetection: true, // Commented out
+        // fakeAccountDetection: true, // Commented out
         activityMonitoring: true,
-        sentimentTracking: true,
+        // sentimentTracking: true, // Commented out
         supportNeeds: true,
         loyaltyPrediction: true,
         lifetimeValue: true,
@@ -1668,7 +1670,7 @@ export const adminDashboardConfig = {
       segments: ["active", "atRisk", "churned", "highValue", "suspicious"],
       alerts: [
         "suspiciousActivity",
-        "botAccounts",
+        // "botAccounts", // Commented out
         "policyViolations",
         "supportEscalation",
       ],
@@ -1682,7 +1684,7 @@ export const adminDashboardConfig = {
       permissions: ["MANAGE_PERMISSIONS"],
       icon: ShieldCheck,
       aiEnabled: true,
-      aiAgent: "analytics",
+      // aiAgent: "analytics", // Commented out
       aiFeatures: {
         roleRecommendations: true,
         accessPatterns: true,
@@ -1707,7 +1709,7 @@ export const adminDashboardConfig = {
       permissions: ["MANAGE_CATEGORIES"],
       icon: FolderTree,
       aiEnabled: true,
-      aiAgent: "analytics",
+      // aiAgent: "analytics", // Commented out
       aiFeatures: {
         autoCategorization: true,
         trendDetection: true,
@@ -1732,7 +1734,7 @@ export const adminDashboardConfig = {
       permissions: ["MANAGE_SETTINGS"],
       icon: Sliders,
       aiEnabled: true,
-      aiAgent: "analytics",
+      // aiAgent: "analytics", // Commented out
       aiFeatures: {
         performanceOptimization: true,
         resourceAllocation: true,
@@ -1749,147 +1751,147 @@ export const adminDashboardConfig = {
       },
     },
 
-    // AI FRAUD DETECTION
-    fraud: {
-      title: "Fraud Detection",
-      description: "Smart detection of suspicious activities",
-      component: FraudDetection,
-      permissions: ["VIEW_FRAUD_ANALYTICS"],
-      icon: Shield,
-      aiEnabled: true,
-      aiAgent: "fraud",
-      aiFeatures: {
-        realTimeMonitoring: true,
-        patternRecognition: true,
-        riskScoring: true,
-        automatedAlerts: true,
-        investigationTools: true,
-        anomalyDetection: true,
-        behavioralAnalysis: true,
-        deviceFingerprinting: true,
-        geolocationValidation: true,
-        velocityChecking: true,
-        blacklistChecking: true,
-        machineLearningModels: true,
-        adaptiveThresholds: true,
-      },
-      metrics: [
-        "riskScore",
-        "blockedAttempts",
-        "falsePositives",
-        "investigationTime",
-        "detectionRate",
-      ],
-    },
+    // AI FRAUD DETECTION - Commented out entire tab
+    // fraud: {
+    //   title: "Fraud Detection",
+    //   description: "Smart detection of suspicious activities",
+    //   component: FraudDetection,
+    //   permissions: ["VIEW_FRAUD_ANALYTICS"],
+    //   icon: Shield,
+    //   aiEnabled: true,
+    //   aiAgent: "fraud",
+    //   aiFeatures: {
+    //     realTimeMonitoring: true,
+    //     patternRecognition: true,
+    //     riskScoring: true,
+    //     automatedAlerts: true,
+    //     investigationTools: true,
+    //     anomalyDetection: true,
+    //     behavioralAnalysis: true,
+    //     deviceFingerprinting: true,
+    //     geolocationValidation: true,
+    //     velocityChecking: true,
+    //     blacklistChecking: true,
+    //     machineLearningModels: true,
+    //     adaptiveThresholds: true,
+    //   },
+    //   metrics: [
+    //     "riskScore",
+    //     "blockedAttempts",
+    //     "falsePositives",
+    //     "investigationTime",
+    //     "detectionRate",
+    //   ],
+    // },
 
-    // AI TRENDS ANALYTICS
-    trends: {
-      title: "Trend Forecasting",
-      description: "Predictive analytics for event industry trends",
-      component: TrendsAnalytics,
-      permissions: ["VIEW_TRENDS"],
-      icon: TrendingUp,
-      aiEnabled: true,
-      aiAgent: "trends",
-      aiFeatures: {
-        marketPrediction: true,
-        seasonalTrends: true,
-        emergingCategories: true,
-        demandForecasting: true,
-        competitiveAnalysis: true,
-        priceTrends: true,
-        attendancePatterns: true,
-        geographicTrends: true,
-        demographicShifts: true,
-        technologyAdoption: true,
-        culturalTrends: true,
-        economicImpact: true,
-        sentimentTrends: true,
-      },
-      timeframes: ["daily", "weekly", "monthly", "quarterly", "yearly"],
-      visualizations: ["line", "bar", "heatmap", "scatter", "choropleth"],
-    },
+    // AI TRENDS ANALYTICS - Keeping this one
+    // trends: {
+    //   title: "Trend Forecasting",
+    //   description: "Predictive analytics for event industry trends",
+    //   component: TrendsAnalytics,
+    //   permissions: ["VIEW_TRENDS"],
+    //   icon: TrendingUp,
+    //   aiEnabled: true,
+    //   // aiAgent: "trends", // Commented out
+    //   aiFeatures: {
+    //     marketPrediction: true,
+    //     seasonalTrends: true,
+    //     emergingCategories: true,
+    //     demandForecasting: true,
+    //     competitiveAnalysis: true,
+    //     priceTrends: true,
+    //     attendancePatterns: true,
+    //     geographicTrends: true,
+    //     demographicShifts: true,
+    //     technologyAdoption: true,
+    //     culturalTrends: true,
+    //     economicImpact: true,
+    //     // sentimentTrends: true, // Commented out
+    //   },
+    //   timeframes: ["daily", "weekly", "monthly", "quarterly", "yearly"],
+    //   visualizations: ["line", "bar", "heatmap", "scatter", "choropleth"],
+    // },
 
-    // AI SENTIMENT ANALYSIS (NEW)
-    sentiment: {
-      title: "Sentiment Analysis",
-      description: "Platform-wide sentiment monitoring",
-      component: SentimentAnalysisPanel,
-      permissions: ["VIEW_SENTIMENT"],
-      icon: MessageCircle,
-      aiEnabled: true,
-      aiAgent: "sentiment",
-      aiFeatures: {
-        reviewAnalysis: true,
-        feedbackMining: true,
-        emotionDetection: true,
-        toxicityDetection: true,
-        trendAnalysis: true,
-        insightGeneration: true,
-        keywordExtraction: true,
-        topicModeling: true,
-        satisfactionTracking: true,
-        complaintDetection: true,
-        praiseIdentification: true,
-        improvementSuggestions: true,
-      },
-    },
+    // AI SENTIMENT ANALYSIS - Commented out entire tab
+    // sentiment: {
+    //   title: "Sentiment Analysis",
+    //   description: "Platform-wide sentiment monitoring",
+    //   component: SentimentAnalysisPanel,
+    //   permissions: ["VIEW_SENTIMENT"],
+    //   icon: MessageCircle,
+    //   aiEnabled: true,
+    //   aiAgent: "sentiment",
+    //   aiFeatures: {
+    //     reviewAnalysis: true,
+    //     feedbackMining: true,
+    //     emotionDetection: true,
+    //     toxicityDetection: true,
+    //     trendAnalysis: true,
+    //     insightGeneration: true,
+    //     keywordExtraction: true,
+    //     topicModeling: true,
+    //     satisfactionTracking: true,
+    //     complaintDetection: true,
+    //     praiseIdentification: true,
+    //     improvementSuggestions: true,
+    //   },
+    // },
 
-    // AI CONTENT MODERATION (NEW)
-    moderation: {
-      title: "Content Moderation",
-      description: "AI-powered content review",
-      component: ToxicityModeration,
-      permissions: ["MODERATE_CONTENT"],
-      icon: AlertTriangle,
-      aiEnabled: true,
-      aiAgent: "toxicity",
-      aiFeatures: {
-        toxicDetection: true,
-        spamFiltering: true,
-        policyEnforcement: true,
-        imageModeration: true,
-        commentReview: true,
-        userReporting: true,
-        automatedAction: true,
-        appealHandling: true,
-        learningSystem: true,
-        accuracyMetrics: true,
-      },
-    },
+    // AI CONTENT MODERATION - Commented out entire tab
+    // moderation: {
+    //   title: "Content Moderation",
+    //   description: "AI-powered content review",
+    //   component: ToxicityModeration,
+    //   permissions: ["MODERATE_CONTENT"],
+    //   icon: AlertTriangle,
+    //   aiEnabled: true,
+    //   aiAgent: "toxicity",
+    //   aiFeatures: {
+    //     toxicDetection: true,
+    //     spamFiltering: true,
+    //     policyEnforcement: true,
+    //     imageModeration: true,
+    //     commentReview: true,
+    //     userReporting: true,
+    //     automatedAction: true,
+    //     appealHandling: true,
+    //     learningSystem: true,
+    //     accuracyMetrics: true,
+    //   },
+    // },
 
-    // AI COHORT ANALYSIS (NEW)
-    cohorts: {
-      title: "Cohort Analysis",
-      description: "User behavior patterns",
-      component: CohortAnalysisView,
-      permissions: ["VIEW_COHORTS"],
-      icon: Users,
-      aiEnabled: true,
-      aiAgent: "cohorts",
-      aiFeatures: {
-        retentionAnalysis: true,
-        behaviorSegments: true,
-        lifecycleTracking: true,
-        engagementPatterns: true,
-        churnPrediction: true,
-        monetizationAnalysis: true,
-        featureAdoption: true,
-        userJourney: true,
-        cohortComparison: true,
-        trendIdentification: true,
-      },
-    },
+    // AI COHORT ANALYSIS - Commented out entire tab
+    // cohorts: {
+    //   title: "Cohort Analysis",
+    //   description: "User behavior patterns",
+    //   component: CohortAnalysisView,
+    //   permissions: ["VIEW_COHORTS"],
+    //   icon: Users,
+    //   aiEnabled: true,
+    //   aiAgent: "cohorts",
+    //   aiFeatures: {
+    //     retentionAnalysis: true,
+    //     behaviorSegments: true,
+    //     lifecycleTracking: true,
+    //     engagementPatterns: true,
+    //     churnPrediction: true,
+    //     monetizationAnalysis: true,
+    //     featureAdoption: true,
+    //     userJourney: true,
+    //     cohortComparison: true,
+    //     trendIdentification: true,
+    //   },
+    // },
   },
 
   quickActions: [
-    {
-      label: "Risk Scan",
-      icon: Shield,
-      path: "fraud",
-      description: "AI fraud detection scan",
-      aiPowered: true,
-    },
+    // {
+    //   label: "Risk Scan",
+    //   icon: Shield,
+    //   path: "fraud",
+    //   description: "AI fraud detection scan",
+    //   aiPowered: true,
+    // },
     {
       label: "System Health",
       icon: Activity,
@@ -1904,20 +1906,20 @@ export const adminDashboardConfig = {
       description: "Predict market movements",
       aiPowered: true,
     },
-    {
-      label: "Sentiment Check",
-      icon: MessageCircle,
-      path: "sentiment",
-      description: "Analyze user feedback",
-      aiPowered: true,
-    },
-    {
-      label: "Moderate Content",
-      icon: AlertTriangle,
-      path: "moderation",
-      description: "Review flagged content",
-      aiPowered: true,
-    },
+    // {
+    //   label: "Sentiment Check",
+    //   icon: MessageCircle,
+    //   path: "sentiment",
+    //   description: "Analyze user feedback",
+    //   aiPowered: true,
+    // },
+    // {
+    //   label: "Moderate Content",
+    //   icon: AlertTriangle,
+    //   path: "moderation",
+    //   description: "Review flagged content",
+    //   aiPowered: true,
+    // },
   ],
 
   insights: [
@@ -1930,15 +1932,15 @@ export const adminDashboardConfig = {
       value: "98%",
       status: "healthy",
     },
-    {
-      title: "Risk Score",
-      icon: Shield,
-      color: "amber",
-      description: "Overall platform risk",
-      aiGenerated: true,
-      value: "23",
-      level: "low",
-    },
+    // {
+    //   title: "Risk Score",
+    //   icon: Shield,
+    //   color: "amber",
+    //   description: "Overall platform risk",
+    //   aiGenerated: true,
+    //   value: "23",
+    //   level: "low",
+    // },
     {
       title: "Growth Rate",
       icon: TrendingUp,
@@ -1948,25 +1950,25 @@ export const adminDashboardConfig = {
       value: "+15%",
       confidence: "89%",
     },
-    {
-      title: "User Satisfaction",
-      icon: Star,
-      color: "purple",
-      description: "Sentiment analysis",
-      aiGenerated: true,
-      value: "4.5",
-      trend: "+0.3",
-    },
+    // {
+    //   title: "User Satisfaction",
+    //   icon: Star,
+    //   color: "purple",
+    //   description: "Sentiment analysis",
+    //   aiGenerated: true,
+    //   value: "4.5",
+    //   trend: "+0.3",
+    // },
   ],
 
-  // AI Widgets for Admin
+  // AI Widgets for Admin - Commented out disabled widgets
   widgets: {
-    fraudAlerts: {
-      enabled: true,
-      title: "Fraud Alerts",
-      icon: Shield,
-      refreshInterval: 10000, // 10 seconds
-    },
+    // fraudAlerts: {
+    //   enabled: true,
+    //   title: "Fraud Alerts",
+    //   icon: Shield,
+    //   refreshInterval: 10000, // 10 seconds
+    // },
     systemMetrics: {
       enabled: true,
       title: "System Metrics",
@@ -1985,12 +1987,12 @@ export const adminDashboardConfig = {
       icon: DollarSign,
       refreshInterval: 300000, // 5 minutes
     },
-    sentimentOverview: {
-      enabled: true,
-      title: "Sentiment Overview",
-      icon: MessageCircle,
-      refreshInterval: 1800000, // 30 minutes
-    },
+    // sentimentOverview: {
+    //   enabled: true,
+    //   title: "Sentiment Overview",
+    //   icon: MessageCircle,
+    //   refreshInterval: 1800000, // 30 minutes
+    // },
     trendDetection: {
       enabled: true,
       title: "Trend Detection",
@@ -1999,7 +2001,7 @@ export const adminDashboardConfig = {
     },
   },
 
-  // AI Model Configuration
+  // AI Model Configuration - Commented out disabled models
   aiModels: {
     recommendation: {
       model: "hybrid",
@@ -2007,13 +2009,13 @@ export const adminDashboardConfig = {
       confidence: 0.85,
       updateFrequency: "realtime",
     },
-    fraudDetection: {
-      model: "ensemble",
-      version: "3.0.0",
-      sensitivity: "adaptive",
-      alertThreshold: 0.7,
-      falsePositiveTarget: 0.03,
-    },
+    // fraudDetection: {
+    //   model: "ensemble",
+    //   version: "3.0.0",
+    //   sensitivity: "adaptive",
+    //   alertThreshold: 0.7,
+    //   falsePositiveTarget: 0.03,
+    // },
     forecasting: {
       model: "timeseries",
       version: "1.5.0",
@@ -2021,18 +2023,18 @@ export const adminDashboardConfig = {
       granularity: "daily",
       accuracy: 0.87,
     },
-    sentiment: {
-      model: "bert-base",
-      version: "2.0.0",
-      languages: 8,
-      accuracy: 0.91,
-    },
-    moderation: {
-      model: "toxicity-detector",
-      version: "1.2.0",
-      threshold: 0.7,
-      precision: 0.89,
-    },
+    // sentiment: {
+    //   model: "bert-base",
+    //   version: "2.0.0",
+    //   languages: 8,
+    //   accuracy: 0.91,
+    // },
+    // moderation: {
+    //   model: "toxicity-detector",
+    //   version: "1.2.0",
+    //   threshold: 0.7,
+    //   precision: 0.89,
+    // },
   },
 };
 
@@ -2092,7 +2094,7 @@ export const aiFeatureFlags = {
 
   // Admin Dashboard AI Features
   admin: {
-    fraudDetection: true,
+    // fraudDetection: true, // Commented out
     trendForecasting: true,
     anomalyDetection: true,
     resourceOptimization: true,
