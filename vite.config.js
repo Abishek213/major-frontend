@@ -15,24 +15,24 @@ export default defineConfig({
       '@context': path.resolve(__dirname, './src/context'),
       '@config': path.resolve(__dirname, './src/config'),
     },
-    extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'] // Add this line
+    extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']
   },
   server: {
     fs: {
       strict: false
     },
     proxy: {
-      '/api': {
-        target: '${import.meta.env.VITE_API_URL}',
-        changeOrigin: true,
-        secure: false,
-        timeout: 30000
-      },
-      '/uploads': { 
-        target: '${import.meta.env.VITE_API_URL}',
-        changeOrigin: true,
-        secure: false
-      }
+  '/api': {
+    target: 'http://localhost:4001',
+    changeOrigin: true,
+    secure: false,
+    timeout: 30000
+  },
+  '/uploads': {
+    target: 'http://localhost:4001',
+    changeOrigin: true,
+    secure: false
+  }
     },
     port: 5173,
     open: true,

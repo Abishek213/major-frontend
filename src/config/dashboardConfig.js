@@ -516,14 +516,14 @@ export const userDashboardConfig = {
       enabled: true,
       priority: 3,
     },
-    faq: {
-      id: "faq-agent",
-      name: "FAQ Assistant",
-      icon: BookOpen,
-      component: FAQViewer,
-      enabled: true,
-      priority: 4,
-    },
+    // faq: {
+    //   id: "faq-agent",
+    //   name: "FAQ Assistant",
+    //   icon: BookOpen,
+    //   component: FAQViewer,
+    //   enabled: true,
+    //   priority: 4,
+    // },
   },
 
   // User Dashboard Tabs with AI Enhancements
@@ -782,38 +782,38 @@ export const userDashboardConfig = {
       ],
     },
 
-    // AI FAQ TAB
-    "ai-faq": {
-      title: "Smart FAQ",
-      description: "Answers to frequently asked questions",
-      component: FAQViewer,
-      permissions: ["VIEW_FAQ"],
-      icon: BookOpen,
-      aiEnabled: true,
-      aiAgent: "faq",
-      aiFeatures: {
-        semanticSearch: true,
-        contextualAnswers: true,
-        relatedQuestions: true,
-        feedbackLearning: true,
-        multimediaAnswers: true,
-        stepByStepGuides: true,
-        videoTutorials: true,
-        communityAnswers: true,
-        expertVerified: true,
-        translationSupport: true,
-      },
-      categories: [
-        "Booking",
-        "Payments",
-        "Cancellations",
-        "Refunds",
-        "Account",
-        "Technical",
-        "Events",
-        "Organizers",
-      ],
-    },
+    // AI FAQ TAB - Commented out
+    // "ai-faq": {
+    //   title: "Smart FAQ",
+    //   description: "Answers to frequently asked questions",
+    //   component: FAQViewer,
+    //   permissions: ["VIEW_FAQ"],
+    //   icon: BookOpen,
+    //   aiEnabled: true,
+    //   aiAgent: "faq",
+    //   aiFeatures: {
+    //     semanticSearch: true,
+    //     contextualAnswers: true,
+    //     relatedQuestions: true,
+    //     feedbackLearning: true,
+    //     multimediaAnswers: true,
+    //     stepByStepGuides: true,
+    //     videoTutorials: true,
+    //     communityAnswers: true,
+    //     expertVerified: true,
+    //     translationSupport: true,
+    //   },
+    //   categories: [
+    //     "Booking",
+    //     "Payments",
+    //     "Cancellations",
+    //     "Refunds",
+    //     "Account",
+    //     "Technical",
+    //     "Events",
+    //     "Organizers",
+    //   ],
+    // },
   },
 
   // AI-Enhanced Additional Routes
@@ -1785,32 +1785,32 @@ export const adminDashboardConfig = {
     // },
 
     // AI TRENDS ANALYTICS - Keeping this one
-    // trends: {
-    //   title: "Trend Forecasting",
-    //   description: "Predictive analytics for event industry trends",
-    //   component: TrendsAnalytics,
-    //   permissions: ["VIEW_TRENDS"],
-    //   icon: TrendingUp,
-    //   aiEnabled: true,
-    //   // aiAgent: "trends", // Commented out
-    //   aiFeatures: {
-    //     marketPrediction: true,
-    //     seasonalTrends: true,
-    //     emergingCategories: true,
-    //     demandForecasting: true,
-    //     competitiveAnalysis: true,
-    //     priceTrends: true,
-    //     attendancePatterns: true,
-    //     geographicTrends: true,
-    //     demographicShifts: true,
-    //     technologyAdoption: true,
-    //     culturalTrends: true,
-    //     economicImpact: true,
-    //     // sentimentTrends: true, // Commented out
-    //   },
-    //   timeframes: ["daily", "weekly", "monthly", "quarterly", "yearly"],
-    //   visualizations: ["line", "bar", "heatmap", "scatter", "choropleth"],
-    // },
+    trends: {
+      title: "Trend Forecasting",
+      description: "Predictive analytics for event industry trends",
+      component: TrendsAnalytics,
+      permissions: ["VIEW_TRENDS"],
+      icon: TrendingUp,
+      aiEnabled: true,
+      // aiAgent: "trends", // Commented out
+      aiFeatures: {
+        marketPrediction: true,
+        seasonalTrends: true,
+        emergingCategories: true,
+        demandForecasting: true,
+        competitiveAnalysis: true,
+        priceTrends: true,
+        attendancePatterns: true,
+        geographicTrends: true,
+        demographicShifts: true,
+        technologyAdoption: true,
+        culturalTrends: true,
+        economicImpact: true,
+        // sentimentTrends: true, // Commented out
+      },
+      timeframes: ["daily", "weekly", "monthly", "quarterly", "yearly"],
+      visualizations: ["line", "bar", "heatmap", "scatter", "choropleth"],
+    },
 
     // AI SENTIMENT ANALYSIS - Commented out entire tab
     // sentiment: {
@@ -2071,6 +2071,7 @@ export const aiFeatureFlags = {
     scheduleOptimization: true,
     weatherIntegration: true,
     accessibilityFeatures: true,
+    // smartFAQ: false, // Commented out - FAQ feature disabled
   },
 
   // Organizer Dashboard AI Features
