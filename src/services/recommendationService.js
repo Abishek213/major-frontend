@@ -1,116 +1,138 @@
-import api from '../utils/api';
+import api from "../utils/api";
+
+function normalizeRecommendation(rec) {
+  const ev = rec.event_id || {};
+  const score = Math.round((rec.confidence_score || 0) * 100);
+
+  // Format date
+  let formattedDate = "";
+  if (ev.event_date) {
+    try {
+      formattedDate = new Date(ev.event_date).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      formattedDate = ev.event_date;
+    }
+  }
+
+  // Determine badges from confidence level
+  const badges = [];
+  if (score >= 90) badges.push("trending");
+  if (score >= 95) badges.push("premium");
+
+  // Attendee count (backend stores attendees as an array of user IDs)
+  const attendeeCount = Array.isArray(ev.attendees) ? ev.attendees.length : 0;
+
+  return {
+    // Identity
+    id: ev._id || rec._id,
+    recommendationId: rec._id,
+
+    // Display fields
+    title: ev.event_name || "Untitled Event",
+    category: ev.category?.category_Name || "General",
+    categoryId: (ev.category?.category_Name || "general")
+      .toLowerCase()
+      .replace(/\s+/g, "-"),
+    description: ev.description || "",
+
+    // Scheduling
+    date: formattedDate,
+    time: ev.time || "",
+
+    // Location
+    location: ev.location || "TBD",
+    isVirtual:
+      (ev.location || "").toLowerCase().includes("online") ||
+      (ev.location || "").toLowerCase().includes("virtual"),
+    distance: 0, // backend doesn't provide distance yet
+
+    // Pricing
+    price: typeof ev.price === "number" ? ev.price : parseFloat(ev.price) || 0,
+    originalPrice:
+      typeof ev.price === "number" ? ev.price : parseFloat(ev.price) || 0,
+
+    // Media
+    image:
+      ev.image ||
+      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&h=300&fit=crop",
+
+    // Tags
+    tags: Array.isArray(ev.tags) ? ev.tags : [],
+
+    // AI fields — mapped directly from backend
+    aiScore: score,
+    confidence: score,
+    aiReason: rec.recommendation_reason || "",
+    matchReasons: rec.recommendation_reason
+      ? [rec.recommendation_reason]
+      : ["Personalized recommendation based on your activity"],
+
+    // Stats
+    attendees: attendeeCount,
+    rating: 4.5, // backend doesn't store ratings on events yet; use placeholder
+
+    // Status flags
+    promoted: false,
+    goingFast:
+      attendeeCount > 0 && ev.totalSlots
+        ? attendeeCount / ev.totalSlots > 0.7
+        : false,
+    salesEndSoon: false,
+    badges,
+
+    // Meta
+    agentName: rec.agent_id?.name || "AI Agent",
+    source: rec.source || "ai",
+  };
+}
 
 class RecommendationService {
-  async getRecommendations(userId, preferences = {}, forceRefresh = false) {
+
+  async getRecommendations(limit = 10) {
     try {
-      const response = await api.safePost('/ai/recommendations', {
-        userId,
-        preferences,
-        forceRefresh
-      });
-      return response.data;
+      const response = await api.safeGet(
+        `/ai/recommendations/me?limit=${limit}`
+      );
+      const body = response?.data;
+      if (!body?.success)
+        throw new Error(body?.message || "Failed to fetch recommendations");
+      return Array.isArray(body.data)
+        ? body.data.map(normalizeRecommendation)
+        : [];
     } catch (error) {
-      console.error('Recommendation service error:', error);
-      
-      // Return mock data for development
-      if (import.meta.env.MODE === 'development') {
-        return this.getMockRecommendations();
-      }
-      
-      throw error;
+      console.error(
+        "[RecommendationService] getRecommendations error:",
+        error.message
+      );
+      return [];
     }
   }
 
-  async rateRecommendation(userId, eventId, rating) {
-    try {
-      const response = await api.safePost('/ai/recommendations/rate', {
+  async getMyRecommendations(limit = 10) {
+    return this.getRecommendations(limit);
+  }
+
+  trackRecommendationView(userId, eventIds) {
+    if (import.meta.env.DEV) {
+      console.log("[RecommendationService] trackView (stub):", {
+        userId,
+        eventIds,
+      });
+    }
+  }
+
+  trackInteraction(userId, eventId, interactionType) {
+    if (import.meta.env.DEV) {
+      console.log("[RecommendationService] trackInteraction (stub):", {
         userId,
         eventId,
-        rating
+        interactionType,
       });
-      return response.data;
-    } catch (error) {
-      console.error('Rating error:', error);
-      
-      // Mock successful rating for development
-      if (import.meta.env.MODE === 'development') {
-        return { success: true, message: 'Rating saved' };
-      }
-      
-      throw error;
     }
-  }
-
-  async updatePreferences(userId, preferences) {
-    try {
-      const response = await api.safePut('/ai/recommendations/preferences', {
-        userId,
-        preferences
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Preferences update error:', error);
-      throw error;
-    }
-  }
-
-  async getRecommendationInsights(userId) {
-    try {
-      const response = await api.safeGet(`/ai/recommendations/insights/${userId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Insights error:', error);
-      
-      // Mock insights for development
-      if (import.meta.env.MODE === 'development') {
-        return {
-          totalEvents: 45,
-          categories: ['Technology', 'Music', 'Business'],
-          avgMatchScore: 87,
-          lastUpdated: new Date().toISOString()
-        };
-      }
-      
-      throw error;
-    }
-  }
-
-  // Mock data for development
-  getMockRecommendations() {
-    return [
-      {
-        id: 101,
-        title: "AI-Picked: Tech Networking Based on Your Profile",
-        category: "AI Recommended",
-        date: "Fri, Jan 15",
-        time: "6:00 PM",
-        location: "Tech Hub Center",
-        price: "$25.00",
-        promoted: false,
-        goingFast: true,
-        salesEndSoon: false,
-        tags: ["ai-recommended", "today"],
-        image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=500&h=300&fit=crop",
-        aiReason: "Matches your interest in technology and networking events",
-        matchScore: 95
-      },
-      {
-        id: 102,
-        title: "Curated for You: Advanced JavaScript Workshop",
-        category: "AI Recommended",
-        date: "Sat, Jan 16",
-        time: "10:00 AM",
-        location: "Online",
-        price: "$49.99",
-        promoted: false,
-        goingFast: false,
-        salesEndSoon: true,
-        tags: ["ai-recommended", "online"],
-        image: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=500&h=300&fit=crop",
-        aiReason: "Based on your past programming workshop attendance",
-        matchScore: 88
-      }
-    ];
   }
 }
 

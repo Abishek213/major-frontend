@@ -1,76 +1,40 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig, loadEnv } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@components': path.resolve(__dirname, './src/components'),
-      '@pages': path.resolve(__dirname, './src/pages'),
-      '@utils': path.resolve(__dirname, './src/utils'),
-      '@hooks': path.resolve(__dirname, './src/hooks'),
-      '@services': path.resolve(__dirname, './src/services'),
-      '@context': path.resolve(__dirname, './src/context'),
-      '@config': path.resolve(__dirname, './src/config'),
-    },
-    extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'] // Add this line
-  },
-  server: {
-    fs: {
-      strict: false
-    },
-    proxy: {
-      '/api': {
-        target: '${import.meta.env.VITE_API_URL}',
-        changeOrigin: true,
-        secure: false,
-        timeout: 30000
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+
+  return {
+    plugins: [react()],
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+        "@components": path.resolve(__dirname, "./src/components"),
+        "@pages": path.resolve(__dirname, "./src/pages"),
+        "@utils": path.resolve(__dirname, "./src/utils"),
+        "@hooks": path.resolve(__dirname, "./src/hooks"),
+        "@services": path.resolve(__dirname, "./src/services"),
+        "@context": path.resolve(__dirname, "./src/context"),
+        "@config": path.resolve(__dirname, "./src/config"),
       },
-      '/uploads': { 
-        target: '${import.meta.env.VITE_API_URL}',
-        changeOrigin: true,
-        secure: false
-      }
+      extensions: [".js", ".jsx", ".json", ".ts", ".tsx"],
     },
-    port: 5173,
-    open: true,
-    watch: {
-      usePolling: true,
-      interval: 100
-    }
-  },
-  build: {
-    sourcemap: true,
-    rollupOptions: {
-      output: {
-        sourcemapExcludeSources: false,
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['lucide-react', 'recharts', 'date-fns'],
-          ai: ['react-chartjs-2', 'chart.js']
-        }
-      }
+    server: {
+      proxy: {
+        "/api": {
+          target: env.VITE_API_BASE_URL,
+          changeOrigin: true,
+          secure: false,
+        },
+        "/uploads": {
+          target: env.VITE_API_BASE_URL,
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+      port: 5173,
+      open: true,
     },
-    chunkSizeWarningLimit: 1000
-  },
-  optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react-router-dom',
-      'lucide-react',
-      'recharts',
-      'date-fns',
-      'react-chartjs-2',
-      'chart.js'
-    ],
-    exclude: []
-  },
-  esbuild: {
-    loader: 'jsx',
-    include: /src\/.*\.jsx?$/,
-    exclude: []
-  }
-})
+  };
+});

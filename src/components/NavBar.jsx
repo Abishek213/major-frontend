@@ -41,12 +41,10 @@ const NavBar = () => {
   const { unreadCount } = useNotifications();
 
   const isMounted = useRef(true);
-  // FIX: Split into two separate refs — one for desktop, one for mobile.
-  // Previously both shared the same ref, so the mobile assignment overwrote
-  // the desktop one, breaking click-outside detection on desktop.
   const desktopNotificationRef = useRef(null);
   const mobileNotificationRef = useRef(null);
   const profileRef = useRef(null);
+  const mobileProfileRef = useRef(null);
   const wsStatusInterval = useRef(null);
 
   // ── Auth sync ─────────────────────────────────────────────────────────────────
@@ -78,8 +76,6 @@ const NavBar = () => {
   }, []);
 
   // ── Click outside handler ─────────────────────────────────────────────────────
-  // FIX: Now checks BOTH desktop and mobile notification refs so click-outside
-  // works correctly regardless of which one the user is viewing.
   useEffect(() => {
     const handleClickOutside = (event) => {
       const insideDesktopNotif =
@@ -93,7 +89,13 @@ const NavBar = () => {
         setShowNotifications(false);
       }
 
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
+      const insideDesktopProfile =
+        profileRef.current && profileRef.current.contains(event.target);
+      const insideMobileProfile =
+        mobileProfileRef.current &&
+        mobileProfileRef.current.contains(event.target);
+
+      if (!insideDesktopProfile && !insideMobileProfile) {
         setIsProfileOpen(false);
       }
     };
@@ -232,7 +234,6 @@ const NavBar = () => {
   );
 
   const renderNotificationButton = () => (
-    // FIX: Use desktopNotificationRef instead of the shared notificationRef
     <li className="relative" ref={desktopNotificationRef}>
       <button
         onClick={toggleNotifications}
@@ -321,7 +322,7 @@ const NavBar = () => {
         marginLeft: isSidebarOpen ? "16rem" : "4rem",
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 py-4">
+      <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between w-full">
           <div className="justify-center flex-1 hidden lg:flex">
             <ul className="flex items-center gap-6">{renderNavLinks()}</ul>
@@ -346,13 +347,13 @@ const NavBar = () => {
 
   const renderRegularNavbar = () => (
     <div className={`${themeClasses.nav} w-full`}>
-      <div className="px-4 py-3 mx-auto max-w-7xl">
+      <div className="px-4 py-2 mx-auto max-w-7xl">
         <div className="flex items-center justify-between w-full">
           <Link to="/" className="flex items-center">
             <img
               src="/images/e-VENTA.png"
               alt="Eventa Logo"
-              className="w-auto h-16"
+              className="w-auto h-14"
             />
           </Link>
           <div className="hidden lg:flex justify-center flex-1">
@@ -377,36 +378,38 @@ const NavBar = () => {
   );
 
   const renderMobileNav = () => (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
-      <div className="flex justify-around items-center p-2">
+    <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 shadow-sm">
+      <div className="flex justify-around items-center p-3">
         {navigationItems.slice(0, 3).map((item) => (
           <Link
             key={item.to}
             to={item.to}
-            className="flex flex-col items-center p-2 text-gray-600 hover:text-blue-600"
+            className="flex flex-col items-center p-2 text-gray-600 hover:text-blue-600 transition-colors"
           >
             <item.icon className="w-5 h-5" />
             <span className="text-xs mt-1">{item.text}</span>
           </Link>
         ))}
+
         {isAuthenticated && (
           <>
-            {/* FIX: Use mobileNotificationRef instead of the shared notificationRef */}
+            {/* Mobile Notifications */}
             <div ref={mobileNotificationRef} className="relative">
               <button
                 onClick={toggleNotifications}
                 className="flex flex-col items-center p-2 text-gray-600 hover:text-blue-600 relative"
+                aria-label="Notifications"
               >
                 <Bell className="w-5 h-5" />
                 <span className="text-xs mt-1">Alerts</span>
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full min-w-[1rem] h-4 flex items-center justify-center px-1 leading-none font-medium">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[1.2rem] h-[1.2rem] flex items-center justify-center px-1 leading-none font-medium animate-pulse">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
               </button>
               {showNotifications && (
-                <div className="absolute bottom-14 right-0">
+                <div className="absolute top-12 right-0 w-72">
                   <NotificationDropdown
                     isOpen={showNotifications}
                     onClose={() => setShowNotifications(false)}
@@ -414,22 +417,33 @@ const NavBar = () => {
                 </div>
               )}
             </div>
-            <button
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex flex-col items-center p-2"
-            >
-              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
-                <span className="text-xs font-medium text-white">
-                  {user?.fullname
-                    ?.split(" ")
-                    .map((name) => name[0])
-                    .join("") || "U"}
-                </span>
-              </div>
-              <span className="text-xs mt-1">Profile</span>
-            </button>
+
+            {/* Mobile Profile */}
+            <div ref={mobileProfileRef} className="relative">
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex flex-col items-center p-2"
+                aria-label="Profile menu"
+              >
+                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
+                  <span className="text-xs font-medium text-white">
+                    {user?.fullname
+                      ?.split(" ")
+                      .map((name) => name[0])
+                      .join("") || "U"}
+                  </span>
+                </div>
+                <span className="text-xs mt-1">Profile</span>
+              </button>
+              {isProfileOpen && (
+                <div className="absolute top-12 right-0">
+                  {renderProfileDropdown()}
+                </div>
+              )}
+            </div>
           </>
         )}
+
         {!isAuthenticated && (
           <Link
             to="/loginsignup"

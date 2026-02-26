@@ -4,6 +4,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import {
   getToken,
@@ -20,11 +21,26 @@ const AuthContext = createContext(null);
 const safeDecodeToken = (token) => {
   if (!token) return null;
   try {
-    const base64Url = token.split(".")[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const trimmed = token.trim();
+    const parts = trimmed.split(".");
+    if (parts.length !== 3) return null;
+
+    const base64Url = parts[1];
+    const base64 = base64Url
+      .replace(/-/g, "+")
+      .replace(/_/g, "/")
+      .replace(/\s/g, "");
+
+    let decodedStr;
+    try {
+      decodedStr = atob(base64);
+    } catch (e) {
+      console.error("atob failed for token part:", base64Url, e);
+      return null;
+    }
+
     const jsonPayload = decodeURIComponent(
-      atob(base64)
+      decodedStr
         .split("")
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
         .join("")
@@ -77,8 +93,14 @@ const DEFAULT_USER_PREFERENCES = {
 };
 
 export const AuthProvider = ({ children }) => {
-  // FIX: Add proper loading state so App.jsx's `const { loading } = useAuth()` works
   const [loading, setLoading] = useState(true);
+  const [aiInsights, setAiInsights] = useState(null);
+  const [loadingPreferences, setLoadingPreferences] = useState(false);
+
+  const preferencesLoadedRef = useRef(false);
+  const insightsLoadedRef = useRef(false);
+  const userIdRef = useRef(null);
+  const prevUserRef = useRef(null);
 
   const [user, setUser] = useState(() => {
     try {
@@ -86,6 +108,7 @@ export const AuthProvider = ({ children }) => {
         const token = getToken();
         const role = getUserRole();
         const decodedToken = safeDecodeToken(token);
+        const userFromToken = decodedToken?.user || {};
 
         const savedPreferences = localStorage.getItem("userPreferences");
         const preferences = savedPreferences
@@ -100,10 +123,10 @@ export const AuthProvider = ({ children }) => {
         return {
           token,
           role,
-          id: decodedToken?.id || null,
-          email: decodedToken?.email || null,
-          name: decodedToken?.name || decodedToken?.fullname || null,
-          isEmailVerified: false, // will be updated from backend
+          id: userFromToken.id || null,
+          email: userFromToken.email || null,
+          name: userFromToken.fullname || null,
+          isEmailVerified: false,
           isMobileVerified: false,
           emailSubscribed: true,
           contactNo: "",
@@ -111,7 +134,6 @@ export const AuthProvider = ({ children }) => {
           interactions,
           lastLogin: new Date().toISOString(),
           loginCount: parseInt(localStorage.getItem("loginCount") || "0"),
-          aiInsights: null,
         };
       }
     } catch (error) {
@@ -121,10 +143,24 @@ export const AuthProvider = ({ children }) => {
     return null;
   });
 
-  const [aiInsights, setAiInsights] = useState(null);
-  const [loadingPreferences, setLoadingPreferences] = useState(false);
+  useEffect(() => {
+    if (user?.id !== userIdRef.current) {
+      userIdRef.current = user?.id || null;
+      preferencesLoadedRef.current = false;
+      insightsLoadedRef.current = false;
+    }
+  }, [user?.id]);
 
-  // Mark auth as initialized after first render
+  useEffect(() => {
+    if (!prevUserRef.current && user) {
+      trackInteraction("login", {
+        method: "token",
+        loginCount: user.loginCount,
+      });
+    }
+    prevUserRef.current = user;
+  }, [user]);
+
   useEffect(() => {
     setLoading(false);
   }, []);
@@ -140,73 +176,99 @@ export const AuthProvider = ({ children }) => {
   }, [user?.token]);
 
   const loadUserPreferences = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id || preferencesLoadedRef.current) return;
+    preferencesLoadedRef.current = true;
     try {
       setLoadingPreferences(true);
-      const response = await api.safeGet(`/users/${user.id}/preferences`);
-      if (response.data) {
-        const mergedPreferences = {
-          ...DEFAULT_USER_PREFERENCES,
-          ...response.data,
-          aiPersonalization: {
-            ...DEFAULT_USER_PREFERENCES.aiPersonalization,
-            ...response.data.aiPersonalization,
-          },
-          notifications: {
-            ...DEFAULT_USER_PREFERENCES.notifications,
-            ...response.data.notifications,
-          },
-          privacy: {
-            ...DEFAULT_USER_PREFERENCES.privacy,
-            ...response.data.privacy,
-          },
-        };
-        setUser((prev) => ({ ...prev, preferences: mergedPreferences }));
-        localStorage.setItem(
-          "userPreferences",
-          JSON.stringify(mergedPreferences)
-        );
-      }
+      // 🔇 Commented out missing backend endpoint
+      // const response = await api.safeGet(`/users/${user.id}/preferences`);
+      // if (response.data) {
+      //   const mergedPreferences = {
+      //     ...DEFAULT_USER_PREFERENCES,
+      //     ...response.data,
+      //     aiPersonalization: {
+      //       ...DEFAULT_USER_PREFERENCES.aiPersonalization,
+      //       ...response.data.aiPersonalization,
+      //     },
+      //     notifications: {
+      //       ...DEFAULT_USER_PREFERENCES.notifications,
+      //       ...response.data.notifications,
+      //     },
+      //     privacy: {
+      //       ...DEFAULT_USER_PREFERENCES.privacy,
+      //       ...response.data.privacy,
+      //     },
+      //   };
+      //   setUser((prev) => {
+      //     if (
+      //       JSON.stringify(prev?.preferences) ===
+      //       JSON.stringify(mergedPreferences)
+      //     ) {
+      //       return prev;
+      //     }
+      //     return { ...prev, preferences: mergedPreferences };
+      //   });
+      //   localStorage.setItem(
+      //     "userPreferences",
+      //     JSON.stringify(mergedPreferences)
+      //   );
+      // }
     } catch (error) {
-      console.error("Error loading user preferences:", error);
+      if (Number(error?.status) !== 404) {
+        console.error("Error loading user preferences:", error);
+      }
     } finally {
       setLoadingPreferences(false);
     }
   }, [user?.id]);
 
   const generateUserInsights = useCallback(async () => {
-    if (!user?.id || !user?.preferences?.aiPersonalization?.enabled) return;
+    if (
+      !user?.id ||
+      !user?.preferences?.aiPersonalization?.enabled ||
+      insightsLoadedRef.current
+    )
+      return;
+    insightsLoadedRef.current = true;
     try {
-      const response = await api.safePost("/ai/user-insights", {
-        userId: user.id,
-        interactions: user.interactions?.slice(-50),
-        preferences: user.preferences,
-      });
-      setAiInsights(response.data);
-      setUser((prev) => ({ ...prev, aiInsights: response.data }));
+      // 🔇 Commented out missing backend endpoint
+      // const response = await api.safePost("/ai/user-insights", {
+      //   userId: user.id,
+      //   interactions: user.interactions?.slice(-50),
+      //   preferences: user.preferences,
+      // });
+      // setAiInsights(response.data);
+      // setUser((prev) => (prev ? { ...prev, aiInsights: response.data } : prev));
     } catch (error) {
-      console.error("Error generating AI insights:", error);
+      if (Number(error?.status) !== 404) {
+        console.error("Error generating AI insights:", error);
+      }
     }
-  }, [user?.id, user?.preferences, user?.interactions]);
+  }, [user?.id, user?.preferences?.aiPersonalization?.enabled]);
 
   const trackInteraction = useCallback(
     async (interactionType, data = {}) => {
       if (!user?.id) return;
+
       const interaction = {
         type: interactionType,
         timestamp: new Date().toISOString(),
         userId: user.id,
         ...data,
       };
+
       setUser((prev) => {
+        if (!prev) return prev;
         const updatedInteractions = [...(prev.interactions || []), interaction];
         if (updatedInteractions.length > 100) updatedInteractions.shift();
+
         const summary = { ...prev.preferences?.interactionSummary };
         summary.totalViews += interactionType === "view" ? 1 : 0;
         summary.totalBookings += interactionType === "booking" ? 1 : 0;
         summary.totalWishlistAdds += interactionType === "wishlist_add" ? 1 : 0;
         summary.totalSearches += interactionType === "search" ? 1 : 0;
         summary.lastActive = new Date().toISOString();
+
         if (data.category) {
           const categories = summary.favoriteCategories || [];
           const existing = categories.find((c) => c.name === data.category);
@@ -216,40 +278,42 @@ export const AuthProvider = ({ children }) => {
             .sort((a, b) => b.count - a.count)
             .slice(0, 5);
         }
+
         if (data.amount) {
           const totalSpent =
             summary.averageSpending * summary.totalBookings +
             parseFloat(data.amount);
           summary.averageSpending = totalSpent / (summary.totalBookings || 1);
         }
+
         return {
           ...prev,
           interactions: updatedInteractions,
           preferences: { ...prev.preferences, interactionSummary: summary },
         };
       });
-      try {
-        const storedInteractions = localStorage.getItem("userInteractions");
-        const interactions = storedInteractions
-          ? JSON.parse(storedInteractions)
-          : [];
-        interactions.push(interaction);
-        if (interactions.length > 200)
-          interactions.splice(0, interactions.length - 200);
-        localStorage.setItem("userInteractions", JSON.stringify(interactions));
-        if (user.preferences)
+
+      setUser((prev) => {
+        if (!prev) return prev;
+        try {
+          localStorage.setItem(
+            "userInteractions",
+            JSON.stringify(prev.interactions)
+          );
           localStorage.setItem(
             "userPreferences",
-            JSON.stringify(user.preferences)
+            JSON.stringify(prev.preferences)
           );
-      } catch (error) {
-        console.error("Error storing interaction:", error);
-      }
-      try {
-        await api.safePost("/user-interactions", interaction).catch(() => {});
-      } catch (error) {}
+        } catch (e) {
+          console.error("Error storing interaction in localStorage", e);
+        }
+        return prev;
+      });
+
+      // 🔇 Commented out missing backend endpoint (fire‑and‑forget)
+      // api.safePost("/user-interactions", interaction).catch(() => {});
     },
-    [user?.id, user?.preferences]
+    [user?.id]
   );
 
   const updatePreferences = useCallback(
@@ -267,16 +331,23 @@ export const AuthProvider = ({ children }) => {
             ...user.preferences?.notifications,
             ...newPreferences.notifications,
           },
-          privacy: { ...user.preferences?.privacy, ...newPreferences.privacy },
+          privacy: {
+            ...user.preferences?.privacy,
+            ...newPreferences.privacy,
+          },
         };
         setUser((prev) => ({ ...prev, preferences: updatedPreferences }));
         localStorage.setItem(
           "userPreferences",
           JSON.stringify(updatedPreferences)
         );
-        await api.safePut(`/users/${user.id}/preferences`, updatedPreferences);
-        if (newPreferences.aiPersonalization?.enabled !== undefined)
+        // 🔇 Commented out missing backend endpoint
+        // await api.safePut(`/users/${user.id}/preferences`, updatedPreferences);
+
+        if (newPreferences.aiPersonalization?.enabled !== undefined) {
+          insightsLoadedRef.current = false;
           generateUserInsights();
+        }
         return { success: true };
       } catch (error) {
         console.error("Error updating preferences:", error);
@@ -341,8 +412,10 @@ export const AuthProvider = ({ children }) => {
         ...prev,
         preferences: DEFAULT_USER_PREFERENCES,
         interactions: [],
-        aiInsights: null,
       }));
+      setAiInsights(null);
+      preferencesLoadedRef.current = false;
+      insightsLoadedRef.current = false;
       return { success: true };
     } catch (error) {
       console.error("Error clearing user data:", error);
@@ -350,7 +423,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user?.id]);
 
-  // ===== VERIFICATION & SUBSCRIPTION METHODS =====
+  // Verification methods
   const sendEmailOtp = async (email) => {
     await api.post("/auth/send-email-otp", { email });
   };
@@ -373,19 +446,15 @@ export const AuthProvider = ({ children }) => {
     await api.put("/auth/subscription", { subscribed });
     setUser((prev) => ({ ...prev, emailSubscribed: subscribed }));
   };
-  // ================================================
 
   const login = async (token, role, userData = {}) => {
     try {
-      // FIX: Never store undefined as role. Default to "User" if backend
-      // omits role (e.g. on first-time Google sign-in where user is just created).
-      // Without this, localStorage.setItem("role", undefined) stores the
-      // literal string "undefined", causing redirectBasedOnRole to fail.
       const resolvedRole = role || "User";
-
       setAuth(token, resolvedRole);
 
       const decodedToken = safeDecodeToken(token);
+      const userFromToken = decodedToken?.user || {};
+
       const loginCount =
         parseInt(localStorage.getItem("loginCount") || "0") + 1;
       localStorage.setItem("loginCount", loginCount.toString());
@@ -393,18 +462,14 @@ export const AuthProvider = ({ children }) => {
       const newUser = {
         token,
         role: resolvedRole,
-        id: decodedToken?.id || userData?.id || null,
-        email: decodedToken?.email || userData?.email || null,
+        id: userFromToken.id || userData?.id || userData?._id || null,
+        email: userFromToken.email || userData?.email || null,
         name:
-          decodedToken?.name ||
-          decodedToken?.fullname ||
+          userFromToken.fullname ||
+          userData?.fullname ||
           userData?.name ||
           null,
         contactNo: userData?.contactNo || "",
-        // FIX: Use ?? instead of || so that an explicit `true` from the backend
-        // is preserved. With ||, `false || false` = false (ok) but the original
-        // code would also turn `undefined || false` = false which masks missing
-        // fields. ?? only falls back when the value is null/undefined.
         isEmailVerified: userData?.isEmailVerified ?? false,
         isMobileVerified: userData?.isMobileVerified ?? false,
         emailSubscribed: userData?.emailSubscribed ?? true,
@@ -412,25 +477,29 @@ export const AuthProvider = ({ children }) => {
         interactions: [],
         lastLogin: new Date().toISOString(),
         loginCount,
-        aiInsights: null,
       };
-
-      setUser(newUser);
 
       const savedPreferences = localStorage.getItem("userPreferences");
       if (savedPreferences) {
         try {
-          const prefs = JSON.parse(savedPreferences);
-          newUser.preferences = { ...DEFAULT_USER_PREFERENCES, ...prefs };
-          setUser(newUser);
+          newUser.preferences = {
+            ...DEFAULT_USER_PREFERENCES,
+            ...JSON.parse(savedPreferences),
+          };
         } catch (e) {
           console.error("Error parsing saved preferences:", e);
         }
       }
+      const savedInteractions = localStorage.getItem("userInteractions");
+      if (savedInteractions) {
+        try {
+          newUser.interactions = JSON.parse(savedInteractions);
+        } catch (e) {
+          console.error("Error parsing saved interactions:", e);
+        }
+      }
 
-      await trackInteraction("login", { method: "token", loginCount });
-      await loadUserPreferences();
-      await generateUserInsights();
+      setUser(newUser);
     } catch (error) {
       console.error("Error during login:", error);
       clearAuth();
@@ -449,6 +518,8 @@ export const AuthProvider = ({ children }) => {
       clearAuth();
       setUser(null);
       setAiInsights(null);
+      preferencesLoadedRef.current = false;
+      insightsLoadedRef.current = false;
     } catch (error) {
       console.error("Error during logout:", error);
       setUser(null);
@@ -460,18 +531,23 @@ export const AuthProvider = ({ children }) => {
     if (user?.id) {
       loadUserPreferences();
       generateUserInsights();
+    }
+  }, [user?.id, loadUserPreferences, generateUserInsights]);
+
+  useEffect(() => {
+    if (user?.id) {
       trackInteraction("page_view", {
         path: window.location.pathname,
         referrer: document.referrer,
       });
     }
-  }, [user?.id, loadUserPreferences, generateUserInsights, trackInteraction]);
+  }, [user?.id, trackInteraction, window.location.pathname]);
 
   const value = {
     user,
     login,
     logout,
-    loading, // FIX: Exposed so App.jsx's `const { loading } = useAuth()` works
+    loading,
     isAuthenticated: !!user,
     getToken: () => user?.token || getToken(),
     aiInsights,

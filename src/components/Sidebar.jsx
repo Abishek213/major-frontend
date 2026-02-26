@@ -35,7 +35,7 @@ const Sidebar = ({ config, user, onLogout, activeTab }) => {
     >
       <div
         className={`
-        flex items-center justify-between p-6
+        flex items-center justify-between p-5
         border-b border-gray-200
       `}
       >
