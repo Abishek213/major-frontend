@@ -94,26 +94,20 @@ class EventRequestService {
   }
 
   // Keep other methods unchanged
- // In eventRequestService.js, update the startNegotiation method:
-
-async startNegotiation(eventRequestId, message, proposedBudget) {
-  try {
-    console.log('🚀 Starting negotiation via service:', { eventRequestId, proposedBudget });
-    
-    const response = await api.safePost(
-      `/negotiation/event-request/${eventRequestId}/start`,
-      {
-        proposedBudget,
-        message
-      }
-    );
-    
-    return response.data;
-  } catch (error) {
-    console.error('❌ Negotiation error:', error);
-    throw error;
+  async startNegotiation(eventRequestId, organizerId, message, proposedBudget) {
+    try {
+      const response = await api.safePost('/negotiation/start', {
+        eventRequestId,
+        organizerId,
+        organizerMessage: message,
+        organizerOffer: proposedBudget
+      });
+      return response.data;
+    } catch (error) {
+      console.error('❌ Negotiation error:', error);
+      throw error;
+    }
   }
-}
 
   async getRequestHistory(userId) {
     try {
