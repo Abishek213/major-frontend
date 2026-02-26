@@ -1,18 +1,17 @@
-// src/Pages/Landing/User/IntrestedOrganizers.jsx
+// src/Pages/Landing/User/InterestedOrganizers.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
-import { useEventRequest } from '@/hooks/useEventRequest';
+import { useNegotiation } from '@/hooks/useNegotiation';
 import AIBadge from "@/components/ai/user/AIBadge";
 import AILoadingSpinner from "@/components/ai/user/AILoadingSpinner";
-import { 
-  AlertTriangle, CheckCircle, XCircle, Users, MapPin, Calendar, 
+import {
+  AlertTriangle, CheckCircle, XCircle, Users, MapPin, Calendar,
   DollarSign, FileText, MessageSquare, Phone, TrendingUp, Sparkles,
-  Plus, ChevronRight, RefreshCw, UserCircle, Clock, Award, Brain,
+  Plus, RefreshCw, UserCircle, Clock, Award, Brain,
   Star, ThumbsUp, ThumbsDown, TrendingDown, BarChart3, Mail,
-  Globe, Briefcase, Heart, Share2, Filter, SortAsc, Download, Eye,
-  Zap, Shield, Bot, Wallet, Smartphone, X
+  Filter, X
 } from 'lucide-react';
 
 const InterestedOrganizers = () => {
@@ -25,51 +24,59 @@ const InterestedOrganizers = () => {
   const [selectedOrganizer, setSelectedOrganizer] = useState(null);
   const [comparisonMode, setComparisonMode] = useState(false);
   const [comparisonList, setComparisonList] = useState([]);
-  const [filterCriteria, setFilterCriteria] = useState({
-    budget: 'all',
-    rating: 'all',
-    experience: 'all',
-    responseTime: 'all'
-  });
   const [sortBy, setSortBy] = useState('matchScore');
   const [showFilters, setShowFilters] = useState(false);
-  
-  // AI Event Request Hook
-  const { 
-    processRequest, 
-    getRequestStats,
-    organizerMatches 
-  } = useEventRequest();
 
-useEffect(() => {
+  // Negotiation States
+  const [negotiationModal, setNegotiationModal] = useState({
+    show: false,
+    organizer: null,
+    event: null,
+    negotiationId: null
+  });
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [counterOfferValue, setCounterOfferValue] = useState('');
+  const [counterMessage, setCounterMessage] = useState('');
+
+  // Use the real negotiation hook
+  const {
+    submitCounterOffer,
+    getPriceAnalysis,
+      getNegotiationDetails,  // Add this
+
+    loading: negotiationLoading
+  } = useNegotiation();
+
+  useEffect(() => {
     const fetchEventRequests = async () => {
       try {
         setLoading(true);
         const response = await api.safeGet("/eventrequest/event-requests-for-user");
-        
-        // Check if response has data
+
         if (response?.data?.eventRequests) {
-          setEventRequests(response.data.eventRequests);
-          // Generate AI insights after getting data
-          setTimeout(() => generateAIInsights(response.data.eventRequests), 100);
+          // Process each event request to include negotiation IDs
+          const processedRequests = response.data.eventRequests.map(event => ({
+            ...event,
+            organizers: event.organizers?.map(org => ({
+              ...org,
+              // Make sure negotiationId is extracted from the response
+              negotiationId: org.negotiationId || null
+            }))
+          }));
+
+          setEventRequests(processedRequests);
+          generateAIInsights(processedRequests);
         } else {
           setEventRequests([]);
         }
         setError(null);
       } catch (error) {
         console.log('Error fetching event requests:', error);
-        
-        // Handle 404 gracefully - user has no requests yet
-        if (error.status === 404 || error.message?.includes('404') || error.message?.includes('No event requests found')) {
-          console.log('No event requests found - showing empty state');
+        if (error.status === 404) {
           setEventRequests([]);
-          setError(null); // Clear error - this is not an error state
+          setError(null);
         } else {
-          setEventRequests([]);
-          // Only set error for non-404 errors
-          if (error.status !== 404 && !error.message?.includes('404') && !error.message?.includes('No event requests found')) {
-            setError(error.message || 'Failed to fetch event requests');
-          }
+          setError(error.message || 'Failed to fetch event requests');
         }
       } finally {
         setLoading(false);
@@ -79,329 +86,190 @@ useEffect(() => {
     fetchEventRequests();
   }, []);
 
-  // AI: Enhance organizers with match scores and insights
-  const enhanceOrganizersWithAI = (organizers, eventRequest) => {
-    if (!organizers || organizers.length === 0) return [];
-    
-    return organizers.map((organizer, index) => {
-      // Calculate AI match score based on multiple factors
-      const matchScore = calculateAIMatchScore(organizer, eventRequest);
-      
-      // Generate AI insights for each organizer
-      const insights = generateOrganizerInsights(organizer, eventRequest, matchScore);
-      
-      return {
-        ...organizer,
-        aiMatchScore: matchScore,
-        aiInsights: insights,
-        aiRecommended: matchScore > 85,
-        rank: index + 1,
-        strengths: generateStrengths(organizer),
-        weaknesses: generateWeaknesses(organizer, matchScore),
-        priceCompetitiveness: calculatePriceCompetitiveness(organizer.proposedBudget, eventRequest.budget),
-        responseSpeed: calculateResponseSpeed(organizer.responseDate),
-        experienceLevel: calculateExperienceLevel(organizer),
-        reliabilityScore: calculateReliabilityScore(organizer)
-      };
-    }).sort((a, b) => b.aiMatchScore - a.aiMatchScore); // Sort by AI match score
-  };
-
-  // AI: Calculate match score based on multiple factors
-  const calculateAIMatchScore = (organizer, eventRequest) => {
-    let score = 70; // Base score
-    
-    // Budget compatibility (30 points)
-    const budgetRatio = organizer.proposedBudget / eventRequest.budget;
-    if (budgetRatio <= 1.1) score += 30;
-    else if (budgetRatio <= 1.2) score += 20;
-    else if (budgetRatio <= 1.3) score += 10;
-    else score -= 10;
-    
-    // Response time (20 points)
-    const responseDays = (new Date() - new Date(organizer.responseDate)) / (1000 * 60 * 60 * 24);
-    if (responseDays <= 1) score += 20;
-    else if (responseDays <= 3) score += 15;
-    else if (responseDays <= 7) score += 10;
-    else score += 5;
-    
-    // Experience level (20 points) - mock data
-    const experienceScore = Math.floor(Math.random() * 20) + 10;
-    score += experienceScore;
-    
-    // Past performance (15 points) - mock data
-    const performanceScore = Math.floor(Math.random() * 15) + 5;
-    score += performanceScore;
-    
-    // Event type expertise (15 points) - mock data
-    const expertiseScore = Math.floor(Math.random() * 15) + 5;
-    score += expertiseScore;
-    
-    return Math.min(Math.round(score), 100);
-  };
-
-  // AI: Generate personalized insights for each organizer
-  const generateOrganizerInsights = (organizer, eventRequest, matchScore) => {
-    const insights = [];
-    
-    if (matchScore > 90) {
-      insights.push("🎯 Excellent match - highly recommended");
-    } else if (matchScore > 80) {
-      insights.push("👍 Good match - meets most requirements");
-    } else if (matchScore > 70) {
-      insights.push("📊 Average match - consider alternatives");
-    } else {
-      insights.push("⚠️ Below average match - review carefully");
-    }
-    
-    // Budget insight
-    const budgetRatio = organizer.proposedBudget / eventRequest.budget;
-    if (budgetRatio <= 1) {
-      insights.push(`💰 Within your budget (${Math.round((1 - budgetRatio) * 100)}% under)`);
-    } else if (budgetRatio <= 1.1) {
-      insights.push(`💰 Slightly above budget (${Math.round((budgetRatio - 1) * 100)}% over)`);
-    } else {
-      insights.push(`💰 Significantly above budget (${Math.round((budgetRatio - 1) * 100)}% over)`);
-    }
-    
-    // Response time insight
-    const responseDays = (new Date() - new Date(organizer.responseDate)) / (1000 * 60 * 60 * 24);
-    if (responseDays <= 1) {
-      insights.push("⚡ Very fast response time");
-    } else if (responseDays <= 3) {
-      insights.push("📨 Average response time");
-    } else {
-      insights.push("🐢 Slow response time");
-    }
-    
-    return insights;
-  };
-
-  // AI: Generate organizer strengths
-  const generateStrengths = (organizer) => {
-    const strengths = [];
-    
-    // Mock strengths based on organizer data
-    if (organizer.proposedBudget < 1000) {
-      strengths.push("Competitive pricing");
-    }
-    if (organizer.message?.length > 100) {
-      strengths.push("Detailed proposal");
-    }
-    if (Math.random() > 0.5) {
-      strengths.push("Similar events experience");
-    }
-    if (Math.random() > 0.5) {
-      strengths.push("Quick responder");
-    }
-    if (Math.random() > 0.5) {
-      strengths.push("High satisfaction rate");
-    }
-    
-    return strengths.slice(0, 3);
-  };
-
-  // AI: Generate organizer weaknesses
-  const generateWeaknesses = (organizer, matchScore) => {
-    const weaknesses = [];
-    
-    if (matchScore < 75) {
-      weaknesses.push("Lower match score");
-    }
-    if (organizer.proposedBudget > 1000) {
-      weaknesses.push("Premium pricing");
-    }
-    if (organizer.message?.length < 50) {
-      weaknesses.push("Brief proposal");
-    }
-    if (Math.random() > 0.7) {
-      weaknesses.push("Limited availability");
-    }
-    
-    return weaknesses.slice(0, 2);
-  };
-
-  // AI: Calculate price competitiveness
-  const calculatePriceCompetitiveness = (proposed, requested) => {
-    const ratio = proposed / requested;
-    if (ratio <= 0.9) return 'excellent';
-    if (ratio <= 1) return 'good';
-    if (ratio <= 1.1) return 'fair';
-    return 'premium';
-  };
-
-  // AI: Calculate response speed
-  const calculateResponseSpeed = (responseDate) => {
-    const days = (new Date() - new Date(responseDate)) / (1000 * 60 * 60 * 24);
-    if (days <= 1) return 'lightning';
-    if (days <= 3) return 'fast';
-    if (days <= 7) return 'normal';
-    return 'slow';
-  };
-
-  // AI: Calculate experience level
-  const calculateExperienceLevel = (organizer) => {
-    // Mock experience level calculation
-    const score = Math.floor(Math.random() * 100);
-    if (score > 80) return 'expert';
-    if (score > 60) return 'experienced';
-    if (score > 40) return 'intermediate';
-    return 'beginner';
-  };
-
-  // AI: Calculate reliability score
-  const calculateReliabilityScore = (organizer) => {
-    return Math.floor(Math.random() * 30) + 70; // Mock score between 70-100
-  };
-
-  // AI: Generate overall insights for the event request
+  // Generate AI insights from real data
   const generateAIInsights = (requests) => {
-    if (!requests || requests.length === 0) return;
-    
     const insights = {};
-    
+
     requests.forEach(request => {
-      if (!request.organizers || request.organizers.length === 0) return;
-      
+      if (!request.organizers || request.organizers.length === 0) {
+        insights[request._id] = {
+          totalOrganizers: 0,
+          marketInsight: "No organizers yet. Check back later.",
+          recommendation: "Consider adjusting your criteria."
+        };
+        return;
+      }
+
       const totalOrganizers = request.organizers.length;
-      const avgMatchScore = request.organizers.reduce((sum, org) => sum + (org.aiMatchScore || 70), 0) / totalOrganizers || 0;
-      const topOrganizer = request.organizers[0];
-      
-      insights[request.eventId] = {
+      const avgMatchScore = request.organizers.reduce((sum, org) =>
+        sum + (org.matchPercentage || 70), 0) / totalOrganizers;
+
+      const budgets = request.organizers
+        .map(o => o.proposedBudget || 0)
+        .filter(b => b > 0);
+
+      insights[request._id] = {
         totalOrganizers,
         avgMatchScore: Math.round(avgMatchScore),
-        topMatchScore: topOrganizer?.aiMatchScore || 0,
-        topOrganizerName: topOrganizer?.fullname || 'N/A',
-        budgetRange: {
-          min: Math.min(...request.organizers.map(o => o.proposedBudget), request.budget),
-          max: Math.max(...request.organizers.map(o => o.proposedBudget), request.budget),
-          average: Math.round(request.organizers.reduce((sum, o) => sum + o.proposedBudget, 0) / totalOrganizers)
-        },
-        recommendation: getAIRecommendation(request),
-        marketInsight: getMarketInsight(request)
+        topMatchScore: Math.max(...request.organizers.map(o => o.matchPercentage || 0)),
+        budgetRange: budgets.length > 0 ? {
+          min: Math.min(...budgets),
+          max: Math.max(...budgets),
+          average: Math.round(budgets.reduce((a, b) => a + b, 0) / budgets.length)
+        } : null,
+        marketInsight: getMarketInsight(request, budgets)
       };
     });
-    
+
     setAiInsights(insights);
   };
 
-  // AI: Get recommendation based on all factors
-  const getAIRecommendation = (request) => {
-    if (!request.organizers || request.organizers.length === 0) {
-      return "No organizers yet. Consider promoting your request.";
+  const getMarketInsight = (request, budgets) => {
+    if (!budgets || budgets.length === 0) {
+      return "No proposals yet. Check back later.";
     }
-    
-    const topOrganizer = request.organizers[0];
-    if (topOrganizer.aiMatchScore > 85) {
-      return `Strongly recommend ${topOrganizer.fullname} (${topOrganizer.aiMatchScore}% match)`;
-    } else if (topOrganizer.aiMatchScore > 75) {
-      return `${topOrganizer.fullname} is a good match. Consider comparing options.`;
-    } else {
-      return "Consider waiting for more organizer responses or adjusting your budget.";
-    }
-  };
 
-  // AI: Get market insight
-  const getMarketInsight = (request) => {
-    if (!request.organizers || request.organizers.length === 0) {
-      return "No market data available yet. Check back later.";
-    }
-    
-    const avgBudget = request.organizers.reduce((sum, o) => sum + o.proposedBudget, 0) / request.organizers.length || request.budget;
+    const avgBudget = budgets.reduce((a, b) => a + b, 0) / budgets.length;
     const ratio = avgBudget / request.budget;
-    
+
     if (ratio < 0.9) {
-      return "Market prices are below your budget - good opportunity!";
+      return "📊 Offers are below your budget - good opportunity!";
     } else if (ratio < 1.1) {
-      return "Market prices align with your budget";
+      return "📊 Offers align with your budget";
     } else {
-      return "Market prices are above your budget. Consider increasing it.";
+      return "📊 Offers are above your budget. Consider negotiating.";
     }
   };
 
   const handleSelectOrganizer = async (eventId, organizerId) => {
+  try {
+    setLoading(true);
+
+    // Add this at the top of your component or before the API call
+console.log('🔍 API Base URL:', import.meta.env.VITE_API_URL);
+console.log('🔍 Full URL being called:', `${import.meta.env.VITE_API_URL}/eventrequest/select-organizer`);
+    
+    const response = await api.safePut(
+      '/eventrequest/select-organizer',
+      { 
+        eventId: eventId,  // Make sure these are correctly named
+        organizerId: organizerId 
+      }
+    );
+
+    if (response.status >= 200 && response.status < 300) {
+      // Refresh the data
+      const updatedResponse = await api.safeGet("/eventrequest/event-requests-for-user");
+      
+      if (updatedResponse?.data?.eventRequests) {
+        setEventRequests(updatedResponse.data.eventRequests);
+      }
+      
+      // Show success message
+      alert('✅ Organizer selected successfully!');
+      setError(null);
+    }
+  } catch (error) {
+    console.error('Error selecting organizer:', error);
+    
+    // Better error message
+    if (error.status === 404) {
+      setError('Event request not found. It may have been deleted or modified.');
+    } else {
+      setError(error.message || 'An error occurred while selecting the organizer');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // In InterestedOrganizers.jsx - UPDATE this function
+
+  const handleOpenNegotiation = async (organizer, event) => {
+    setSelectedOrganizer(organizer);
+
+    // IMPORTANT: Get the REAL negotiation ID from the organizer object
+    // The negotiation ID should be stored in the organizer data from backend
+    const negotiationId = organizer.negotiationId;
+
+    if (!negotiationId) {
+      console.error('❌ No negotiation ID found for this organizer');
+      alert('Cannot start negotiation: No negotiation record found');
+      return;
+    }
+
+    console.log('🔑 Using REAL negotiation ID:', negotiationId);
+
+
+    // Get AI price analysis
+    const analysis = await getPriceAnalysis(
+      event.eventType,
+      event.venue,
+      event.budget
+    );
+
+    setAiAnalysis(analysis);
+
+    // Set default counter offer (midpoint)
+    const midPoint = Math.round(
+      (event.budget + (organizer.proposedBudget || 0)) / 2
+    );
+    setCounterOfferValue(midPoint);
+    setCounterMessage(`I'm interested in your proposal of NPR ${organizer.proposedBudget?.toLocaleString()}. Can we agree on NPR ${midPoint.toLocaleString()}?`);
+
+    setNegotiationModal({
+      show: true,
+      organizer,
+      event,
+      negotiationId: negotiationId  // ✅ Use REAL ID from backend
+    });
+  };
+
+  const handleSendCounterOffer = async () => {
+    if (!negotiationModal.organizer || !negotiationModal.event) return;
+
+    // IMPORTANT: Use the real negotiationId from the modal state
+    const negotiationId = negotiationModal.negotiationId;
+
+    if (!negotiationId || negotiationId.includes('undefined') || negotiationId.includes('neg_')) {
+      console.error('❌ Invalid negotiation ID:', negotiationId);
+      alert('Invalid negotiation ID. Please try again.');
+      return;
+    }
+
     try {
-      const response = await api.safePut(
-        '/eventrequest/event-request/select-organizer',
-        { eventId, organizerId }
+      console.log('📤 Sending counter offer with REAL ID:', negotiationId);
+
+      const result = await submitCounterOffer(
+        negotiationId,  // ✅ This should now be a REAL MongoDB ObjectId
+        parseInt(counterOfferValue),
+        counterMessage
       );
 
-      if (response.status >= 200 && response.status < 300) {
-        // Track selection for AI learning
-        if (user?.id) {
-          await api.safePost('/user-interactions', {
-            userId: user.id,
-            eventId,
-            organizerId,
-            interactionType: 'select_organizer',
-            timestamp: new Date().toISOString()
-          }).catch(err => console.log('Interaction tracking not available'));
-        }
-        
+      if (result?.success) {
+        alert('✅ Counter offer sent! Waiting for organizer response.');
+        setNegotiationModal({ show: false, organizer: null, event: null, negotiationId: null });
+
+        // Refresh the event requests
         const updatedResponse = await api.safeGet("/eventrequest/event-requests-for-user");
         setEventRequests(updatedResponse.data.eventRequests);
-        setError(null);
       }
     } catch (error) {
-      console.error('Error selecting organizer:', error);
-      setError(error.message || 'An error occurred while selecting the organizer.');
+      console.error('❌ Counter offer error:', error);
+      alert('❌ Failed to send counter offer: ' + error.message);
     }
   };
 
   const handleCompareOrganizer = (organizer) => {
-    if (comparisonList.includes(organizer.organizerId)) {
-      setComparisonList(comparisonList.filter(id => id !== organizer.organizerId));
+    if (comparisonList.includes(organizer._id)) {
+      setComparisonList(comparisonList.filter(id => id !== organizer._id));
     } else {
       if (comparisonList.length < 3) {
-        setComparisonList([...comparisonList, organizer.organizerId]);
+        setComparisonList([...comparisonList, organizer._id]);
       } else {
         setError('You can compare up to 3 organizers at once');
         setTimeout(() => setError(null), 3000);
       }
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    const statusClasses = {
-      pending: 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border border-amber-200',
-      approved: 'bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200',
-      rejected: 'bg-gradient-to-r from-rose-100 to-pink-100 text-rose-800 border border-rose-200',
-      deal_done: 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border border-blue-200'
-    };
-    
-    return (
-      <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${statusClasses[status] || 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-200'}`}>
-        {status?.replace('_', ' ').toUpperCase()}
-      </span>
-    );
-  };
-
-  const getPriceCompetitivenessColor = (level) => {
-    switch(level) {
-      case 'excellent': return 'text-emerald-600 bg-emerald-100';
-      case 'good': return 'text-blue-600 bg-blue-100';
-      case 'fair': return 'text-amber-600 bg-amber-100';
-      case 'premium': return 'text-rose-600 bg-rose-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
-  const getResponseSpeedColor = (speed) => {
-    switch(speed) {
-      case 'lightning': return 'text-purple-600 bg-purple-100';
-      case 'fast': return 'text-emerald-600 bg-emerald-100';
-      case 'normal': return 'text-blue-600 bg-blue-100';
-      case 'slow': return 'text-amber-600 bg-amber-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
-  const getExperienceLevelColor = (level) => {
-    switch(level) {
-      case 'expert': return 'text-purple-600 bg-purple-100';
-      case 'experienced': return 'text-emerald-600 bg-emerald-100';
-      case 'intermediate': return 'text-blue-600 bg-blue-100';
-      case 'beginner': return 'text-amber-600 bg-amber-100';
-      default: return 'text-gray-600 bg-gray-100';
     }
   };
 
@@ -411,669 +279,521 @@ useEffect(() => {
 
   const handleRefresh = () => {
     setLoading(true);
-    // Re-run the fetch effect
     window.location.reload();
   };
 
-  if (loading) {
+  const getStatusBadge = (status) => {
+    const statusClasses = {
+      pending: 'bg-amber-100 text-amber-800',
+      accepted: 'bg-emerald-100 text-emerald-800',
+      rejected: 'bg-rose-100 text-rose-800',
+      deal_done: 'bg-blue-100 text-blue-800'
+    };
     return (
-      <div className="space-y-8 p-4 md:p-6">
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
-          <div className="p-6 md:p-8">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <AILoadingSpinner />
-                <p className="text-lg font-medium text-gray-700 mt-4">AI is analyzing organizer matches...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusClasses[status] || 'bg-gray-100 text-gray-800'}`}>
+        {status?.toUpperCase()}
+      </span>
     );
-  }
+  };
 
-  if (error && !eventRequests.length) {
-    return (
-      <div className="space-y-8 p-4 md:p-6">
-        <div className="relative p-5 pl-14 bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 rounded-lg shadow-sm animate-fade-in">
-          <div className="absolute left-5 top-5">
-            <AlertTriangle className="w-6 h-6 text-red-500" />
-          </div>
-          <div className="pr-10">
-            <h4 className="font-bold text-red-800 mb-1">Error</h4>
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-          <button
-            onClick={handleRefresh}
-            className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!eventRequests || eventRequests.length === 0) {
-    return (
-      <div className="space-y-8 p-4 md:p-6">
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
-          <div className="p-6 md:p-8">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
-                    <Brain className="w-6 h-6 text-white" />
-                  </div>
-                  AI-Powered Organizer Matching
-                </h1>
-                <p className="text-gray-600 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-purple-500" />
-                  Smart matches based on your event requirements
-                </p>
-              </div>
-              
-              <button
-                onClick={handleCreateEventRequest}
-                className="mt-4 md:mt-0 px-6 py-3 rounded-xl font-medium flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              >
-                <Plus className="w-5 h-5" />
-                Create New Event Request
-              </button>
-            </div>
-
-            {/* Empty State */}
-            <div className="py-16 text-center">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mx-auto mb-6 shadow-inner">
-                <Brain className="w-12 h-12 text-indigo-400" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-700 mb-2">No Event Requests Found</h3>
-              <p className="text-gray-500 mb-6">
-                Create your first event request and let AI find the perfect organizers for you!
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={handleCreateEventRequest}
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 font-medium hover:from-indigo-200 hover:to-purple-200 transition-all duration-300 flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create New Event Request
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorDisplay error={error} onRefresh={handleRefresh} />;
+  if (!eventRequests?.length) return <EmptyState onCreateRequest={handleCreateEventRequest} />;
 
   return (
-    <div className="space-y-8 p-4 md:p-6">
+    <div className="p-4 space-y-8 md:p-6">
+
       {/* Error Alert */}
       {error && (
-        <div className="relative p-5 pl-14 bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 rounded-lg shadow-sm animate-fade-in">
-          <div className="absolute left-5 top-5">
-            <AlertTriangle className="w-6 h-6 text-red-500" />
-          </div>
-          <div className="pr-10">
-            <h4 className="font-bold text-red-800 mb-1">Action Required</h4>
+        <div className="p-4 border-l-4 border-red-500 rounded-lg bg-red-50">
+          <div className="flex items-center">
+            <AlertTriangle className="w-5 h-5 mr-2 text-red-500" />
             <p className="text-sm text-red-600">{error}</p>
+            <button onClick={() => setError(null)} className="ml-auto">
+              <XCircle className="w-5 h-5 text-red-500" />
+            </button>
           </div>
-          <button 
-            onClick={() => setError(null)} 
-            className="absolute right-4 top-4 p-1 rounded-full hover:bg-red-100 transition-colors"
-          >
-            <XCircle className="w-5 h-5 text-red-500" />
-          </button>
         </div>
       )}
 
       {/* Main Dashboard */}
-      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+      <div className="overflow-hidden bg-white border border-gray-200 shadow-xl rounded-2xl">
         <div className="p-6 md:p-8">
-          {/* Header Section */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
-                  <Brain className="w-6 h-6 text-white" />
-                </div>
-                AI Organizer Matching
-              </h1>
-              <p className="text-gray-600 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-500" />
-                Smart rankings based on budget, experience, and reliability
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-3 mt-4 md:mt-0">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="px-4 py-3 rounded-xl font-medium flex items-center gap-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 transition-all duration-300"
-              >
-                <Filter className="w-5 h-5" />
-                Filters
-              </button>
-              <button
-                onClick={() => setComparisonMode(!comparisonMode)}
-                className={`px-4 py-3 rounded-xl font-medium flex items-center gap-2 transition-all duration-300 ${
-                  comparisonMode
-                    ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg'
-                    : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300'
-                }`}
-              >
-                <BarChart3 className="w-5 h-5" />
-                Compare ({comparisonList.length}/3)
-              </button>
-              <button
-                onClick={handleRefresh}
-                className="p-3 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 transition-all duration-300"
-              >
-                <RefreshCw className="w-5 h-5" />
-              </button>
-              <button
-                onClick={handleCreateEventRequest}
-                className="px-6 py-3 rounded-xl font-medium flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              >
-                <Plus className="w-5 h-5" />
-                New Request
-              </button>
-            </div>
-          </div>
 
-          {/* AI Stats Overview */}
-          {eventRequests.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-xl p-6 shadow-md">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-white" />
-                  </div>
-                  <Sparkles className="w-8 h-8 text-indigo-300" />
-                </div>
-                <h3 className="text-3xl font-bold text-gray-800 mb-1">
-                  {eventRequests.reduce((acc, req) => acc + (req.organizers?.length || 0), 0)}
-                </h3>
-                <p className="text-gray-600 font-medium">Total Organizer Matches</p>
-              </div>
+          {/* Header */}
+          <HeaderSection
+            comparisonMode={comparisonMode}
+            setComparisonMode={setComparisonMode}
+            comparisonList={comparisonList}
+            onRefresh={handleRefresh}
+            onCreateRequest={handleCreateEventRequest}
+          />
 
-              <div className="bg-gradient-to-br from-purple-50 to-white border border-purple-100 rounded-xl p-6 shadow-md">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <Award className="w-6 h-6 text-white" />
-                  </div>
-                  <Brain className="w-8 h-8 text-purple-300" />
-                </div>
-                <h3 className="text-3xl font-bold text-gray-800 mb-1">
-                  {eventRequests.filter(req => req.organizers?.some(o => o.aiMatchScore > 85)).length}
-                </h3>
-                <p className="text-gray-600 font-medium">High Match Requests</p>
-              </div>
-
-              <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-xl p-6 shadow-md">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-white" />
-                  </div>
-                  <TrendingDown className="w-8 h-8 text-emerald-300" />
-                </div>
-                <h3 className="text-3xl font-bold text-gray-800 mb-1">
-                  ${eventRequests.reduce((acc, req) => {
-                    if (!req.organizers || req.organizers.length === 0) return acc;
-                    return acc + (aiInsights[req.eventId]?.budgetRange?.average || 0);
-                  }, 0) / eventRequests.length || 0}
-                </h3>
-                <p className="text-gray-600 font-medium">Avg. Proposed Budget</p>
-              </div>
-
-              <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-xl p-6 shadow-md">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-white" />
-                  </div>
-                  <Zap className="w-8 h-8 text-amber-300" />
-                </div>
-                <h3 className="text-3xl font-bold text-gray-800 mb-1">
-                  {Math.round(eventRequests.reduce((acc, req) => {
-                    if (!req.organizers || req.organizers.length === 0) return acc;
-                    const fastResponses = req.organizers.filter(o => o.responseSpeed === 'lightning' || o.responseSpeed === 'fast').length;
-                    return acc + (fastResponses / req.organizers.length || 0) * 100;
-                  }, 0) / eventRequests.length)}%
-                </h3>
-                <p className="text-gray-600 font-medium">Fast Response Rate</p>
-              </div>
-            </div>
-          )}
+          {/* Stats Overview */}
+          <StatsOverview eventRequests={eventRequests} aiInsights={aiInsights} />
 
           {/* Event Requests List */}
           <div className="space-y-8">
             {eventRequests.map((event) => (
-              <div key={event.eventId} className="border border-gray-200 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
-                {/* Event Header with AI Insights */}
-                <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200 p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center shadow-sm">
-                        <FileText className="w-7 h-7 text-indigo-600" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-3 mb-1">
-                          <h2 className="text-xl font-bold text-gray-800">{event.eventType} Event</h2>
-                          {aiInsights[event.eventId]?.topMatchScore > 85 && (
-                            <AIBadge score={aiInsights[event.eventId]?.topMatchScore} reason="Top match available" />
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600">Request ID: {event.eventId}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {getStatusBadge(event.status)}
-                      <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl">
-                        <Users className="w-4 h-4 text-gray-600" />
-                        <span className="font-medium text-gray-800">{event.organizers?.length || 0} Organizers</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* AI Market Insights */}
-                  {aiInsights[event.eventId] && (
-                    <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">
-                      <div className="flex items-start gap-3">
-                        <Brain className="w-5 h-5 text-purple-600 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-purple-900 mb-1">AI Market Insight</p>
-                          <p className="text-sm text-gray-700">{aiInsights[event.eventId].marketInsight}</p>
-                          <p className="text-sm text-gray-700 mt-2">
-                            <span className="font-medium">Recommendation:</span> {aiInsights[event.eventId].recommendation}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Event Details */}
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
-                        <MapPin className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Venue</p>
-                        <p className="font-bold text-gray-800">{event.venue}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
-                        <Calendar className="w-5 h-5 text-emerald-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Date</p>
-                        <p className="font-bold text-gray-800">{new Date(event.date).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-yellow-100 flex items-center justify-center">
-                        <DollarSign className="w-5 h-5 text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Budget</p>
-                        <p className="font-bold text-gray-800 text-xl">${event.budget}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center">
-                        <TrendingUp className="w-5 h-5 text-rose-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Avg. Match</p>
-                        <p className="font-bold text-gray-800 text-xl">{aiInsights[event.eventId]?.avgMatchScore || 0}%</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div className="mb-8">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-indigo-600" />
-                      Event Description
-                    </h3>
-                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-6">
-                      <p className="text-gray-700 leading-relaxed">{event.description}</p>
-                    </div>
-                  </div>
-
-                  {/* Organizers Section with AI Rankings */}
-                  <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <Brain className="w-5 h-5 text-indigo-600" />
-                        AI-Ranked Organizers ({event.organizers?.length || 0})
-                      </h3>
-                      {event.organizers && event.organizers.length > 0 && (
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                          >
-                            <option value="matchScore">Sort by Match Score</option>
-                            <option value="budget">Sort by Budget</option>
-                            <option value="responseTime">Sort by Response Time</option>
-                            <option value="experience">Sort by Experience</option>
-                          </select>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {!event.organizers || event.organizers.length === 0 ? (
-                      <div className="py-12 text-center bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center mx-auto mb-6">
-                          <Users className="w-10 h-10 text-gray-400" />
-                        </div>
-                        <p className="text-gray-600 font-medium">No organizers have accepted for this event yet.</p>
-                        <p className="text-sm text-gray-500 mt-2">AI will notify you as soon as matches are found.</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {event.organizers
-                          .sort((a, b) => {
-                            if (sortBy === 'matchScore') return (b.aiMatchScore || 0) - (a.aiMatchScore || 0);
-                            if (sortBy === 'budget') return (a.proposedBudget || 0) - (b.proposedBudget || 0);
-                            if (sortBy === 'responseTime') {
-                              const speedWeight = { lightning: 4, fast: 3, normal: 2, slow: 1 };
-                              return (speedWeight[b.responseSpeed] || 0) - (speedWeight[a.responseSpeed] || 0);
-                            }
-                            return 0;
-                          })
-                          .map((organizer, index) => (
-                          <div 
-                            key={organizer.organizerId} 
-                            className={`group bg-gradient-to-br from-white to-gray-50 border rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 relative ${
-                              organizer.aiRecommended ? 'border-purple-400 ring-2 ring-purple-200' : 'border-gray-200'
-                            }`}
-                          >
-                            {/* AI Rank Badge */}
-                            <div className="absolute -top-3 -left-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                                index === 0 ? 'bg-gradient-to-r from-yellow-500 to-amber-500' :
-                                index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' :
-                                index === 2 ? 'bg-gradient-to-r from-amber-600 to-amber-700' :
-                                'bg-gradient-to-r from-indigo-500 to-purple-500'
-                              }`}>
-                                #{index + 1}
-                              </div>
-                            </div>
-
-                            {/* Compare Checkbox */}
-                            {comparisonMode && (
-                              <div className="absolute top-4 right-4">
-                                <input
-                                  type="checkbox"
-                                  checked={comparisonList.includes(organizer.organizerId)}
-                                  onChange={() => handleCompareOrganizer(organizer)}
-                                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                                />
-                              </div>
-                            )}
-
-                            <div className="flex items-start justify-between mb-6">
-                              <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
-                                  <UserCircle className="w-7 h-7 text-indigo-600" />
-                                </div>
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <h4 className="font-bold text-gray-800 text-lg">{organizer.fullname}</h4>
-                                    {organizer.aiRecommended && (
-                                      <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                                        Best Match
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    {getStatusBadge(organizer.status)}
-                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getExperienceLevelColor(organizer.experienceLevel)}`}>
-                                      {organizer.experienceLevel}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* AI Match Score */}
-                              <div className="text-center">
-                                <div className="relative w-16 h-16">
-                                  <svg className="w-16 h-16 transform -rotate-90">
-                                    <circle
-                                      cx="32"
-                                      cy="32"
-                                      r="28"
-                                      stroke="currentColor"
-                                      strokeWidth="4"
-                                      fill="none"
-                                      className="text-gray-200"
-                                    />
-                                    <circle
-                                      cx="32"
-                                      cy="32"
-                                      r="28"
-                                      stroke="currentColor"
-                                      strokeWidth="4"
-                                      fill="none"
-                                      strokeDasharray={`${2 * Math.PI * 28}`}
-                                      strokeDashoffset={`${2 * Math.PI * 28 * (1 - (organizer.aiMatchScore || 70) / 100)}`}
-                                      className={`${
-                                        (organizer.aiMatchScore || 70) > 85 ? 'text-emerald-500' :
-                                        (organizer.aiMatchScore || 70) > 75 ? 'text-blue-500' :
-                                        (organizer.aiMatchScore || 70) > 65 ? 'text-amber-500' :
-                                        'text-rose-500'
-                                      }`}
-                                    />
-                                  </svg>
-                                  <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-lg font-bold text-gray-800">{organizer.aiMatchScore || 70}%</span>
-                                  </div>
-                                </div>
-                                <p className="text-xs text-gray-600 mt-1">AI Match</p>
-                              </div>
-                            </div>
-                            
-                            {/* AI Insights */}
-                            <div className="space-y-2 mb-4">
-                              {(organizer.aiInsights || []).map((insight, i) => (
-                                <div key={i} className="flex items-start gap-2 text-xs">
-                                  <Sparkles className="w-3 h-3 text-purple-600 mt-0.5" />
-                                  <span className="text-gray-700">{insight}</span>
-                                </div>
-                              ))}
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4 mb-6">
-                              <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg">
-                                <DollarSign className="w-4 h-4 text-emerald-600" />
-                                <div>
-                                  <p className="text-xs text-gray-600">Proposed</p>
-                                  <p className="font-bold text-gray-800">${organizer.proposedBudget}</p>
-                                </div>
-                                <span className={`ml-auto px-2 py-1 rounded-full text-xs font-medium ${getPriceCompetitivenessColor(organizer.priceCompetitiveness)}`}>
-                                  {organizer.priceCompetitiveness}
-                                </span>
-                              </div>
-                              
-                              <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg">
-                                <Clock className="w-4 h-4 text-blue-600" />
-                                <div>
-                                  <p className="text-xs text-gray-600">Response</p>
-                                  <p className="font-bold text-gray-800">{new Date(organizer.responseDate).toLocaleDateString()}</p>
-                                </div>
-                                <span className={`ml-auto px-2 py-1 rounded-full text-xs font-medium ${getResponseSpeedColor(organizer.responseSpeed)}`}>
-                                  {organizer.responseSpeed}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Strengths & Weaknesses */}
-                            <div className="grid grid-cols-2 gap-4 mb-6">
-                              <div>
-                                <p className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
-                                  <ThumbsUp className="w-3 h-3 text-emerald-600" />
-                                  Strengths
-                                </p>
-                                <div className="space-y-1">
-                                  {(organizer.strengths || []).map((strength, i) => (
-                                    <div key={i} className="flex items-center gap-1 text-xs text-emerald-700">
-                                      <CheckCircle className="w-3 h-3" />
-                                      {strength}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
-                                  <ThumbsDown className="w-3 h-3 text-rose-600" />
-                                  Considerations
-                                </p>
-                                <div className="space-y-1">
-                                  {(organizer.weaknesses || []).map((weakness, i) => (
-                                    <div key={i} className="flex items-center gap-1 text-xs text-rose-700">
-                                      <AlertTriangle className="w-3 h-3" />
-                                      {weakness}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-4 mb-6">
-                              <div className="flex items-center gap-2 mb-2">
-                                <MessageSquare className="w-4 h-4 text-indigo-600" />
-                                <p className="text-sm font-medium text-gray-800">Organizer's Proposal</p>
-                              </div>
-                              <p className="text-sm text-gray-700">{organizer.message}</p>
-                            </div>
-                            
-                            <div className="flex gap-3">
-                              <button
-                                onClick={() => handleSelectOrganizer(event.eventId, organizer.organizerId)}
-                                className="flex-1 group/select py-3 rounded-xl font-medium flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
-                              >
-                                <CheckCircle className="w-5 h-5 group-hover/select:scale-110 transition-transform" />
-                                Select Organizer
-                              </button>
-                              <button
-                                onClick={() => window.location.href = `mailto:${organizer.contact || ''}`}
-                                className="px-4 py-3 rounded-xl font-medium flex items-center justify-center gap-2 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 hover:from-blue-200 hover:to-cyan-200 shadow-md hover:shadow-lg transition-all duration-300"
-                              >
-                                <Mail className="w-5 h-5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <EventRequestCard
+                key={event._id}
+                event={event}
+                aiInsights={aiInsights}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                comparisonMode={comparisonMode}
+                comparisonList={comparisonList}
+                onCompare={handleCompareOrganizer}
+                onSelectOrganizer={handleSelectOrganizer}
+                onOpenNegotiation={handleOpenNegotiation}
+                getStatusBadge={getStatusBadge}
+              />
             ))}
           </div>
         </div>
       </div>
 
-      {/* Comparison Modal */}
-      {comparisonMode && comparisonList.length > 0 && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full mx-6 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white">
-              <div>
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-indigo-600" />
-                  Organizer Comparison
-                </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  Compare {comparisonList.length} organizers side by side
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setComparisonMode(false);
-                  setComparisonList([]);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
-              >
-                <XCircle className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {eventRequests.flatMap(event => 
-                  (event.organizers || [])
-                    .filter(org => comparisonList.includes(org.organizerId))
-                    .map((organizer, idx) => (
-                      <div key={organizer.organizerId} className="border border-gray-200 rounded-xl p-6">
-                        <div className="text-center mb-6">
-                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mx-auto mb-3">
-                            <UserCircle className="w-10 h-10 text-indigo-600" />
-                          </div>
-                          <h3 className="font-bold text-gray-800">{organizer.fullname}</h3>
-                          <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium ${getExperienceLevelColor(organizer.experienceLevel)}`}>
-                            {organizer.experienceLevel}
-                          </span>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">AI Match Score</span>
-                            <span className={`font-bold ${
-                              (organizer.aiMatchScore || 70) > 85 ? 'text-emerald-600' :
-                              (organizer.aiMatchScore || 70) > 75 ? 'text-blue-600' :
-                              'text-amber-600'
-                            }`}>
-                              {organizer.aiMatchScore || 70}%
-                            </span>
-                          </div>
-                          
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Proposed Budget</span>
-                            <span className="font-bold text-gray-800">${organizer.proposedBudget}</span>
-                          </div>
-                          
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Response Speed</span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getResponseSpeedColor(organizer.responseSpeed)}`}>
-                              {organizer.responseSpeed}
-                            </span>
-                          </div>
-                          
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Reliability Score</span>
-                            <span className="font-bold text-gray-800">{organizer.reliabilityScore || 85}%</span>
-                          </div>
-                          
-                          <div className="pt-4 border-t border-gray-200">
-                            <button
-                              onClick={() => handleSelectOrganizer(event.eventId, organizer.organizerId)}
-                              className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 text-white font-medium hover:from-emerald-600 hover:to-green-600 transition"
-                            >
-                              Select This Organizer
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Negotiation Modal */}
+      {negotiationModal.show && (
+        <NegotiationModal
+          organizer={negotiationModal.organizer}
+          event={negotiationModal.event}
+          aiAnalysis={aiAnalysis}
+          counterOfferValue={counterOfferValue}
+          setCounterOfferValue={setCounterOfferValue}
+          counterMessage={counterMessage}
+          setCounterMessage={setCounterMessage}
+          onSend={handleSendCounterOffer}
+          onClose={() => setNegotiationModal({ show: false, organizer: null, event: null, negotiationId: null })}
+          loading={negotiationLoading}
+        />
       )}
     </div>
   );
 };
+
+// ============ HEADER SECTION ============
+const HeaderSection = ({ comparisonMode, setComparisonMode, comparisonList, onRefresh, onCreateRequest }) => (
+  <div className="flex flex-col justify-between mb-8 md:flex-row md:items-center">
+    <div>
+      <h1 className="flex items-center gap-3 mb-2 text-2xl font-bold text-gray-800 md:text-3xl">
+        <div className="flex items-center justify-center w-12 h-12 shadow-lg rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500">
+          <Brain className="w-6 h-6 text-white" />
+        </div>
+        AI Organizer Matching
+      </h1>
+      <p className="flex items-center gap-2 text-gray-600">
+        <Sparkles className="w-4 h-4 text-purple-500" />
+        Review and negotiate with interested organizers
+      </p>
+    </div>
+
+    <div className="flex items-center gap-3 mt-4 md:mt-0">
+      <button
+        onClick={() => setComparisonMode(!comparisonMode)}
+        className={`px-4 py-3 rounded-xl font-medium flex items-center gap-2 transition ${comparisonMode ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+      >
+        <BarChart3 className="w-5 h-5" />
+        Compare ({comparisonList.length}/3)
+      </button>
+      <button onClick={onRefresh} className="p-3 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200">
+        <RefreshCw className="w-5 h-5" />
+      </button>
+      <button onClick={onCreateRequest} className="flex items-center gap-2 px-6 py-3 text-white rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600">
+        <Plus className="w-5 h-5" />
+        New Request
+      </button>
+    </div>
+  </div>
+);
+
+// ============ STATS OVERVIEW ============
+const StatsOverview = ({ eventRequests, aiInsights }) => {
+  const totalMatches = eventRequests.reduce((acc, req) => acc + (req.organizers?.length || 0), 0);
+  const avgBudget = eventRequests.reduce((acc, req) => {
+    if (!req.organizers?.length) return acc;
+    const avg = aiInsights[req._id]?.budgetRange?.average || 0;
+    return acc + avg;
+  }, 0) / eventRequests.length || 0;
+
+  return (
+    <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2">
+      <StatCard title="Total Organizer Matches" value={totalMatches} icon={TrendingUp} color="indigo" />
+      <StatCard title="Avg. Proposed Budget" value={`NPR ${Math.round(avgBudget).toLocaleString()}`} icon={DollarSign} color="emerald" />
+    </div>
+  );
+};
+
+const StatCard = ({ title, value, icon: Icon, color }) => (
+  <div className={`bg-gradient-to-br from-${color}-50 to-white border border-${color}-100 rounded-xl p-6 shadow-md`}>
+    <div className="flex items-center justify-between mb-4">
+      <div className={`w-12 h-12 rounded-lg bg-gradient-to-br from-${color}-500 to-${color}-600 flex items-center justify-center`}>
+        <Icon className="w-6 h-6 text-white" />
+      </div>
+    </div>
+    <h3 className="mb-1 text-3xl font-bold text-gray-800">{value}</h3>
+    <p className="font-medium text-gray-600">{title}</p>
+  </div>
+);
+
+// ============ EVENT REQUEST CARD ============
+const EventRequestCard = ({
+  event, aiInsights, sortBy, setSortBy, comparisonMode, comparisonList,
+  onCompare, onSelectOrganizer, onOpenNegotiation, getStatusBadge
+}) => {
+  return (
+    <div className="overflow-hidden transition border border-gray-200 shadow-lg rounded-xl hover:shadow-xl">
+
+      {/* Event Header */}
+      <div className="p-6 border-b bg-gray-50">
+        <div className="flex flex-col justify-between gap-4 md:flex-row">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center bg-indigo-100 w-14 h-14 rounded-xl">
+              <FileText className="text-indigo-600 w-7 h-7" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">{event.eventType || 'Event'} Request</h2>
+              <p className="text-sm text-gray-600">Request ID: {event._id}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {getStatusBadge(event.status)}
+            <div className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-xl">
+              <Users className="w-4 h-4 text-gray-600" />
+              <span className="font-medium">{event.organizers?.length || 0} Organizers</span>
+            </div>
+          </div>
+        </div>
+
+        {/* AI Market Insights */}
+        {aiInsights[event._id] && (
+          <div className="p-4 mt-4 border border-purple-200 bg-purple-50 rounded-xl">
+            <div className="flex items-start gap-3">
+              <Brain className="w-5 h-5 text-purple-600 mt-0.5" />
+              <div>
+                <p className="mb-1 text-sm font-medium text-purple-900">AI Market Insight</p>
+                <p className="text-sm text-gray-700">{aiInsights[event._id].marketInsight}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Event Details */}
+      <div className="p-6">
+        <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-3">
+          <DetailCard icon={MapPin} label="Venue" value={event.venue || 'Not specified'} color="blue" />
+          <DetailCard icon={Calendar} label="Date" value={event.date ? new Date(event.date).toLocaleDateString() : 'Flexible'} color="emerald" />
+          <DetailCard icon={DollarSign} label="Budget" value={`NPR ${event.budget?.toLocaleString() || '0'}`} color="amber" />
+        </div>
+
+        {/* Description */}
+        {event.description && (
+          <div className="mb-8">
+            <h3 className="flex items-center gap-2 mb-4 text-lg font-bold">
+              <FileText className="w-5 h-5 text-indigo-600" />
+              Event Description
+            </h3>
+            <div className="p-6 border bg-gray-50 rounded-xl">
+              <p className="text-gray-700">{event.description}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Organizers Section */}
+        <OrganizersSection
+          event={event}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          comparisonMode={comparisonMode}
+          comparisonList={comparisonList}
+          onCompare={onCompare}
+          onSelectOrganizer={onSelectOrganizer}
+          onOpenNegotiation={onOpenNegotiation}
+          getStatusBadge={getStatusBadge}
+        />
+      </div>
+    </div>
+  );
+};
+
+const DetailCard = ({ icon: Icon, label, value, color }) => (
+  <div className="flex items-center gap-3 p-4 border bg-gray-50 rounded-xl">
+    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br from-${color}-100 to-${color}-200 flex items-center justify-center`}>
+      <Icon className={`w-5 h-5 text-${color}-600`} />
+    </div>
+    <div>
+      <p className="text-xs text-gray-600">{label}</p>
+      <p className="font-bold text-gray-800">{value}</p>
+    </div>
+  </div>
+);
+
+// ============ ORGANIZERS SECTION ============
+const OrganizersSection = ({
+  event, sortBy, setSortBy, comparisonMode, comparisonList,
+  onCompare, onSelectOrganizer, onOpenNegotiation, getStatusBadge
+}) => {
+  if (!event.organizers?.length) {
+    return (
+      <div className="py-12 text-center border bg-gray-50 rounded-xl">
+        <Users className="w-10 h-10 mx-auto mb-4 text-gray-400" />
+        <p className="font-medium text-gray-600">No organizers have responded yet.</p>
+        <p className="mt-2 text-sm text-gray-500">Check back later or create a new request.</p>
+      </div>
+    );
+  }
+
+  const sortedOrganizers = [...event.organizers].sort((a, b) => {
+    if (sortBy === 'matchScore') return (b.matchPercentage || 0) - (a.matchPercentage || 0);
+    if (sortBy === 'budget') return (a.proposedBudget || 0) - (b.proposedBudget || 0);
+    return 0;
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="flex items-center gap-2 text-lg font-bold">
+          <Brain className="w-5 h-5 text-indigo-600" />
+          Organizer Responses ({event.organizers.length})
+        </h3>
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-3 py-2 text-sm border rounded-lg">
+          <option value="matchScore">Sort by Match Score</option>
+          <option value="budget">Sort by Budget</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {sortedOrganizers.map((organizer, index) => (
+          <OrganizerCard
+            key={organizer._id}
+            organizer={organizer}
+            index={index}
+            event={event}
+            comparisonMode={comparisonMode}
+            comparisonList={comparisonList}
+            onCompare={onCompare}
+            onSelectOrganizer={onSelectOrganizer}
+            onOpenNegotiation={onOpenNegotiation}
+            getStatusBadge={getStatusBadge}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ============ ORGANIZER CARD ============
+const OrganizerCard = ({
+  organizer, index, event, comparisonMode, comparisonList,
+  onCompare, onSelectOrganizer, onOpenNegotiation, getStatusBadge
+}) => {
+  return (
+    <div className="relative p-6 transition-all bg-white border shadow-md rounded-xl hover:shadow-xl">
+
+      {/* Rank Badge */}
+      <div className="absolute -top-3 -left-3">
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-500' : 'bg-amber-700'
+          }`}>
+          #{index + 1}
+        </div>
+      </div>
+
+      {/* Compare Checkbox */}
+      {comparisonMode && (
+        <div className="absolute top-4 right-4">
+          <input
+            type="checkbox"
+            checked={comparisonList.includes(organizer._id)}
+            onChange={() => onCompare(organizer)}
+            className="w-5 h-5 text-indigo-600 rounded"
+          />
+        </div>
+      )}
+
+      <div className="flex items-start justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center justify-center bg-indigo-100 w-14 h-14 rounded-xl">
+            <UserCircle className="text-indigo-600 w-7 h-7" />
+          </div>
+          <div>
+            <h4 className="text-lg font-bold text-gray-800">{organizer.fullname}</h4>
+            <div className="flex items-center gap-2 mt-1">
+              {getStatusBadge(organizer.status)}
+            </div>
+          </div>
+        </div>
+
+        {/* Match Score */}
+        <div className="text-center">
+          <span className="text-2xl font-bold text-indigo-600">{organizer.matchPercentage || 0}%</span>
+          <p className="text-xs text-gray-600">match</p>
+        </div>
+      </div>
+
+      {/* Price */}
+      <div className="p-3 mb-6 border rounded-lg bg-gray-50">
+        <div className="flex items-center gap-2">
+          <DollarSign className="w-4 h-4 text-emerald-600" />
+          <div>
+            <p className="text-xs text-gray-600">Proposed Budget</p>
+            <p className="font-bold text-gray-800">NPR {organizer.proposedBudget?.toLocaleString() || 'Not specified'}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Organizer's Proposal */}
+      {organizer.message && (
+        <div className="p-4 mb-6 border bg-gray-50 rounded-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <MessageSquare className="w-4 h-4 text-indigo-600" />
+            <p className="text-sm font-medium text-gray-800">Organizer's Proposal</p>
+          </div>
+          <p className="text-sm text-gray-700">{organizer.message}</p>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => onSelectOrganizer(event._id, organizer._id || organizer.organizerId )}
+          className="flex-1 py-3 font-medium text-white transition-all rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600"
+        >
+          <CheckCircle className="inline w-5 h-5 mr-2" />
+          Select
+        </button>
+        <button
+          onClick={() => onOpenNegotiation(organizer, event)}
+          className="flex-1 py-3 font-medium text-white transition-all rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+        >
+          <MessageSquare className="inline w-5 h-5 mr-2" />
+          Negotiate
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ============ NEGOTIATION MODAL ============
+const NegotiationModal = ({
+  organizer, event, aiAnalysis,
+  counterOfferValue, setCounterOfferValue,
+  counterMessage, setCounterMessage,
+  onSend, onClose, loading
+}) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-lg mx-6 bg-white shadow-2xl rounded-2xl">
+
+        {/* Header */}
+        <div className="p-6 text-white border-b bg-gradient-to-r from-indigo-500 to-purple-500">
+          <h2 className="flex items-center gap-2 text-xl font-bold">
+            <Brain className="w-5 h-5" />
+            AI Negotiation Assistant
+          </h2>
+        </div>
+
+        <div className="p-6 space-y-4">
+
+          {/* AI Price Analysis */}
+          {aiAnalysis && (
+            <div className="p-4 border border-purple-200 bg-purple-50 rounded-xl">
+              <h3 className="mb-2 font-medium text-purple-900">AI Market Analysis</h3>
+
+              {aiAnalysis.marketAnalysis?.estimatedPrice && (
+                <p className="mb-2 text-sm text-gray-700">
+                  Market Price: NPR {aiAnalysis.marketAnalysis.estimatedPrice.toLocaleString()}
+                </p>
+              )}
+
+              {aiAnalysis.validation?.suggestion && (
+                <p className="text-xs text-gray-600">💡 {aiAnalysis.validation.suggestion}</p>
+              )}
+            </div>
+          )}
+
+          {/* Event Details */}
+          <div className="p-4 rounded-lg bg-gray-50">
+            <p className="text-sm"><span className="font-medium">Event:</span> {event.eventType} in {event.venue}</p>
+            <p className="text-sm"><span className="font-medium">Your Budget:</span> NPR {event.budget?.toLocaleString()}</p>
+            <p className="text-sm"><span className="font-medium">Organizer's Offer:</span> NPR {organizer.proposedBudget?.toLocaleString()}</p>
+          </div>
+
+          {/* Counter Offer Form */}
+          <div>
+            <label className="block mb-1 text-sm font-medium">Your Counter Offer (NPR)</label>
+            <input
+              type="number"
+              value={counterOfferValue}
+              onChange={(e) => setCounterOfferValue(e.target.value)}
+              className="w-full p-3 border rounded-lg"
+              placeholder="Enter your offer"
+            />
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium">Message to Organizer</label>
+            <textarea
+              rows={3}
+              value={counterMessage}
+              onChange={(e) => setCounterMessage(e.target.value)}
+              placeholder="Explain your counter offer..."
+              className="w-full p-3 border rounded-lg resize-none"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={onSend}
+              disabled={loading || !counterOfferValue}
+              className="flex-1 py-3 font-medium text-white rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50"
+            >
+              {loading ? 'Sending...' : 'Send Counter Offer'}
+            </button>
+            <button onClick={onClose} className="px-6 py-3 border rounded-lg hover:bg-gray-50">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============ LOADING, ERROR, EMPTY STATES ============
+const LoadingSpinner = () => (
+  <div className="p-8 text-center">
+    <AILoadingSpinner />
+    <p className="mt-4 text-gray-600">Loading your event requests...</p>
+  </div>
+);
+
+const ErrorDisplay = ({ error, onRefresh }) => (
+  <div className="p-6 border-l-4 border-red-500 rounded-lg bg-red-50">
+    <AlertTriangle className="w-6 h-6 mb-2 text-red-500" />
+    <p className="mb-4 text-red-600">{error}</p>
+    <button onClick={onRefresh} className="px-4 py-2 text-red-700 bg-red-100 rounded-lg">
+      Try Again
+    </button>
+  </div>
+);
+
+const EmptyState = ({ onCreateRequest }) => (
+  <div className="p-8 bg-white border border-gray-200 shadow-xl rounded-2xl">
+    <div className="py-16 text-center">
+      <div className="flex items-center justify-center w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100">
+        <Brain className="w-12 h-12 text-indigo-400" />
+      </div>
+      <h3 className="mb-2 text-xl font-bold text-gray-700">No Event Requests Found</h3>
+      <p className="mb-6 text-gray-500">Create your first event request and let AI find the perfect organizers!</p>
+      <button onClick={onCreateRequest} className="px-6 py-3 font-medium text-white rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500">
+        <Plus className="inline w-4 h-4 mr-2" />
+        Create New Event Request
+      </button>
+    </div>
+  </div>
+);
 
 export default InterestedOrganizers;
