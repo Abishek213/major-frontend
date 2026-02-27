@@ -115,15 +115,6 @@ const EventsManagement = () => {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
 
-      const notificationData = {
-        eventId,
-        status: action === "approve" ? "approved" : "rejected",
-        message: `Your event has been ${
-          action === "approve" ? "approved" : "rejected"
-        }`,
-        type: "event_response",
-      };
-
       const eventResponse = await api.post(
         `/admin/approve-event/${eventId}`,
         {
@@ -135,6 +126,23 @@ const EventsManagement = () => {
       );
 
       if (eventResponse?.data?.success) {
+        // Use the actual persisted status returned by the backend (e.g. "upcoming",
+        // "ongoing", "completed", or "rejected") — never hardcode "approved" since
+        // "approved" is no longer a valid DB status.
+        const actualStatus =
+          eventResponse.data.actualStatus ||
+          (action === "approve" ? "upcoming" : "rejected");
+
+        const notificationData = {
+          eventId,
+          status: actualStatus,
+          message:
+            action === "approve"
+              ? `Your event has been approved and is now ${actualStatus}`
+              : "Your event has been rejected",
+          type: "event_response",
+        };
+
         try {
           await api.post(
             `/notifications/events/${eventId}/approve`,
