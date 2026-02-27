@@ -45,6 +45,7 @@ const RecommendationSection = ({
   minimal = false,
   externalSearchTerm = "",
   externalCategoryId = null,
+  defaultSortBy = "relevance", // new prop: initial sort order
 }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -59,7 +60,7 @@ const RecommendationSection = ({
     priceRange: "any",
     location: "",
     dateRange: "anytime",
-    sortBy: "relevance",
+    sortBy: defaultSortBy, // use prop
     eventType: "all",
     minRating: 0,
     maxDistance: 50,
@@ -108,13 +109,11 @@ const RecommendationSection = ({
 
         // Add external search term if provided (e.g., from parent search input)
         if (externalSearchTerm) {
-          combinedFilters.keyword = externalSearchTerm; // adjust key as your API expects
+          combinedFilters.keyword = externalSearchTerm;
         }
 
         // Add external category if provided and not "all"
         if (externalCategoryId) {
-          // If the user has also selected categories internally, we may want to merge.
-          // For simplicity, we replace the categories array with the external one.
           combinedFilters.categories = [externalCategoryId];
         }
 
@@ -197,7 +196,7 @@ const RecommendationSection = ({
       priceRange: "any",
       location: "",
       dateRange: "anytime",
-      sortBy: "relevance",
+      sortBy: defaultSortBy, // reset to prop default
       eventType: "all",
       minRating: 0,
       maxDistance: 50,
@@ -611,6 +610,12 @@ const RecommendationSection = ({
                     src={event.image}
                     alt={event.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = "none";
+                      e.target.parentNode.innerHTML +=
+                        '<div class="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center"><svg class="w-12 h-12 text-gray-400" ... /></div>';
+                    }}
                   />
 
                   {/* Badges */}
@@ -799,6 +804,12 @@ const RecommendationSection = ({
                 src={selectedEvent.image}
                 alt={selectedEvent.title}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.style.display = "none";
+                  e.target.parentNode.innerHTML +=
+                    '<div class="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center"><svg class="w-12 h-12 text-gray-400" ... /></div>';
+                }}
               />
               <button
                 onClick={() => setShowEventDetails(false)}

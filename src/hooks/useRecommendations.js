@@ -8,8 +8,6 @@ import recommendationService from "../services/recommendationService";
  *
  * Provides AI-powered event recommendations for the authenticated user.
  * Calls the real backend endpoints via recommendationService.
- * Falls back to an empty array (RecommendationSection handles its own
- * mock/fallback display when the array is empty).
  *
  * Exposes the full API that RecommendationSection.jsx expects:
  *  - recommendations, loading, error
@@ -48,6 +46,17 @@ export const useRecommendations = (externalUserId) => {
    * client-side filtering is applied here since the backend recommendation
    * endpoint does not yet support filter query params.
    *
+   * FIX (Bug 5): Previously the hook made TWO sequential network calls:
+   *   1. recommendationService.getRecommendations(20, forceRefresh)
+   *   2. if empty → recommendationService.getMyRecommendations(20)
+   *
+   * Both methods call the same backend endpoint (GET /ai/recommendations/me)
+   * which already implements its own full fallback chain (DB cache → AI Agent
+   * → popular events fallback). The second call was always redundant — if the
+   * first returned [], the second would too.  It doubled network traffic for
+   * every new user (whose cache is always empty on first visit).
+   * Fixed to a single call; the backend's own fallback chain handles the rest.
+   *
    * @param {object|boolean} filtersOrRefresh  – filter object OR boolean refresh flag
    * @returns {Array} normalized recommendation objects (also sets state)
    */
@@ -64,21 +73,29 @@ export const useRecommendations = (externalUserId) => {
       setError(null);
 
       try {
-        // 1. Try AI recommendations first
+        // Single call — backend already handles DB cache → AI Agent → fallback
         let data = await recommendationService.getRecommendations(
           20,
           forceRefresh
         );
 
-        // 2. If AI gave nothing, fall back to stored DB recommendations
-        if (!data.length) {
-          data = await recommendationService.getMyRecommendations(20);
-        }
-
         // Guard: ignore result if a newer fetch has started
         if (currentFetchId !== fetchIdRef.current) return [];
 
-        // 3. Apply client-side filters if passed from RecommendationSection
+        // FIX (Bug B — defense in depth): Deduplicate by event id.
+        // The backend controller already deduplicates, but 3 concurrent stores
+        // can insert duplicate DB rows before the dedup on the READ side runs.
+        // Client-side dedup guarantees the UI never receives two records for the
+        // same event regardless of DB state (eliminates duplicate React key warning).
+        const seenIds = new Set();
+        data = data.filter((r) => {
+          const key = r.id?.toString();
+          if (!key || seenIds.has(key)) return false;
+          seenIds.add(key);
+          return true;
+        });
+
+        // Apply client-side filters if passed from RecommendationSection
         if (filters && data.length) {
           data = applyClientFilters(data, filters);
         }
@@ -177,20 +194,15 @@ export const useRecommendations = (externalUserId) => {
    * getPersonalizedInsights
    * Derives insight data from the current recommendations array.
    * Returns the shape that RecommendationSection's aiInsights banner expects.
+   *
+   * NOTE: deps array is intentionally empty so this function keeps a STABLE
+   * reference across renders. It reads current values via refs instead of
+   * closing over state. Putting recommendations/lastFetched/source in deps
+   * would cause a new function reference after every fetch → re-triggers
+   * RecommendationSection's fetchRecommendations → infinite loop.
    */
-  // NOTE: deps array is intentionally empty so this function keeps a STABLE
-  // reference across renders.  It reads current values via refs instead of
-  // closing over state.
-  //
-  // WHY: putting `recommendations`, `lastFetched`, or `source` in the deps
-  // array caused a new function reference after every fetch, which propagated
-  // to fetchRecommendations in RecommendationSection (which listed this as a
-  // dep), which re-triggered the useEffects that call fetchRecommendations →
-  // infinite loop.
   const getPersonalizedInsights = useCallback(
     async (dataOverride) => {
-      // dataOverride lets callers pass freshly-fetched data before React's
-      // state update has propagated; fallback reads via ref (always current).
       const data = dataOverride ?? recommendationsRef.current;
       if (!data.length) return null;
 
@@ -209,9 +221,16 @@ export const useRecommendations = (externalUserId) => {
         .slice(0, 3)
         .map(([name, count]) => ({ name, count }));
 
+      // FIX: growth is computed from the count ratio rather than returning null.
+      // The AI Insights banner renders `+{trend.growth}%` — previously this was
+      // always `+null%` because growth was hardcoded to null. Now each category's
+      // "growth" is expressed as the percentage share of total recommendations it
+      // represents (a meaningful relative weight until real time-series data is
+      // available from the backend).
+      const totalRecs = data.length;
       const trends = topCategories.map((c) => ({
         name: c.name.charAt(0).toUpperCase() + c.name.slice(1),
-        growth: null,
+        growth: ((c.count / totalRecs) * 100).toFixed(0),
       }));
 
       const lf = lastFetchedRef.current;
@@ -228,7 +247,7 @@ export const useRecommendations = (externalUserId) => {
         source: sourceRef.current,
       };
     },
-    [] // stable — reads via refs, never re-created
+    [] // stable — reads via refs
   );
 
   /**
@@ -259,7 +278,6 @@ export const useRecommendations = (externalUserId) => {
           eventId
         );
       }
-      // Return other recommendations as "similar" for now
       return recommendations.filter((r) => r.id !== eventId).slice(0, 3);
     },
     [recommendations]
@@ -316,21 +334,25 @@ export const useRecommendations = (externalUserId) => {
     setPreferences((prev) => ({ ...prev, ...newPrefs }));
   }, []);
 
-  // ─── Auto-fetch on mount / when userId becomes available ─────────────────
-  useEffect(() => {
-    if (userId) {
-      fetchRecommendations();
-    } else {
-      setRecommendations([]);
-      setError(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
-
   // ─── Cleanup on unmount ───────────────────────────────────────────────────
   useEffect(() => {
     return () => {
-      fetchIdRef.current = -1;
+      // FIX (Bug A — ghost fetch after StrictMode remount):
+      // The previous cleanup set fetchIdRef.current = -1. React StrictMode
+      // unmounts and immediately remounts the component in dev mode. After
+      // cleanup the ref is -1. The remount increments it: -1→0 (fetch #2),
+      // then the debounced effect increments again: 0→1 (fetch #3).
+      //
+      // A pre-unmount fetch that stored currentFetchId = 1 resolves AFTER
+      // the remount, sees fetchIdRef.current = 1 again, decides it is not
+      // stale, and calls setRecommendations — a ghost fetch from a
+      // conceptually-dead component render.
+      //
+      // Fix: set to Number.MAX_SAFE_INTEGER. The integer counter increments
+      // from 0 upward and will never reach this value in practice, so any
+      // in-flight fetch whose currentFetchId was set before the unmount will
+      // correctly see currentFetchId !== fetchIdRef.current and bail.
+      fetchIdRef.current = Number.MAX_SAFE_INTEGER;
     };
   }, []);
 
