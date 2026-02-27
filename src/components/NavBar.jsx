@@ -92,7 +92,8 @@ const NavBar = () => {
       const insideDesktopProfile =
         profileRef.current && profileRef.current.contains(event.target);
       const insideMobileProfile =
-        mobileProfileRef.current && mobileProfileRef.current.contains(event.target);
+        mobileProfileRef.current &&
+        mobileProfileRef.current.contains(event.target);
 
       if (!insideDesktopProfile && !insideMobileProfile) {
         setIsProfileOpen(false);
@@ -389,7 +390,7 @@ const NavBar = () => {
             <span className="text-xs mt-1">{item.text}</span>
           </Link>
         ))}
-        
+
         {isAuthenticated && (
           <>
             {/* Mobile Notifications */}

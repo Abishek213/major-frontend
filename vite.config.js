@@ -1,76 +1,81 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig, loadEnv } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@components': path.resolve(__dirname, './src/components'),
-      '@pages': path.resolve(__dirname, './src/pages'),
-      '@utils': path.resolve(__dirname, './src/utils'),
-      '@hooks': path.resolve(__dirname, './src/hooks'),
-      '@services': path.resolve(__dirname, './src/services'),
-      '@context': path.resolve(__dirname, './src/context'),
-      '@config': path.resolve(__dirname, './src/config'),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+
+  return {
+    plugins: [react()],
+
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+        "@components": path.resolve(__dirname, "./src/components"),
+        "@pages": path.resolve(__dirname, "./src/pages"),
+        "@utils": path.resolve(__dirname, "./src/utils"),
+        "@hooks": path.resolve(__dirname, "./src/hooks"),
+        "@services": path.resolve(__dirname, "./src/services"),
+        "@context": path.resolve(__dirname, "./src/context"),
+        "@config": path.resolve(__dirname, "./src/config"),
+      },
+      extensions: [".js", ".jsx", ".json", ".ts", ".tsx"],
     },
-    extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']
-  },
-  server: {
-    fs: {
-      strict: false
+
+    server: {
+      port: 5173,
+      open: true,
+      proxy: {
+        "/api": {
+          target: env.VITE_API_BASE_URL,
+          changeOrigin: true,
+          secure: false,
+        },
+        "/uploads": {
+          target: env.VITE_API_BASE_URL,
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+      watch: {
+        usePolling: true,
+        interval: 100,
+      },
     },
-    proxy: {
-  '/api': {
-    target: 'http://localhost:4001',
-    changeOrigin: true,
-    secure: false,
-    timeout: 30000
-  },
-  '/uploads': {
-    target: 'http://localhost:4001',
-    changeOrigin: true,
-    secure: false
-  }
+
+    build: {
+      sourcemap: true,
+      rollupOptions: {
+        output: {
+          sourcemapExcludeSources: false,
+          manualChunks: {
+            vendor: ["react", "react-dom", "react-router-dom"],
+            ui: ["lucide-react", "recharts", "date-fns"],
+            ai: ["react-chartjs-2", "chart.js"],
+          },
+        },
+      },
+      chunkSizeWarningLimit: 1000,
     },
-    port: 5173,
-    open: true,
-    watch: {
-      usePolling: true,
-      interval: 100
-    }
-  },
-  build: {
-    sourcemap: true,
-    rollupOptions: {
-      output: {
-        sourcemapExcludeSources: false,
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['lucide-react', 'recharts', 'date-fns'],
-          ai: ['react-chartjs-2', 'chart.js']
-        }
-      }
+
+    optimizeDeps: {
+      include: [
+        "react",
+        "react-dom",
+        "react-router-dom",
+        "lucide-react",
+        "recharts",
+        "date-fns",
+        "react-chartjs-2",
+        "chart.js",
+      ],
+      exclude: [],
     },
-    chunkSizeWarningLimit: 1000
-  },
-  optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react-router-dom',
-      'lucide-react',
-      'recharts',
-      'date-fns',
-      'react-chartjs-2',
-      'chart.js'
-    ],
-    exclude: []
-  },
-  esbuild: {
-    loader: 'jsx',
-    include: /src\/.*\.jsx?$/,
-    exclude: []
-  }
-})
+
+    esbuild: {
+      loader: "jsx",
+      include: /src\/.*\.jsx?$/,
+      exclude: [],
+    },
+  };
+});
