@@ -2,17 +2,15 @@
  * AI Helper Functions for processing and formatting AI-related data
  */
 
-/**
- * Calculate confidence level from AI score
- * @param {number} score - AI confidence score (0-1)
- * @returns {string} Confidence level description
- */
 export const getConfidenceLevel = (score) => {
-  if (score >= 0.9) return 'Very High';
-  if (score >= 0.7) return 'High';
-  if (score >= 0.5) return 'Medium';
-  if (score >= 0.3) return 'Low';
-  return 'Very Low';
+  // Normalize to 0-1 range regardless of whether caller passes 0-1 or 0-100
+  const normalized = score > 1 ? score / 100 : score;
+
+  if (normalized >= 0.9) return "Very High";
+  if (normalized >= 0.7) return "High";
+  if (normalized >= 0.5) return "Medium";
+  if (normalized >= 0.3) return "Low";
+  return "Very Low";
 };
 
 /**
@@ -21,10 +19,10 @@ export const getConfidenceLevel = (score) => {
  * @returns {string} Tailwind CSS color class
  */
 export const getSentimentColor = (score) => {
-  if (score > 0.5) return 'text-green-600';
-  if (score > 0) return 'text-green-400';
-  if (score > -0.5) return 'text-yellow-600';
-  return 'text-red-600';
+  if (score > 0.5) return "text-green-600";
+  if (score > 0) return "text-green-400";
+  if (score > -0.5) return "text-yellow-600";
+  return "text-red-600";
 };
 
 /**
@@ -33,10 +31,10 @@ export const getSentimentColor = (score) => {
  * @returns {string} Tailwind CSS background class
  */
 export const getSentimentBgColor = (score) => {
-  if (score > 0.5) return 'bg-green-100';
-  if (score > 0) return 'bg-green-50';
-  if (score > -0.5) return 'bg-yellow-100';
-  return 'bg-red-100';
+  if (score > 0.5) return "bg-green-100";
+  if (score > 0) return "bg-green-50";
+  if (score > -0.5) return "bg-yellow-100";
+  return "bg-red-100";
 };
 
 /**
@@ -48,11 +46,14 @@ export const formatAISuggestion = (suggestion) => {
   return {
     ...suggestion,
     confidenceLabel: getConfidenceLevel(suggestion.confidence),
-    formattedDate: suggestion.date ? new Date(suggestion.date).toLocaleDateString() : null,
-    formattedValue: suggestion.value ? 
-      (typeof suggestion.value === 'number' && suggestion.value > 1000 ? 
-        `$${suggestion.value.toLocaleString()}` : suggestion.value) 
-      : null
+    formattedDate: suggestion.date
+      ? new Date(suggestion.date).toLocaleDateString()
+      : null,
+    formattedValue: suggestion.value
+      ? typeof suggestion.value === "number" && suggestion.value > 1000
+        ? `$${suggestion.value.toLocaleString()}`
+        : suggestion.value
+      : null,
   };
 };
 
@@ -63,7 +64,7 @@ export const formatAISuggestion = (suggestion) => {
  */
 export const groupInsightsByCategory = (insights) => {
   return insights.reduce((acc, insight) => {
-    const category = insight.category || 'general';
+    const category = insight.category || "general";
     if (!acc[category]) {
       acc[category] = [];
     }
@@ -79,7 +80,7 @@ export const groupInsightsByCategory = (insights) => {
  */
 export const calculateTrend = (dataPoints) => {
   if (!dataPoints || dataPoints.length < 2) {
-    return { direction: 'stable', percentage: 0 };
+    return { direction: "stable", percentage: 0 };
   }
 
   const first = dataPoints[0];
@@ -88,9 +89,9 @@ export const calculateTrend = (dataPoints) => {
   const percentage = first !== 0 ? (change / first) * 100 : 0;
 
   return {
-    direction: change > 0 ? 'up' : change < 0 ? 'down' : 'stable',
+    direction: change > 0 ? "up" : change < 0 ? "down" : "stable",
     percentage: Math.abs(percentage).toFixed(1),
-    absolute: change
+    absolute: change,
   };
 };
 
@@ -100,11 +101,11 @@ export const calculateTrend = (dataPoints) => {
  * @returns {string} Priority level
  */
 export const getPriorityLevel = (score) => {
-  if (score >= 80) return 'Critical';
-  if (score >= 60) return 'High';
-  if (score >= 40) return 'Medium';
-  if (score >= 20) return 'Low';
-  return 'Optional';
+  if (score >= 80) return "Critical";
+  if (score >= 60) return "High";
+  if (score >= 40) return "Medium";
+  if (score >= 20) return "Low";
+  return "Optional";
 };
 
 /**
@@ -116,11 +117,13 @@ export const formatAIResponse = (response) => {
   return {
     ...response,
     timestamp: new Date().toISOString(),
-    formattedData: response.data ? {
-      labels: response.data.map((_, i) => `Item ${i + 1}`),
-      values: response.data
-    } : null,
-    summary: response.insights ? generateSummary(response.insights) : null
+    formattedData: response.data
+      ? {
+          labels: response.data.map((_, i) => `Item ${i + 1}`),
+          values: response.data,
+        }
+      : null,
+    summary: response.insights ? generateSummary(response.insights) : null,
   };
 };
 
@@ -130,11 +133,13 @@ export const formatAIResponse = (response) => {
  * @returns {string} Summary text
  */
 const generateSummary = (insights) => {
-  if (!insights || insights.length === 0) return '';
+  if (!insights || insights.length === 0) return "";
   if (insights.length === 1) return insights[0];
-  
+
   const topInsights = insights.slice(0, 3);
-  return `${topInsights.join('. ')}${insights.length > 3 ? ` and ${insights.length - 3} more insights.` : '.'}`;
+  return `${topInsights.join(". ")}${
+    insights.length > 3 ? ` and ${insights.length - 3} more insights.` : "."
+  }`;
 };
 
 /**
@@ -145,65 +150,61 @@ const generateSummary = (insights) => {
  */
 export const isAIFeatureEnabled = (userRole, feature) => {
   const featureAccess = {
-    admin: ['fraud', 'analytics', 'sentiment', 'all'],
-    organizer: ['planning', 'negotiation', 'dashboard', 'all'],
-    user: ['recommendations', 'assistant', 'all']
+    admin: ["fraud", "analytics", "sentiment", "all"],
+    organizer: ["planning", "negotiation", "dashboard", "all"],
+    user: ["recommendations", "assistant", "all"],
   };
 
-  return featureAccess[userRole]?.includes(feature) || featureAccess[userRole]?.includes('all') || false;
+  return (
+    featureAccess[userRole]?.includes(feature) ||
+    featureAccess[userRole]?.includes("all") ||
+    false
+  );
 };
 
 /**
- * Cache AI responses for performance
+ * Cache AI responses for performance using in-memory storage.
+ *
+ * NOTE: Previously used localStorage. Kept as in-memory Map so this module
+ * works correctly in all environments (SSR, test, etc.) while still providing
+ * TTL-based expiry. For persistent cross-session caching, the backend's 24h
+ * DB cache in ai_service.js / ai_controller.js is the authoritative store.
+ *
  * @param {string} key - Cache key
  * @param {any} data - Data to cache
- * @param {number} ttl - Time to live in milliseconds
+ * @param {number} ttl - Time to live in milliseconds (default 5 min)
  */
+const _memCache = new Map();
+
 export const cacheAIResponse = (key, data, ttl = 5 * 60 * 1000) => {
-  const cacheItem = {
-    data,
-    timestamp: Date.now(),
-    ttl
-  };
-  localStorage.setItem(`ai_cache_${key}`, JSON.stringify(cacheItem));
+  _memCache.set(key, { data, timestamp: Date.now(), ttl });
 };
 
 /**
  * Get cached AI response
  * @param {string} key - Cache key
- * @returns {any|null} Cached data or null if expired
+ * @returns {any|null} Cached data or null if expired / not found
  */
 export const getCachedAIResponse = (key) => {
-  const cached = localStorage.getItem(`ai_cache_${key}`);
-  if (!cached) return null;
+  const entry = _memCache.get(key);
+  if (!entry) return null;
 
-  const { data, timestamp, ttl } = JSON.parse(cached);
-  if (Date.now() - timestamp > ttl) {
-    localStorage.removeItem(`ai_cache_${key}`);
+  if (Date.now() - entry.timestamp > entry.ttl) {
+    _memCache.delete(key);
     return null;
   }
 
-  return data;
+  return entry.data;
 };
 
 /**
- * Clear expired AI cache
+ * Clear all expired entries from the in-memory AI cache.
  */
 export const clearExpiredAICache = () => {
-  const keys = Object.keys(localStorage);
   const now = Date.now();
-
-  keys.forEach(key => {
-    if (key.startsWith('ai_cache_')) {
-      try {
-        const { timestamp, ttl } = JSON.parse(localStorage.getItem(key));
-        if (now - timestamp > ttl) {
-          localStorage.removeItem(key);
-        }
-      } catch (e) {
-        // Invalid cache item, remove it
-        localStorage.removeItem(key);
-      }
+  for (const [key, entry] of _memCache.entries()) {
+    if (now - entry.timestamp > entry.ttl) {
+      _memCache.delete(key);
     }
-  });
+  }
 };

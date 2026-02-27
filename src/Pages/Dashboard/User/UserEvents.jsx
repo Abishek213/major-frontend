@@ -284,6 +284,37 @@ const UserEvents = () => {
     { id: "for-you", label: "For You", icon: Brain },
   ];
 
+  // Image fallback component
+  const EventImage = ({ event, isPast }) => {
+    const [imageError, setImageError] = useState(false);
+    const imageUrl = event.image
+      ? `/uploads/events/${event.image.split("/").pop()}`
+      : null;
+
+    if (!imageUrl || imageError) {
+      return (
+        <div
+          className={`w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center ${
+            isPast ? "grayscale-[30%]" : ""
+          }`}
+        >
+          <Calendar className="w-12 h-12 text-gray-400" />
+        </div>
+      );
+    }
+
+    return (
+      <img
+        src={imageUrl}
+        alt={event.event_name}
+        className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${
+          isPast ? "grayscale-[30%]" : ""
+        }`}
+        onError={() => setImageError(true)}
+      />
+    );
+  };
+
   if (loading) {
     return (
       <div className="space-y-8 p-4 md:p-6">
@@ -448,8 +479,8 @@ const UserEvents = () => {
               )}
             </div>
 
-            {/* Categories – now visible on all tabs */}
-            {parentCategories.length > 0 && (
+            {/* Categories – hidden in For You tab */}
+            {!isForYouTab && parentCategories.length > 0 && (
               <div className="space-y-3">
                 <h3 className="font-medium text-gray-800 flex items-center gap-2">
                   <Tag className="w-5 h-5 text-indigo-600" />
@@ -490,9 +521,8 @@ const UserEvents = () => {
               <RecommendationSection
                 minimal
                 externalSearchTerm={searchTerm}
-                externalCategoryId={
-                  selectedCategory !== "all" ? selectedCategory : null
-                }
+                externalCategoryId={null} // ignore category filter in For You
+                defaultSortBy="date" // show latest events first
               />
             </div>
           ) : (
@@ -548,19 +578,8 @@ const UserEvents = () => {
                             isPast ? "h-36" : "h-48"
                           }`}
                         >
-                          <img
-                            src={
-                              event.image
-                                ? `/uploads/events/${event.image
-                                    .split("/")
-                                    .pop()}`
-                                : "/default-event.jpg"
-                            }
-                            alt={event.event_name}
-                            className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${
-                              isPast ? "grayscale-[30%]" : ""
-                            }`}
-                          />
+                          <EventImage event={event} isPast={isPast} />
+
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
                           {/* Status badge */}
