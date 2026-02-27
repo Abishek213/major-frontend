@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
@@ -20,7 +21,10 @@ export default defineConfig(({ mode }) => {
       },
       extensions: [".js", ".jsx", ".json", ".ts", ".tsx"],
     },
+
     server: {
+      port: 5173,
+      open: true,
       proxy: {
         "/api": {
           target: env.VITE_API_BASE_URL,
@@ -33,8 +37,45 @@ export default defineConfig(({ mode }) => {
           secure: false,
         },
       },
-      port: 5173,
-      open: true,
+      watch: {
+        usePolling: true,
+        interval: 100,
+      },
+    },
+
+    build: {
+      sourcemap: true,
+      rollupOptions: {
+        output: {
+          sourcemapExcludeSources: false,
+          manualChunks: {
+            vendor: ["react", "react-dom", "react-router-dom"],
+            ui: ["lucide-react", "recharts", "date-fns"],
+            ai: ["react-chartjs-2", "chart.js"],
+          },
+        },
+      },
+      chunkSizeWarningLimit: 1000,
+    },
+
+    optimizeDeps: {
+      include: [
+        "react",
+        "react-dom",
+        "react-router-dom",
+        "lucide-react",
+        "recharts",
+        "date-fns",
+        "react-chartjs-2",
+        "chart.js",
+      ],
+      exclude: [],
+    },
+
+    esbuild: {
+      loader: "jsx",
+      include: /src\/.*\.jsx?$/,
+      exclude: [],
     },
   };
 });

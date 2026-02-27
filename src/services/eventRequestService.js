@@ -1,198 +1,134 @@
+// src/services/eventRequestService.js
 import api from '../utils/api';
 
-// ─── Base path ────────────────────────────────────────────────────────────────
-// Server mounts this router at: /api/v1/eventrequest  (see server.js)
-// api.js baseURL should be set via VITE_API_URL env var, e.g.:
-//   VITE_API_URL=http://localhost:5000/api/v1
-// So BASE = '/eventrequest' resolves to: http://localhost:5000/api/v1/eventrequest
-const BASE = '/eventrequest';
-
 class EventRequestService {
-  /**
-   * Submit a natural language event request to the backend with AI processing.
-   * Calls POST /api/v1/eventrequest with useAI: true so the controller runs
-   * callAIAgent() and returns matchedOrganizers + budgetAnalysis.
-   *
-   * @param {string}  naturalLanguage  - Free-text description from the user
-   * @param {string}  userId           - Authenticated user ID
-   * @param {Object}  extraFields      - Optional structured fields (eventType, venue, …)
-   * @returns {Object} { success, message, data: { eventRequest, aiInsights } }
-   */
-  async processNaturalLanguageRequest(naturalLanguage, userId, extraFields = {}) {
+  async processNaturalLanguageRequest(request, userId, context = {}) {
     try {
+      console.log('📤 Sending to AI agent via backend:', { userId, request });
+
+      // ========== MINIMAL PAYLOAD ==========
+      // Just send the raw text to backend - let AI do the extraction
       const payload = {
+
+        eventType: 'Pending AI Processing',
+        venue: 'Not Specified',
+        date: new Date(),
+        budget: 0,
+        userId: userId,
+        naturalLanguage: request,
         useAI: true,
-        naturalLanguage,
-        // Sensible defaults so the EventRequest schema is satisfied;
-        // the AI service extracts richer values from naturalLanguage on the backend.
-        eventType:   extraFields.eventType   || 'General',
-        venue:       extraFields.venue       || 'TBD',
-        date:        extraFields.date        || new Date().toISOString(),
-        budget:      extraFields.budget      || 0,
-        description: naturalLanguage,
-        ...extraFields
+        description: request
       };
 
-      // POST /api/v1/eventrequest
-      const response = await api.safePost(BASE, payload);
-      return response.data; // { success, message, data: { eventRequest, aiInsights } }
-    } catch (error) {
-      console.error('Event request service error:', error);
+      console.log('📦 Sending payload to backend:', JSON.stringify(payload, null, 2));
 
-      if (import.meta.env.MODE === 'development') {
-        return this._mockProcessedRequest(naturalLanguage);
+      // ========== MAKE API CALL ==========
+      const response = await api.safePost('/eventrequest', payload);
+
+      console.log('📥 Backend response status:', response.status);
+      console.log('📥 Backend response data:', response.data);
+
+      if (!response.data || !response.data.success) {
+        const errorMsg = response.data?.error || response.data?.message || 'Failed to create event request';
+        console.error('❌ Backend error:', errorMsg);
+        throw new Error(errorMsg);
       }
 
-      throw error;
+      // ========== USE ONLY AI DATA FROM BACKEND ==========
+      const responseData = response.data.data;
+      
+      // This is the REAL AI data from your AI agent!
+      const aiInsights = responseData.aiInsights || {};
+      const extractedEntities = aiInsights.extractedEntities || {};
+      
+      console.log('🤖 AI extracted entities:', extractedEntities);
+
+      // Format for display - ONLY use AI values, NO frontend extraction
+      const transformedEntities = {
+        // Use AI data directly
+        eventType: extractedEntities.eventType || 'Not specified',
+        location: extractedEntities.locations?.[0] || 'Not specified',
+        date: extractedEntities.date || 'Not specified',
+        budget: extractedEntities.budget ? `NPR ${extractedEntities.budget.toLocaleString()}` : 'Not specified',
+        guestCount: extractedEntities.guests ? `${extractedEntities.guests} guests` : 'Not specified',
+        // For UI badges/categories
+        guestCategory: extractedEntities.guests ? (
+          extractedEntities.guests < 50 ? 'Small (< 50)' : 
+          extractedEntities.guests < 200 ? 'Medium (50-200)' : 
+          'Large (> 200)'
+        ) : 'Not specified',
+        // Keep raw values for calculations
+        rawBudget: extractedEntities.budget,
+        rawGuests: extractedEntities.guests
+      };
+
+      const transformedOrganizers = (aiInsights.matchedOrganizers || []).map(org => ({
+        id: org.id || org._id,
+        name: org.name || org.fullname || 'Organizer',
+        matchScore: org.matchPercentage || org.matchScore || 0,
+        specialization: org.expertise?.[0] || 'Event Management',
+        rating: org.rating || 4.0,
+        completedEvents: org.pastEvents || org.completedEvents || 0,
+        responseTime: org.responseTime || '24h',
+        priceRange: org.priceRange || [0, 0],
+        location: org.location || transformedEntities.location,
+        verified: org.isVerified || false,
+        email: org.email,
+        contact: org.contact
+      }));
+
+      return {
+        success: true,
+        entities: transformedEntities,
+        organizers: transformedOrganizers,
+        budgetAnalysis: aiInsights.budgetAnalysis,
+        suggestions: aiInsights.suggestions || aiInsights.aiSuggestions,
+        requestId: responseData.eventRequest?._id || Date.now().toString(),
+        timestamp: new Date().toISOString()
+      };
+
+    } catch (error) {
+      console.error('❌ Event request service error:', error);
+      throw new Error(`Failed to process request: ${error.message}`);
     }
   }
 
-  /**
-   * Fetch AI insights stored on an event request.
-   * GET /api/v1/eventrequest/with-ai-insights/:id
-   */
-  async getEventRequestWithAIInsights(requestId) {
+  // Keep other methods unchanged
+  async startNegotiation(eventRequestId, organizerId, message, proposedBudget) {
     try {
-      const response = await api.safeGet(`${BASE}/with-ai-insights/${requestId}`);
-      return response.data; // { success, data: { eventRequest, interestedOrganizers, aiInsights } }
-    } catch (error) {
-      console.error('AI insights fetch error:', error);
-
-      if (import.meta.env.MODE === 'development') {
-        return { success: false, data: null };
-      }
-
-      throw error;
-    }
-  }
-
-  /**
-   * Get AI-suggested organizers for an already-created event request.
-   * GET /api/v1/eventrequest/ai-suggestions/:id
-   */
-  async getAISuggestedOrganizers(requestId) {
-    try {
-      const response = await api.safeGet(`${BASE}/ai-suggestions/${requestId}`);
-      return response.data; // { success, data: { aiEnabled, filteredSuggestions, … } }
-    } catch (error) {
-      console.error('AI organizer suggestion error:', error);
-
-      if (import.meta.env.MODE === 'development') {
-        return {
-          success: true,
-          data: { aiEnabled: false, filteredSuggestions: this._mockOrganizers() }
-        };
-      }
-
-      throw error;
-    }
-  }
-
-  /**
-   * Trigger a fresh AI reprocessing pass on an existing event request.
-   * POST /api/v1/eventrequest/reprocess-with-ai/:id
-   */
-  async reprocessWithAI(requestId, naturalLanguage = null) {
-    try {
-      const response = await api.safePost(
-        `${BASE}/reprocess-with-ai/${requestId}`,
-        { naturalLanguage }
-      );
+      const response = await api.safePost('/negotiation/start', {
+        eventRequestId,
+        organizerId,
+        organizerMessage: message,
+        organizerOffer: proposedBudget
+      });
       return response.data;
     } catch (error) {
-      console.error('AI reprocess error:', error);
+      console.error('❌ Negotiation error:', error);
       throw error;
     }
   }
 
-  // ─── Legacy helpers kept for backward compatibility ───────────────────────────
-
-  async sendRequestToOrganizers(requestId, organizerIds) {
-    try {
-      const response = await api.safePost('/ai/send-request', { requestId, organizerIds });
-      return response.data;
-    } catch (error) {
-      console.error('Request sending error:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Fetch all event requests for the logged-in user.
-   * GET /api/v1/eventrequest/event-requests-for-user
-   */
   async getRequestHistory(userId) {
     try {
-      const response = await api.safeGet(`${BASE}/event-requests-for-user`);
+      const response = await api.safeGet('/eventrequest/event-requests-for-user');
       return response.data;
     } catch (error) {
-      console.error('Request history error:', error);
-      if (import.meta.env.MODE === 'development') return [];
-      throw error;
+      console.error('❌ Request history error:', error);
+      return { eventRequests: [] };
     }
   }
 
-  // ─── Mock data (development fallbacks) ───────────────────────────────────────
-
-  _mockProcessedRequest(text) {
-    return {
-      success: true,
-      message: '[DEV] Mock response — backend not reachable',
-      data: {
-        eventRequest: { _id: `mock_${Date.now()}`, description: text, status: 'open' },
-        aiInsights: {
-          enabled: true,
-          matchedOrganizers: this._mockOrganizers(),
-          budgetAnalysis: { feasibility: 'moderate', note: 'Mock analysis' },
-          suggestions: { tip: 'Book at least 4 weeks in advance' }
-        }
-      }
-    };
-  }
-
-  _mockOrganizers() {
-    return [
-      {
-        id: 1,
-        name: 'Tech Events Co.',
-        matchScore: 95,
-        specialization: 'Technology Conferences',
-        experience: '5+ years',
-        rating: 4.8,
-        previousEvents: ['AI Summit 2023', 'DevCon 2024'],
-        responseTime: '< 1 hour',
-        completedEvents: 47,
-        successRate: '98%'
-      },
-      {
-        id: 2,
-        name: 'Kathmandu Event Planners',
-        matchScore: 88,
-        specialization: 'Local Business Events',
-        experience: '3+ years',
-        rating: 4.5,
-        previousEvents: ['Business Expo 2023', 'Startup Weekend'],
-        responseTime: '< 3 hours',
-        completedEvents: 28,
-        successRate: '95%'
-      },
-      {
-        id: 3,
-        name: 'Digital Summit Organizers',
-        matchScore: 82,
-        specialization: 'Online Tech Events',
-        experience: '4+ years',
-        rating: 4.7,
-        previousEvents: ['Digital Marketing Conference', 'Web3 Workshop'],
-        responseTime: '< 2 hours',
-        completedEvents: 35,
-        successRate: '96%'
-      }
-    ];
+  async trackRequestStatus(requestId) {
+    try {
+      const response = await api.safeGet(`/eventrequest/with-ai-insights/${requestId}`);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Status tracking error:', error);
+      throw error;
+    }
   }
 }
 
 const eventRequestService = new EventRequestService();
-
-export { EventRequestService };
 export default eventRequestService;

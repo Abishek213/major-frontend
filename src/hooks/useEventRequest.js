@@ -1,170 +1,172 @@
+// src/hooks/useEventRequest.js
 import { useState, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
-import eventRequestService from '../services/eventRequestService'; // Default import
+import { useAuth } from '../context/AuthContext.jsx';
+import eventRequestService from '../services/eventRequestService';
 
 export const useEventRequest = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth(); // Add authLoading
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // AI response states
   const [entities, setEntities] = useState(null);
   const [organizerMatches, setOrganizerMatches] = useState([]);
+  const [budgetAnalysis, setBudgetAnalysis] = useState(null);
+  const [aiSuggestions, setAiSuggestions] = useState(null);
 
-  const processRequest = useCallback(async (naturalLanguageRequest) => {
-    if (!user?.id || !naturalLanguageRequest.trim()) return;
-
-    setLoading(true);
+  // Clear all states
+  const clearAllStates = useCallback(() => {
     setEntities(null);
     setOrganizerMatches([]);
+    setBudgetAnalysis(null);
+    setAiSuggestions(null);
+    setError(null);
+  }, []);
+
+  // Process natural language request with AI
+  const processRequest = useCallback(async (naturalLanguageRequest) => {
+    console.log('🔍 processRequest called with:', { 
+      userId: user?.id, 
+      authLoading,
+      text: naturalLanguageRequest 
+    });
+
+    // Check if auth is still loading
+    if (authLoading) {
+      console.log('⏳ Auth still loading, please wait');
+      setError('Authentication is still loading. Please wait.');
+      return { 
+        success: false, 
+        error: 'Authentication is still loading. Please wait.' 
+      };
+    }
+
+    // Check if user exists
+    if (!user) {
+      console.error('❌ No user object found');
+      setError('User not authenticated - Please log in');
+      return { 
+        success: false, 
+        error: 'User not authenticated - Please log in' 
+      };
+    }
+
+    if (!user.id) {
+      console.error('❌ User has no ID:', user);
+      setError('User ID not found - Please log in again');
+      return { 
+        success: false, 
+        error: 'User ID not found - Please log in again' 
+      };
+    }
+
+    if (!naturalLanguageRequest?.trim()) {
+      setError('Please enter a request');
+      return { success: false, error: 'Please enter a request' };
+    }
+
+    setLoading(true);
+    setError(null);
+    clearAllStates();
 
     try {
+      console.log('🚀 Hook: Processing request for user:', user.id);
+      console.log('📝 Hook: Request text:', naturalLanguageRequest);
+      
       const result = await eventRequestService.processNaturalLanguageRequest(
         naturalLanguageRequest,
-        user.id,
-        { timestamp: new Date().toISOString() }
+        user.id
       );
-
-      setEntities(result.entities);
-      setOrganizerMatches(result.organizers);
-
-      // Save request to history
-      const newRequest = {
-        id: result.requestId || Date.now().toString(),
-        text: naturalLanguageRequest,
-        entities: result.entities,
-        organizers: result.organizers,
-        timestamp: result.timestamp || new Date().toISOString(),
-        status: 'processed'
-      };
-
-      setRequests(prev => [newRequest, ...prev]);
-
-      return {
-        entities: result.entities,
-        organizers: result.organizers,
-        requestId: newRequest.id
-      };
-
-    } catch (error) {
-      console.error('Error processing request:', error);
       
-      // For development, use mock processing
-      if (import.meta.env.MODE === 'development') {
-        const mockEntities = eventRequestService.getMockEntities(naturalLanguageRequest);
-        const mockOrganizers = eventRequestService.getMockOrganizers();
+      console.log('📦 Hook: Received result:', result);
+      
+      // IMPORTANT: Update all states with the result
+      if (result?.success) {
+        // Set entities if they exist
+        if (result.entities) {
+          setEntities(result.entities);
+        }
         
-        setEntities(mockEntities);
-        setOrganizerMatches(mockOrganizers);
+        // Set organizers if they exist
+        if (result.organizers && result.organizers.length > 0) {
+          console.log('✅ Hook: Setting', result.organizers.length, 'organizers');
+          setOrganizerMatches(result.organizers);
+        } else {
+          console.log('⚠️ Hook: No organizers in result');
+          setOrganizerMatches([]);
+        }
         
+        // Set budget analysis if it exists
+        if (result.budgetAnalysis) {
+          setBudgetAnalysis(result.budgetAnalysis);
+        }
+        
+        // Set suggestions if they exist
+        if (result.suggestions) {
+          setAiSuggestions(result.suggestions);
+        }
+        
+        // Save to history
         const newRequest = {
-          id: Date.now().toString(),
+          id: result.requestId || Date.now().toString(),
           text: naturalLanguageRequest,
-          entities: mockEntities,
-          organizers: mockOrganizers,
+          entities: result.entities,
+          organizers: result.organizers || [],
+          budgetAnalysis: result.budgetAnalysis,
+          suggestions: result.suggestions,
           timestamp: new Date().toISOString(),
           status: 'processed'
         };
         
         setRequests(prev => [newRequest, ...prev]);
         
+        // Return the complete result with all data
         return {
-          entities: mockEntities,
-          organizers: mockOrganizers,
+          success: true,
+          entities: result.entities,
+          organizers: result.organizers || [],
+          budgetAnalysis: result.budgetAnalysis,
+          suggestions: result.suggestions,
           requestId: newRequest.id
+        };
+      } else {
+        // Return success false but with any partial data
+        return { 
+          success: false, 
+          error: result?.error || 'Unknown error',
+          entities: result?.entities || null
         };
       }
       
-      throw new Error('Failed to process request. Please try again.');
+    } catch (error) {
+      console.error('❌ Hook: Error in processRequest:', error);
+      setError(error.message);
+      return { success: false, error: error.message };
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user, authLoading, clearAllStates]); // Add authLoading to dependencies
 
-  const extractEntities = useCallback(async (text) => {
-    try {
-      const result = await eventRequestService.extractEntities(text);
-      return result;
-    } catch (error) {
-      console.error('Error extracting entities:', error);
-      if (import.meta.env.MODE === 'development') {
-        return eventRequestService.getMockEntities(text);
-      }
-      throw error;
-    }
-  }, []);
-
-  const findMatchingOrganizers = useCallback(async (criteria) => {
-    try {
-      const result = await eventRequestService.findMatchingOrganizers(criteria);
-      return result;
-    } catch (error) {
-      console.error('Error finding matching organizers:', error);
-      if (import.meta.env.MODE === 'development') {
-        return eventRequestService.getMockOrganizers();
-      }
-      throw error;
-    }
-  }, []);
-
-  const getRequestHistory = useCallback(() => {
-    return requests.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }, [requests]);
-
-  const getRequestStats = useCallback(() => {
-    if (requests.length === 0) return null;
-
-    const eventTypes = {};
-    const locations = {};
-    let totalBudget = 0;
-    let totalAttendees = 0;
-    
-    requests.forEach(req => {
-      const type = req.entities.eventType;
-      const location = req.entities.location;
-      const budget = req.entities.budget;
-      const attendees = req.entities.attendees;
-      
-      eventTypes[type] = (eventTypes[type] || 0) + 1;
-      locations[location] = (locations[location] || 0) + 1;
-      
-      if (budget && budget !== 'Not specified' && budget !== 'Free') {
-        const budgetValue = parseInt(budget.replace(/[^0-9]/g, '')) || 0;
-        totalBudget += budgetValue;
-      }
-      
-      if (attendees && attendees !== 'Not specified') {
-        const attendeesValue = parseInt(attendees.replace(/[^0-9]/g, '')) || 50;
-        totalAttendees += attendeesValue;
-      }
-    });
-
-    return {
-      totalRequests: requests.length,
-      mostCommonType: Object.keys(eventTypes).reduce((a, b) => 
-        eventTypes[a] > eventTypes[b] ? a : b, 'Various'),
-      mostCommonLocation: Object.keys(locations).reduce((a, b) => 
-        locations[a] > locations[b] ? a : b, 'Various'),
-      avgOrganizerMatches: requests.reduce((acc, req) => 
-        acc + (req.organizers?.length || 0), 0) / requests.length,
-      avgBudget: requests.length > 0 ? Math.round(totalBudget / requests.length) : 0,
-      avgAttendees: requests.length > 0 ? Math.round(totalAttendees / requests.length) : 0
-    };
-  }, [requests]);
-
-  const clearHistory = useCallback(() => {
-    setRequests([]);
-    setEntities(null);
-    setOrganizerMatches([]);
-  }, []);
-
+  // Return all the values and functions
   return {
+    // Main function
     processRequest,
-    extractEntities,
-    findMatchingOrganizers,
-    requests: getRequestHistory(),
-    loading,
+    
+    // AI results - these will update in real-time
     entities,
     organizerMatches,
-    getRequestStats,
-    clearHistory
+    budgetAnalysis,
+    aiSuggestions,
+    
+    // Status
+    loading,
+    error,
+    
+    // History
+    requests,
+    
+    // Other utilities
+    clearResults: clearAllStates,
   };
 };

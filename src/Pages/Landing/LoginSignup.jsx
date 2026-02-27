@@ -254,7 +254,7 @@ const LoginSignup = () => {
       setError("");
       setShowErrorAlert(false);
 
-      const res = await api.post("/auth/google", {
+      const res = await api.safePost("/auth/google", {
         tokenId: credentialResponse.credential,
       });
 
@@ -302,7 +302,9 @@ const LoginSignup = () => {
     setLoading(true);
 
     try {
-      const response = await api.post("/auth/login", {
+              console.log('API object:', api); // See what api actually contains
+
+      const response = await api.safePost("/auth/login", {
         email: formData.email.trim(),
         password: formData.password,
       });
@@ -413,7 +415,7 @@ const LoginSignup = () => {
         }),
       };
 
-      const response = await api.post("/auth/signup", signupData);
+      const response = await api.safePost("/auth/signup", signupData);
 
       if (response.data?.user) {
         setError("");
@@ -530,7 +532,7 @@ const LoginSignup = () => {
     };
 
     return (
-      <div className="flex gap-2 justify-center">
+      <div className="flex justify-center gap-2">
         {[...Array(6)].map((_, i) => (
           <input
             key={i}
@@ -540,7 +542,7 @@ const LoginSignup = () => {
             value={value[i] || ""}
             onChange={(e) => handleChange(e, i)}
             onKeyDown={(e) => handleKeyDown(e, i)}
-            className="w-12 h-12 text-center text-xl border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            className="w-12 h-12 text-xl text-center border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         ))}
       </div>
@@ -760,19 +762,19 @@ const LoginSignup = () => {
   };
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden">
+    <div className="relative flex min-h-screen overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0 w-full h-full">
         <img
           src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1920&h=1080&fit=crop"
           alt="Background"
-          className="w-full h-full object-cover"
+          className="object-cover w-full h-full"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-purple-900/30 to-blue-900/30"></div>
       </div>
 
       {/* Form Card */}
-      <div className="relative z-10 flex items-center justify-center w-full pt-24 p-4">
+      <div className="relative z-10 flex items-center justify-center w-full p-4 pt-24">
         <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-4 max-h-[90vh] overflow-y-auto">
           {showErrorAlert && error && (
             <Alert variant="destructive" className="mb-4 text-sm">
@@ -783,10 +785,10 @@ const LoginSignup = () => {
 
           <form onSubmit={handleSubmit} onKeyDown={handleKeyPress}>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">
+              <h1 className="mb-1 text-2xl font-bold text-gray-900">
                 {isLogin ? "Welcome back!" : "Create your account"}
               </h1>
-              <p className="text-gray-600 mb-6 text-sm">
+              <p className="mb-6 text-sm text-gray-600">
                 {isLogin
                   ? "Sign in to your account"
                   : "Fill in your details to get started"}
@@ -832,7 +834,7 @@ const LoginSignup = () => {
                       }`}
                     />
                     {errors.fullname && (
-                      <p className="text-red-500 text-xs mt-1">
+                      <p className="mt-1 text-xs text-red-500">
                         {errors.fullname}
                       </p>
                     )}
@@ -852,7 +854,7 @@ const LoginSignup = () => {
                     }`}
                   />
                   {errors.email && (
-                    <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                    <p className="mt-1 text-xs text-red-500">{errors.email}</p>
                   )}
                 </div>
 
@@ -871,7 +873,7 @@ const LoginSignup = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute text-gray-400 -translate-y-1/2 right-3 top-1/2 hover:text-gray-600"
                   >
                     {showPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -880,7 +882,7 @@ const LoginSignup = () => {
                     )}
                   </button>
                   {errors.password && (
-                    <p className="text-red-500 text-xs mt-1">
+                    <p className="mt-1 text-xs text-red-500">
                       {errors.password}
                     </p>
                   )}
@@ -906,7 +908,7 @@ const LoginSignup = () => {
                       onClick={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute text-gray-400 -translate-y-1/2 right-3 top-1/2 hover:text-gray-600"
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="w-4 h-4" />
@@ -915,7 +917,7 @@ const LoginSignup = () => {
                       )}
                     </button>
                     {errors.confirmPassword && (
-                      <p className="text-red-500 text-xs mt-1">
+                      <p className="mt-1 text-xs text-red-500">
                         {errors.confirmPassword}
                       </p>
                     )}
@@ -936,7 +938,7 @@ const LoginSignup = () => {
                       }`}
                     />
                     {errors.contactNo && (
-                      <p className="text-red-500 text-xs mt-1">
+                      <p className="mt-1 text-xs text-red-500">
                         {errors.contactNo}
                       </p>
                     )}
@@ -962,7 +964,7 @@ const LoginSignup = () => {
                       <option value="Admin">Admin</option>
                     </select>
                     {errors.role && (
-                      <p className="text-red-600 text-xs mt-1">{errors.role}</p>
+                      <p className="mt-1 text-xs text-red-600">{errors.role}</p>
                     )}
                   </div>
                 )}
@@ -979,7 +981,7 @@ const LoginSignup = () => {
                   {loading ? (
                     <span className="flex items-center justify-center">
                       <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        className="w-4 h-4 mr-2 -ml-1 text-white animate-spin"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -1015,7 +1017,7 @@ const LoginSignup = () => {
                       onClick={() =>
                         alert("Password reset functionality coming soon!")
                       }
-                      className="text-blue-600 hover:underline text-xs"
+                      className="text-xs text-blue-600 hover:underline"
                     >
                       Forgot password?
                     </button>
@@ -1023,11 +1025,11 @@ const LoginSignup = () => {
                 )}
 
                 {/* Toggle Login / Signup */}
-                <div className="text-center mt-4">
+                <div className="mt-4 text-center">
                   <button
                     type="button"
                     onClick={toggleMode}
-                    className="text-gray-700 hover:underline text-xs"
+                    className="text-xs text-gray-700 hover:underline"
                   >
                     {isLogin
                       ? "Don't have an account? "
@@ -1069,19 +1071,19 @@ const LoginSignup = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="py-4 space-y-4">
             {otpMessage && (
-              <p className="text-sm text-green-600 text-center">{otpMessage}</p>
+              <p className="text-sm text-center text-green-600">{otpMessage}</p>
             )}
             {otpError && (
-              <p className="text-sm text-red-600 text-center">{otpError}</p>
+              <p className="text-sm text-center text-red-600">{otpError}</p>
             )}
 
             {!otpSent ? (
               <button
                 onClick={handleSendOtp}
                 disabled={verifying}
-                className="w-full bg-blue-600 text-white py-2 rounded-lg disabled:opacity-50 font-semibold text-sm"
+                className="w-full py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg disabled:opacity-50"
               >
                 {verifying ? "Sending..." : "Send OTP"}
               </button>
@@ -1092,14 +1094,14 @@ const LoginSignup = () => {
                   <button
                     onClick={handleVerifyOtp}
                     disabled={verifying || otpValue.length !== 6}
-                    className="flex-1 bg-green-600 text-white py-2 rounded-lg disabled:opacity-50 font-semibold text-sm"
+                    className="flex-1 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg disabled:opacity-50"
                   >
                     {verifying ? "Verifying..." : "Verify"}
                   </button>
                   <button
                     onClick={handleSendOtp}
                     disabled={verifying}
-                    className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg disabled:opacity-50 text-sm"
+                    className="flex-1 py-2 text-sm text-gray-800 bg-gray-200 rounded-lg disabled:opacity-50"
                   >
                     Resend
                   </button>
