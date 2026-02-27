@@ -39,15 +39,16 @@ import AIBadge, { AIAgentBadge, AIScoreBadge, AICompactBadge } from "./AIBadge";
 import recommendationService from "@/services/recommendationService";
 import { useRecommendations } from "@/hooks/useRecommendations";
 import { getConfidenceLevel } from "@/utils/aiHelpers";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // ✅ added useNavigate
 
 const RecommendationSection = ({
   minimal = false,
   externalSearchTerm = "",
   externalCategoryId = null,
-  defaultSortBy = "relevance", // new prop: initial sort order
+  defaultSortBy = "relevance",
 }) => {
   const { user } = useAuth();
+  const navigate = useNavigate(); // ✅ added
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -60,7 +61,7 @@ const RecommendationSection = ({
     priceRange: "any",
     location: "",
     dateRange: "anytime",
-    sortBy: defaultSortBy, // use prop
+    sortBy: defaultSortBy,
     eventType: "all",
     minRating: 0,
     maxDistance: 50,
@@ -75,12 +76,7 @@ const RecommendationSection = ({
     { id: "arts", name: "Arts", icon: Film, color: "pink" },
     { id: "food", name: "Food & Drink", icon: Utensils, color: "orange" },
     { id: "sports", name: "Sports", icon: Target, color: "red" },
-    {
-      id: "education",
-      name: "Education",
-      icon: GraduationCap,
-      color: "indigo",
-    },
+    { id: "education", name: "Education", icon: GraduationCap, color: "indigo" },
     { id: "gaming", name: "Gaming", icon: Gamepad2, color: "yellow" },
   ]);
 
@@ -97,22 +93,18 @@ const RecommendationSection = ({
 
   const fetchRecommendationsRef = useRef(null);
 
-  // Stable fetch function that merges internal filters with external props
   const fetchRecommendations = useCallback(
     async (overrideFilters = {}) => {
       if (!user?.id) return;
 
       setLoading(true);
       try {
-        // Start with internal filters, then apply overrides (from filter panel)
         let combinedFilters = { ...filters, ...overrideFilters };
 
-        // Add external search term if provided (e.g., from parent search input)
         if (externalSearchTerm) {
           combinedFilters.keyword = externalSearchTerm;
         }
 
-        // Add external category if provided and not "all"
         if (externalCategoryId) {
           combinedFilters.categories = [externalCategoryId];
         }
@@ -154,7 +146,6 @@ const RecommendationSection = ({
 
   fetchRecommendationsRef.current = fetchRecommendations;
 
-  // Initial fetch when user logs in
   useEffect(() => {
     if (user?.id) {
       fetchRecommendationsRef.current();
@@ -164,7 +155,6 @@ const RecommendationSection = ({
     }
   }, [user?.id]);
 
-  // Debounced re-fetch when filters or external props change
   useEffect(() => {
     if (!user?.id) return;
     const debounceTimer = setTimeout(() => {
@@ -196,7 +186,7 @@ const RecommendationSection = ({
       priceRange: "any",
       location: "",
       dateRange: "anytime",
-      sortBy: defaultSortBy, // reset to prop default
+      sortBy: defaultSortBy,
       eventType: "all",
       minRating: 0,
       maxDistance: 50,
@@ -208,6 +198,28 @@ const RecommendationSection = ({
   const handleViewDetails = (event) => {
     setSelectedEvent(event);
     setShowEventDetails(true);
+  };
+
+  // ✅ Fixed: navigate the same way UserEvents does
+  const handleNavigateToEvent = (e, event) => {
+    e.stopPropagation();
+
+    // event.title is used in recommendations; event.event_name is the DB field
+    const eventName = event.event_name || event.title || "";
+    const urlFriendlyName = eventName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    const eventId = event._id || event.id;
+
+    navigate(`/userdb/events/${urlFriendlyName}`, {
+      state: {
+        eventId,
+        eventData: event,
+        source: "recommendations",
+      },
+    });
   };
 
   const handleLikeEvent = async (eventId) => {
@@ -370,7 +382,6 @@ const RecommendationSection = ({
           </div>
 
           <div className="p-4 space-y-4">
-            {/* Categories */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Categories
@@ -389,16 +400,13 @@ const RecommendationSection = ({
                     indigo: "from-indigo-500 to-indigo-600",
                     yellow: "from-yellow-500 to-yellow-600",
                   };
-
                   return (
                     <button
                       key={cat.id}
                       onClick={() => handleCategoryToggle(cat.id)}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                         isSelected
-                          ? `bg-gradient-to-r ${
-                              colorClasses[cat.color]
-                            } text-white shadow-sm`
+                          ? `bg-gradient-to-r ${colorClasses[cat.color]} text-white shadow-sm`
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                     >
@@ -410,18 +418,13 @@ const RecommendationSection = ({
               </div>
             </div>
 
-            {/* Main Filters Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Price Range
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price Range</label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   value={filters.priceRange}
-                  onChange={(e) =>
-                    handleFilterChange("priceRange", e.target.value)
-                  }
+                  onChange={(e) => handleFilterChange("priceRange", e.target.value)}
                 >
                   <option value="any">Any Price</option>
                   <option value="free">Free Only</option>
@@ -430,32 +433,22 @@ const RecommendationSection = ({
                   <option value="over100">Over $100</option>
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
                 <input
                   type="text"
                   placeholder="City, state, or zip"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   value={filters.location}
-                  onChange={(e) =>
-                    handleFilterChange("location", e.target.value)
-                  }
+                  onChange={(e) => handleFilterChange("location", e.target.value)}
                 />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date Range
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   value={filters.dateRange}
-                  onChange={(e) =>
-                    handleFilterChange("dateRange", e.target.value)
-                  }
+                  onChange={(e) => handleFilterChange("dateRange", e.target.value)}
                 >
                   <option value="anytime">Anytime</option>
                   <option value="today">Today</option>
@@ -464,11 +457,8 @@ const RecommendationSection = ({
                   <option value="month">This Month</option>
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Sort By
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   value={filters.sortBy}
@@ -483,32 +473,22 @@ const RecommendationSection = ({
               </div>
             </div>
 
-            {/* Advanced Filters Toggle */}
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800 font-medium"
             >
-              {showAdvancedFilters ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
+              {showAdvancedFilters ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
               Advanced Filters
             </button>
 
-            {/* Advanced Filters */}
             {showAdvancedFilters && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Event Type
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Event Type</label>
                   <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     value={filters.eventType}
-                    onChange={(e) =>
-                      handleFilterChange("eventType", e.target.value)
-                    }
+                    onChange={(e) => handleFilterChange("eventType", e.target.value)}
                   >
                     <option value="all">All Types</option>
                     <option value="virtual">Virtual Only</option>
@@ -516,17 +496,12 @@ const RecommendationSection = ({
                     <option value="hybrid">Hybrid Events</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Min Rating
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Min Rating</label>
                   <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     value={filters.minRating}
-                    onChange={(e) =>
-                      handleFilterChange("minRating", parseInt(e.target.value))
-                    }
+                    onChange={(e) => handleFilterChange("minRating", parseInt(e.target.value))}
                   >
                     <option value={0}>Any Rating</option>
                     <option value={4}>4+ Stars</option>
@@ -534,20 +509,12 @@ const RecommendationSection = ({
                     <option value={4.8}>4.8+ Stars</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Max Distance
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Distance</label>
                   <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     value={filters.maxDistance}
-                    onChange={(e) =>
-                      handleFilterChange(
-                        "maxDistance",
-                        parseInt(e.target.value)
-                      )
-                    }
+                    onChange={(e) => handleFilterChange("maxDistance", parseInt(e.target.value))}
                   >
                     <option value={10}>Within 10 miles</option>
                     <option value={25}>Within 25 miles</option>
@@ -571,7 +538,6 @@ const RecommendationSection = ({
         </div>
       ) : (
         <>
-          {/* Results Summary – hidden in minimal mode */}
           {!minimal && recommendations.length > 0 && (
             <div className="mb-4 flex items-center justify-between">
               <p className="text-sm text-gray-600">
@@ -585,10 +551,8 @@ const RecommendationSection = ({
                     style={{
                       width: `${Math.min(
                         100,
-                        recommendations.reduce(
-                          (acc, r) => acc + (r.confidence || 0),
-                          0
-                        ) / recommendations.length
+                        recommendations.reduce((acc, r) => acc + (r.confidence || 0), 0) /
+                          recommendations.length
                       )}%`,
                     }}
                   />
@@ -597,18 +561,17 @@ const RecommendationSection = ({
             </div>
           )}
 
-          {/* Recommendations Grid – always visible */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recommendations.map((event) => (
               <div
-                key={event.id}
+                key={event.id || event._id}
                 className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all duration-300 group cursor-pointer"
                 onClick={() => handleViewDetails(event)}
               >
                 <div className="relative h-48 overflow-hidden">
                   <img
                     src={event.image}
-                    alt={event.title}
+                    alt={event.title || event.event_name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
                       e.target.onerror = null;
@@ -618,20 +581,17 @@ const RecommendationSection = ({
                     }}
                   />
 
-                  {/* Badges */}
                   <div className="absolute top-3 left-3 flex flex-col gap-2">
                     <span className="inline-flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg">
                       <Sparkles className="w-3 h-3" />
                       AI Pick
                     </span>
-
                     {event.badges?.includes("trending") && (
                       <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg">
                         <TrendingUp className="w-3 h-3" />
                         Trending
                       </span>
                     )}
-
                     {event.badges?.includes("limited") && (
                       <span className="inline-flex items-center gap-1 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg">
                         <Clock className="w-3 h-3" />
@@ -640,12 +600,10 @@ const RecommendationSection = ({
                     )}
                   </div>
 
-                  {/* AI Score */}
                   <div className="absolute top-3 right-3">
                     <AIScoreBadge score={event.aiScore} size="sm" />
                   </div>
 
-                  {/* Discount Badge */}
                   {event.originalPrice > event.price && (
                     <div className="absolute bottom-3 right-3">
                       <span className="bg-green-500 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg">
@@ -658,7 +616,7 @@ const RecommendationSection = ({
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-bold text-gray-900 line-clamp-2 flex-1">
-                      {event.title}
+                      {event.title || event.event_name}
                     </h3>
                     <AIBadge
                       agent="recommendations"
@@ -668,7 +626,6 @@ const RecommendationSection = ({
                     />
                   </div>
 
-                  {/* Match Reasons */}
                   <div className="mb-3 space-y-1">
                     {event.matchReasons?.slice(0, 2).map((reason, idx) => (
                       <div key={idx} className="flex items-start gap-1.5">
@@ -678,7 +635,6 @@ const RecommendationSection = ({
                     ))}
                   </div>
 
-                  {/* Event Details */}
                   <div className="space-y-2 mb-3">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Calendar className="w-4 h-4 text-gray-400" />
@@ -686,7 +642,6 @@ const RecommendationSection = ({
                         {event.date} • {event.time}
                       </span>
                     </div>
-
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <MapPin className="w-4 h-4 text-gray-400" />
                       <span className="truncate">{event.location}</span>
@@ -696,20 +651,18 @@ const RecommendationSection = ({
                         </span>
                       )}
                     </div>
-
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4 text-gray-400" />
                         <span className="font-bold text-gray-900">
-                          ${event.price.toFixed(2)}
+                          ${Number(event.price).toFixed(2)}
                         </span>
                         {event.originalPrice > event.price && (
                           <span className="text-xs text-gray-400 line-through">
-                            ${event.originalPrice.toFixed(2)}
+                            ${Number(event.originalPrice).toFixed(2)}
                           </span>
                         )}
                       </div>
-
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 text-yellow-400 fill-current" />
                         <span className="text-sm font-medium text-gray-700">
@@ -722,9 +675,8 @@ const RecommendationSection = ({
                     </div>
                   </div>
 
-                  {/* Tags */}
                   <div className="flex flex-wrap gap-1 mb-4">
-                    {event.tags.slice(0, 3).map((tag, idx) => (
+                    {event.tags?.slice(0, 3).map((tag, idx) => (
                       <span
                         key={idx}
                         className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs"
@@ -734,16 +686,11 @@ const RecommendationSection = ({
                     ))}
                   </div>
 
-                  {/* Action Buttons */}
+                  {/* ✅ Fixed: uses navigate() instead of window.location.href */}
                   <div className="flex gap-2">
                     <button
                       className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium rounded-lg hover:opacity-90 transition-opacity text-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.location.href = `/event/${
-                          event.id || event._id
-                        }`;
-                      }}
+                      onClick={(e) => handleNavigateToEvent(e, event)}
                     >
                       View Details
                     </button>
@@ -751,7 +698,7 @@ const RecommendationSection = ({
                       className="p-2.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleLikeEvent(event.id);
+                        handleLikeEvent(event.id || event._id);
                       }}
                     >
                       <Heart className="w-5 h-5" />
@@ -764,7 +711,6 @@ const RecommendationSection = ({
         </>
       )}
 
-      {/* Empty State (logged in but no recommendations) */}
       {!loading && recommendations.length === 0 && (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 flex items-center justify-center">
@@ -802,7 +748,7 @@ const RecommendationSection = ({
             <div className="relative h-64">
               <img
                 src={selectedEvent.image}
-                alt={selectedEvent.title}
+                alt={selectedEvent.title || selectedEvent.event_name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.onerror = null;
@@ -817,8 +763,6 @@ const RecommendationSection = ({
               >
                 <X className="w-5 h-5" />
               </button>
-
-              {/* AI Badge */}
               <div className="absolute top-4 left-4">
                 <AIBadge
                   agent="recommendations"
@@ -831,10 +775,9 @@ const RecommendationSection = ({
 
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-16rem)]">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {selectedEvent.title}
+                {selectedEvent.title || selectedEvent.event_name}
               </h2>
 
-              {/* AI Insights */}
               <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-100">
                 <div className="flex items-center gap-2 mb-2">
                   <Brain className="w-5 h-5 text-purple-600" />
@@ -844,10 +787,7 @@ const RecommendationSection = ({
                 </div>
                 <ul className="space-y-2">
                   {selectedEvent.matchReasons?.map((reason, idx) => (
-                    <li
-                      key={idx}
-                      className="flex items-start gap-2 text-sm text-gray-700"
-                    >
+                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
                       <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                       {reason}
                     </li>
@@ -855,70 +795,60 @@ const RecommendationSection = ({
                 </ul>
               </div>
 
-              {/* Event Details Grid */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500 mb-1">Date & Time</p>
-                  <p className="font-medium text-gray-900">
-                    {selectedEvent.date}
-                  </p>
+                  <p className="font-medium text-gray-900">{selectedEvent.date}</p>
                   <p className="text-sm text-gray-600">{selectedEvent.time}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500 mb-1">Location</p>
-                  <p className="font-medium text-gray-900">
-                    {selectedEvent.location}
-                  </p>
+                  <p className="font-medium text-gray-900">{selectedEvent.location}</p>
                   {selectedEvent.distance > 0 && (
-                    <p className="text-sm text-gray-600">
-                      {selectedEvent.distance} miles away
-                    </p>
+                    <p className="text-sm text-gray-600">{selectedEvent.distance} miles away</p>
                   )}
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500 mb-1">Price</p>
                   <p className="font-medium text-gray-900">
-                    ${selectedEvent.price.toFixed(2)}
+                    ${Number(selectedEvent.price).toFixed(2)}
                   </p>
                   {selectedEvent.originalPrice > selectedEvent.price && (
                     <p className="text-sm text-green-600">
-                      Save $
-                      {(
-                        selectedEvent.originalPrice - selectedEvent.price
-                      ).toFixed(2)}
+                      Save ${(selectedEvent.originalPrice - selectedEvent.price).toFixed(2)}
                     </p>
                   )}
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500 mb-1">Category</p>
-                  <p className="font-medium text-gray-900">
-                    {selectedEvent.category}
-                  </p>
+                  <p className="font-medium text-gray-900">{selectedEvent.category}</p>
                 </div>
               </div>
 
-              {/* Tags */}
               <div className="mb-6">
                 <h4 className="font-medium text-gray-900 mb-2">Tags</h4>
                 <div className="flex flex-wrap gap-2">
-                  {selectedEvent.tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                    >
+                  {selectedEvent.tags?.map((tag, idx) => (
+                    <span key={idx} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
                       #{tag}
                     </span>
                   ))}
                 </div>
               </div>
 
-              {/* Action Buttons */}
+              {/* ✅ Fixed: "Go to Event" button also uses navigate */}
               <div className="flex gap-3">
-                <button className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
-                  Book Now
+                <button
+                  className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                  onClick={(e) => handleNavigateToEvent(e, selectedEvent)}
+                >
+                  Go to Event
                 </button>
-                <button className="flex-1 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors">
-                  Save for Later
+                <button
+                  className="flex-1 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                  onClick={() => setShowEventDetails(false)}
+                >
+                  Close
                 </button>
               </div>
             </div>

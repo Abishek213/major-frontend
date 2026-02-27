@@ -1,361 +1,226 @@
 // src/Pages/Landing/Organizer/EventRequest.jsx
+// FIXED:
+// 1. Uses backend-computed hasUserCounter / myNegotiationId / myStatus directly (no re-derivation)
+// 2. deal_done events shown in "Won" tab (requires backend patch applied)
+// 3. Counter offer UI always renders from backend fields
 import { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import {
   Calendar, MapPin, DollarSign, User, Filter, Check, X,
   Clock, Sparkles, Search, RefreshCw, AlertTriangle, TrendingUp,
-  Target, Activity, Users, Bot, MessageSquare, Brain, Award, Zap
+  Target, Activity, MessageSquare, Brain, Award, Zap,
+  Trophy, BadgeCheck, Inbox,
 } from "lucide-react";
 import AIBadge from "../../../components/ai/user/AIBadge";
-import AILoadingSpinner from "../../../components/ai//user/AILoadingSpinner";
 import { useNegotiation } from "../../../hooks/useNegotiation";
 
+// ─── Tabs ──────────────────────────────────────────────────────────────────
+const TABS = [
+  { id: "available", label: "Available",      icon: Inbox  },
+  { id: "pending",   label: "My Offers",      icon: Clock  },
+  { id: "won",       label: "Accepted Deals", icon: Trophy },
+];
+
+// ─── Main Component ────────────────────────────────────────────────────────
 const EventRequest = () => {
   const [eventRequests, setEventRequests] = useState([]);
-  const [filter, setFilter] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [refreshCount, setRefreshCount] = useState(0);
+  const [activeTab,     setActiveTab]     = useState("available");
+  const [filter,        setFilter]        = useState("");
+  const [searchTerm,    setSearchTerm]    = useState("");
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState("");
+  const [refreshCount,  setRefreshCount]  = useState(0);
 
-  // Add these with your other useState declarations
-  const [organizerId, setOrganizerId] = useState(null);
-
-
-
-  // Form states for accept
+  // Budget / message inputs keyed by eventId
   const [proposedBudget, setProposedBudget] = useState({});
-  const [customMessage, setCustomMessage] = useState({});
+  const [customMessage,  setCustomMessage]  = useState({});
 
-  // Negotiation States
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [showNegotiationModal, setShowNegotiationModal] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [aiSuggestions, setAiSuggestions] = useState({});
+  // Negotiation modal
+  const [selectedRequest,       setSelectedRequest]       = useState(null);
+  const [showNegotiationModal,  setShowNegotiationModal]  = useState(false);
+  const [aiAnalysis,            setAiAnalysis]            = useState(null);
+  const [aiSuggestions,         setAiSuggestions]         = useState({});
 
-  const {
-    submitOffer,
-    getPriceAnalysis,
-    acceptOffer,  // ✅ Make sure this is included
-    rejectOffer,
-    loading: aiLoading
-  } = useNegotiation();
+  const { submitOffer, getPriceAnalysis, acceptOffer, rejectOffer, loading: aiLoading } = useNegotiation();
 
+  // ─── Token decode ─────────────────────────────────────────────────────────
+  // We only need the token for API calls; organizer identity comes from backend
+  const getToken   = () => localStorage.getItem("token");
+  const getOrgId   = () => { try { const d = jwtDecode(getToken()); return d.user?.id || d.id; } catch { return null; } };
 
+  // ─── Fetch ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    // Get organizer ID from token
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        const id = decoded.user?.id || decoded.id;
-        setOrganizerId(id);
-      } catch (error) {
-        console.error("Error decoding token:", error);
-      }
-    }
-  }, []);
-
-  // Helper function to safely parse budget values
-  const parseBudget = (budget) => {
-    if (budget === null || budget === undefined) return 0;
-    const budgetStr = budget.toString();
-    const numericValue = budgetStr.replace(/[^0-9]/g, '');
-    return parseInt(numericValue) || 0;
-  };
-
-  const handleProposedBudgetChange = (eventId, value) => {
-    setProposedBudget((prevState) => ({
-      ...prevState,
-      [eventId]: value,
-    }));
-
-    // Auto-suggest optimal price based on budget
-    if (value && eventRequests.find(r => r._id === eventId)) {
-      const request = eventRequests.find(r => r._id === eventId);
-      const budgetNum = parseInt(value);
-      const requestBudget = parseBudget(request.budget);
-
-      if (budgetNum > requestBudget * 1.2) {
-        setAiSuggestions(prev => ({
-          ...prev,
-          [eventId]: {
-            type: 'warning',
-            message: 'Your price is 20% above their budget. Consider lowering for better chances.'
-          }
-        }));
-      } else if (budgetNum < requestBudget * 0.8) {
-        setAiSuggestions(prev => ({
-          ...prev,
-          [eventId]: {
-            type: 'success',
-            message: 'Competitive price! You have a good chance of winning this bid.'
-          }
-        }));
-      }
-    }
-  };
-
-  const handleCustomMessageChange = (eventId, value) => {
-    setCustomMessage((prevState) => ({
-      ...prevState,
-      [eventId]: value,
-    }));
-  };
-
-  useEffect(() => {
-    const fetchEventRequests = async () => {
+    const fetch_ = async () => {
       setLoading(true);
       setError("");
       try {
-        const url = `${import.meta.env.VITE_API_URL}/eventrequest/event-requests${filter ? `?eventType=${filter}` : ""
-          }`;
-
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
+        const url = `${import.meta.env.VITE_API_URL}/eventrequest/event-requests${filter ? `?eventType=${filter}` : ""}`;
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${getToken()}` } });
+        if (res.ok) {
+          const data = await res.json();
           setEventRequests(data);
         } else {
-          setError("Failed to fetch event requests. Please try again.");
+          setError("Failed to fetch event requests.");
         }
-      } catch (error) {
-        setError("Error fetching event requests: " + error.message);
+      } catch (e) {
+        setError("Network error: " + e.message);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchEventRequests();
+    fetch_();
   }, [filter, refreshCount]);
 
-  const handleFilterChange = (event) => setFilter(event.target.value);
-  const handleSearchChange = (event) => setSearchTerm(event.target.value);
-  const handleRefresh = () => setRefreshCount(prev => prev + 1);
+  const handleRefresh = () => setRefreshCount((p) => p + 1);
 
-  // ============ MANUAL ACCEPT FLOW ============
-  const handleAccept = async (eventId, proposedBudgetValue = "", customMsg = "") => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("No token found. Please log in again.");
-        return;
-      }
-
-      const decodedToken = jwtDecode(token);
-      const organizerId = decodedToken.user?.id;
-
-      if (!organizerId) {
-        alert("Organizer ID is missing. Please log in again.");
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/eventrequest/event-request/${eventId}/accept`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            organizerId,
-            proposedBudget: proposedBudgetValue,
-            customMessage: customMsg
-          }),
-        }
-      );
-
-      if (response.ok) {
-        alert("✅ Event request accepted successfully!");
-        handleRefresh();
-      } else {
-        alert("❌ Error accepting event request");
-      }
-    } catch (error) {
-      console.error("Error accepting event request:", error);
-      alert("❌ Error accepting event request");
-    }
+  const parseBudget = (v) => {
+    if (v == null) return 0;
+    return parseInt(v.toString().replace(/[^0-9]/g, "")) || 0;
   };
 
-  // ============ MANUAL REJECT FLOW ============
+  // ─── Budget input with AI hint ────────────────────────────────────────────
+  const handleBudgetChange = (eventId, value) => {
+    setProposedBudget((p) => ({ ...p, [eventId]: value }));
+    const req = eventRequests.find((r) => r._id === eventId);
+    if (!req || !value) return;
+    const num = parseInt(value);
+    const rb  = parseBudget(req.budget);
+    if (num > rb * 1.2)      setAiSuggestions((p) => ({ ...p, [eventId]: { type: "warning", message: "20%+ above their budget — consider lowering." } }));
+    else if (num < rb * 0.8) setAiSuggestions((p) => ({ ...p, [eventId]: { type: "success", message: "Competitive price! High chance of winning." } }));
+    else                     setAiSuggestions((p) => ({ ...p, [eventId]: { type: "info",    message: "Aligned with client budget." } }));
+  };
+
+  // ─── Accept (direct) ─────────────────────────────────────────────────────
+  const handleAccept = async (eventId) => {
+    const token  = getToken();
+    const orgId  = getOrgId();
+    const budget = proposedBudget[eventId] || "";
+    const msg    = customMessage[eventId]  || "";
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/eventrequest/${eventId}/accept`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ organizerId: orgId, proposedBudget: budget, customMessage: msg }),
+      });
+      if (res.ok) handleRefresh();
+      else alert("❌ Error accepting event request");
+    } catch { alert("❌ Error accepting event request"); }
+  };
+
+  // ─── Reject ───────────────────────────────────────────────────────────────
   const handleReject = async (eventId) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("No token found. Please log in again.");
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/eventrequest/event-request/${eventId}/reject`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        alert("✅ Event request rejected successfully");
-         // ✅ FIX: Remove the request from the local state immediately
-      setEventRequests(prevRequests => 
-        prevRequests.filter(request => request._id !== eventId)
-      );
-
-      // Also clear any form data for this request
-      setProposedBudget(prev => {
-        const newState = { ...prev };
-        delete newState[eventId];
-        return newState;
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/eventrequest/event-request/${eventId}/reject`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
       });
-      
-      setCustomMessage(prev => {
-        const newState = { ...prev };
-        delete newState[eventId];
-        return newState;
-      });
-        // handleRefresh();
-        
-      } else {
-        alert("❌ Error rejecting event request");
-      }
-    } catch (error) {
-      console.error("Error rejecting event request:", error);
-      alert("❌ Error rejecting event request");
-    }
+      if (res.ok) {
+        setEventRequests((prev) => prev.filter((r) => r._id !== eventId));
+        setProposedBudget((p) => { const s = { ...p }; delete s[eventId]; return s; });
+        setCustomMessage((p)  => { const s = { ...p }; delete s[eventId]; return s; });
+      } else alert("❌ Error rejecting event request");
+    } catch { alert("❌ Error rejecting event request"); }
   };
 
-  // ============ NEGOTIATION FLOW ============
+  // ─── Negotiation modal open ───────────────────────────────────────────────
   const handleOpenNegotiation = async (request) => {
     setSelectedRequest(request);
-
-    const budgetNum = parseBudget(request.budget);
-
-    // Get AI price analysis from backend (counter-offer.js)
-    const analysis = await getPriceAnalysis(
-      request.eventType,
-      request.venue,
-      budgetNum
-    );
-
+    const analysis = await getPriceAnalysis(request.eventType, request.venue, parseBudget(request.budget));
     setAiAnalysis(analysis);
     setShowNegotiationModal(true);
   };
 
+  // ─── Submit negotiation offer ─────────────────────────────────────────────
   const handleSubmitNegotiation = async () => {
     if (!selectedRequest) return;
-
     try {
-      // Create negotiation record in database
-      const result = await submitOffer(
-        selectedRequest._id,
-        {
-          proposedPrice: parseInt(proposedBudget[selectedRequest._id] || parseBudget(selectedRequest.budget)),
-          proposedDate: selectedRequest.date?.split('T')[0] || '',
-          customMessage: customMessage[selectedRequest._id] || "I'm interested in negotiating"
-        }
-      );
-
-      if (result?.success) {
-        alert("✅ Negotiation started! The user will see your offer.");
-        setShowNegotiationModal(false);
-        handleRefresh();
-      }
-    } catch (err) {
-      alert("❌ Failed to start negotiation: " + err.message);
-    }
+      const result = await submitOffer(selectedRequest._id, {
+        proposedPrice: parseInt(proposedBudget[selectedRequest._id] || parseBudget(selectedRequest.budget)),
+        proposedDate:  selectedRequest.date?.split("T")[0] || "",
+        customMessage: customMessage[selectedRequest._id] || "I'm interested in negotiating",
+      });
+      if (result?.success) { setShowNegotiationModal(false); handleRefresh(); }
+    } catch (err) { alert("❌ Failed to start negotiation: " + err.message); }
   };
 
-  // ============ COUNTER OFFER HANDLERS ============
-
- const handleAcceptCounter = async (negotiationId, amount) => {
+  // ─── Counter-offer handlers ───────────────────────────────────────────────
+  const handleAcceptCounter = async (negotiationId, amount) => {
     try {
       const result = await acceptOffer(negotiationId);
-      if (result?.success) {
-        alert(`✅ You accepted NPR ${amount.toLocaleString()}! Deal done.`);
-        handleRefresh();
-      }
-    } catch (error) {
-      alert('❌ Failed to accept: ' + error.message);
-    }
+      if (result?.success) { alert(`✅ Deal accepted at NPR ${amount?.toLocaleString()}!`); handleRefresh(); }
+    } catch (e) { alert("❌ " + e.message); }
   };
 
-const handleCounterCounter = async (negotiationId, userAmount) => {
-  // Find the request that has this negotiation
-  const request = eventRequests.find(r => 
-    r.myNegotiationId === negotiationId
-  );
-  
-  if (request) {
-    setSelectedRequest(request);
-    // Pre-fill with a reasonable counter (midpoint)
-    const midPoint = Math.round((userAmount + parseBudget(request.budget)) / 2);
-    setProposedBudget({ [request._id]: midPoint });
-    setShowNegotiationModal(true);
-  }
-};
+  const handleCounterCounter = async (negotiationId, userAmount) => {
+    const request = eventRequests.find((r) => r.myNegotiationId === negotiationId);
+    if (request) {
+      setSelectedRequest(request);
+      const mid = Math.round((userAmount + parseBudget(request.budget)) / 2);
+      setProposedBudget({ [request._id]: mid });
+      setShowNegotiationModal(true);
+    }
+  };
 
   const handleRejectCounter = async (negotiationId) => {
     try {
       const result = await rejectOffer(negotiationId);
-      if (result?.success) {
-        alert('❌ Offer rejected');
-        handleRefresh();
-      }
-    } catch (error) {
-      alert('❌ Failed to reject: ' + error.message);
-    }
+      if (result?.success) handleRefresh();
+    } catch (e) { alert("❌ " + e.message); }
   };
 
+  // ─── Categorise using BACKEND-COMPUTED fields (no re-derivation!) ─────────
+  //
+  // The backend already computed: myStatus, hasUserCounter, isDealWon, myNegotiationId
+  // We trust those directly instead of re-searching interestedOrganizers on the frontend.
+  //
+  const categorized = { available: [], pending: [], won: [] };
 
+  eventRequests.forEach((req) => {
+    // Apply UI filters
+    const matchType   = filter    === "" || req.eventType === filter;
+    const matchSearch = searchTerm === "" ||
+      req.eventType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      req.venue.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (req.userId?.fullname || "").toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchType || !matchSearch) return;
 
+    // Use backend-computed flags
+    const myStatus     = req.myStatus;       // 'not_responded' | 'pending' | 'countered' | 'accepted' | 'rejected'
+    const isDealWon    = req.isDealWon;       // true only for deal_done + this org accepted
+    const hasResponded = req.hasResponded;    // any response at all
 
-  const filteredEventRequests = eventRequests.filter(request => {
-    const matchesFilter = filter === "" || request.eventType === filter;
-    const matchesSearch = searchTerm === "" ||
-      request.eventType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.venue.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (request.userId?.fullname || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (request.userId?.email || "").toLowerCase().includes(searchTerm.toLowerCase());
+    // Hide rejected unless it's a won deal (shouldn't happen, but guard anyway)
+    if (myStatus === "rejected" && !isDealWon) return;
 
-   // ✅ FIX: Use organizerId (from state) instead of currentOrganizerId
-  const myResponse = request.interestedOrganizers?.find(
-    org => org.organizerId?._id === organizerId ||
-      org.organizerId?.toString() === organizerId?.toString()
-  );
-  // Hide if status is 'rejected'
-  if (myResponse?.status === 'rejected') {
-    return false;
-  }
-
-    return matchesFilter && matchesSearch;
+    if (isDealWon) {
+      categorized.won.push(req);
+    } else if (hasResponded) {
+      // pending, countered, or accepted-but-not-deal_done
+      categorized.pending.push(req);
+    } else {
+      categorized.available.push(req);
+    }
   });
 
-  if (loading) return <LoadingSpinner />;
+  const displayed = categorized[activeTab] || [];
+  const totalBudget = eventRequests.reduce((s, r) => s + parseBudget(r.budget), 0);
 
-  if (error) {
-    return <ErrorDisplay error={error} onRefresh={handleRefresh} />;
-  }
+  // ─── Render ───────────────────────────────────────────────────────────────
+  if (loading) return <LoadingSpinner />;
+  if (error)   return <ErrorDisplay error={error} onRefresh={handleRefresh} />;
 
   return (
-    <div className="min-h-screen p-4 space-y-8 md:p-6 bg-gradient-to-br from-gray-50 to-white">
+    <div className="min-h-screen p-4 space-y-6 md:p-6 bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
 
-      {/* Negotiation Modal */}
+      {/* ── Negotiation Modal ── */}
       {showNegotiationModal && selectedRequest && (
         <NegotiationModal
           request={selectedRequest}
           aiAnalysis={aiAnalysis}
           proposedBudget={proposedBudget[selectedRequest._id] || ""}
-          onBudgetChange={(value) => setProposedBudget(prev => ({ ...prev, [selectedRequest._id]: value }))}
+          onBudgetChange={(v) => setProposedBudget((p) => ({ ...p, [selectedRequest._id]: v }))}
           customMessage={customMessage[selectedRequest._id] || ""}
-          onMessageChange={(value) => setCustomMessage(prev => ({ ...prev, [selectedRequest._id]: value }))}
+          onMessageChange={(v) => setCustomMessage((p) => ({ ...p, [selectedRequest._id]: v }))}
           onSubmit={handleSubmitNegotiation}
           onClose={() => setShowNegotiationModal(false)}
           loading={aiLoading}
@@ -363,60 +228,121 @@ const handleCounterCounter = async (negotiationId, userAmount) => {
         />
       )}
 
-      {/* Header */}
-      <HeaderSection onRefresh={handleRefresh} />
+      {/* ── Page Header ── */}
+      <div className="flex flex-col justify-between gap-4 p-6 bg-white/90 border border-gray-100 shadow-md rounded-2xl md:flex-row md:items-center">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow">
+            <Activity className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-gray-800">Event Requests</h1>
+              <AIBadge type="organizer" agent="negotiation" />
+            </div>
+            <p className="text-xs text-gray-500">Manage incoming opportunities &amp; track your deals</p>
+          </div>
+        </div>
+        <button onClick={handleRefresh} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-xl hover:bg-gray-200 transition-all">
+          <RefreshCw className="w-4 h-4" /> Refresh
+        </button>
+      </div>
 
-      {/* Stats */}
-      <StatsSection requests={eventRequests} parseBudget={parseBudget} />
+      {/* ── Stats ── */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard title="Available"   value={categorized.available.length} gradient="from-blue-500 to-indigo-600"    icon={Inbox}       />
+        <StatCard title="My Offers"   value={categorized.pending.length}   gradient="from-amber-500 to-orange-500"   icon={Clock}       />
+        <StatCard title="Deals Won"   value={categorized.won.length}       gradient="from-emerald-500 to-green-600"  icon={Trophy}      />
+        <StatCard title="Budget Pool" value={`NPR ${Math.round(totalBudget / 1000)}K`} gradient="from-purple-500 to-violet-600" icon={DollarSign} />
+      </div>
 
-      {/* Filter and Search */}
-      <FilterSection
-        filter={filter}
-        onFilterChange={handleFilterChange}
-        searchTerm={searchTerm}
-        onSearchChange={handleSearchChange}
-      />
+      {/* ── Filter + Search ── */}
+      <div className="flex flex-col gap-3 p-4 bg-white/90 border border-gray-100 rounded-2xl shadow-sm lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-3">
+          <Filter className="w-4 h-4 text-indigo-400" />
+          <select value={filter} onChange={(e) => setFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none">
+            <option value="">All Event Types</option>
+            <option value="Wedding">💒 Wedding</option>
+            <option value="Birthday">🎂 Birthday</option>
+            <option value="Corporate">🏢 Corporate</option>
+            <option value="Conference">🎤 Conference</option>
+            <option value="Party">🎉 Party</option>
+            <option value="Sports">⚽ Sports</option>
+          </select>
+        </div>
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute w-4 h-4 text-gray-400 -translate-y-1/2 left-3 top-1/2" />
+          <input
+            type="text"
+            placeholder="Search by event, venue or client…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full py-2 pl-9 pr-4 text-sm bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+          />
+        </div>
+      </div>
 
-      {/* Event Requests Grid */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2">
-        {filteredEventRequests.length > 0 ? (
-          filteredEventRequests.map((request) => {
+      {/* ── Tabs ── */}
+      <div className="flex gap-1 p-1 bg-gray-100 border border-gray-200/60 rounded-2xl w-fit">
+        {TABS.map((tab) => {
+          const count = categorized[tab.id].length;
+          const Icon  = tab.icon;
+          const isActive = activeTab === tab.id;
+          const isWonTab = tab.id === "won";
+          return (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? isWonTab ? "bg-emerald-500 text-white shadow-lg" : "bg-white text-indigo-700 shadow-md"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+              }`}>
+              <Icon className="w-4 h-4" />
+              {tab.label}
+              {count > 0 && (
+                <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                  isActive
+                    ? isWonTab ? "bg-white/25 text-white" : "bg-indigo-100 text-indigo-700"
+                    : "bg-gray-200 text-gray-600"
+                }`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Won tab banner */}
+      {activeTab === "won" && categorized.won.length > 0 && (
+        <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+          <Trophy className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          <p className="text-sm font-semibold text-emerald-800">
+            🎉 You have {categorized.won.length} confirmed deal{categorized.won.length > 1 ? "s" : ""}! The client has selected you.
+          </p>
+        </div>
+      )}
+
+      {/* ── Cards Grid ── */}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        {displayed.length > 0 ? (
+          displayed.map((request) => {
             const winProb = proposedBudget[request._id]
-              ? getWinProbability(request, proposedBudget[request._id])
+              ? getWinProbability(parseBudget(request.budget), proposedBudget[request._id])
               : null;
-
-            // Get current organizer ID from token
-            const token = localStorage.getItem("token");
-            const decodedToken = token ? jwtDecode(token) : null;
-            const currentOrganizerId = decodedToken?.user?.id;
-
             return (
               <RequestCard
                 key={request._id}
                 request={request}
-                // Pass ALL the response data
-                myResponse={request.myResponse}
-                myStatus={request.myStatus}
-                myProposedBudget={request.myProposedBudget}
-                myNegotiationId={request.myNegotiationId}
-                hasUserCounter={request.hasUserCounter}
-
-                // Pass current organizer ID
-                currentOrganizerId={organizerId}
-
                 proposedBudget={proposedBudget[request._id] || ""}
-                onBudgetChange={(value) => handleProposedBudgetChange(request._id, value)}
+                onBudgetChange={(v) => handleBudgetChange(request._id, v)}
                 customMessage={customMessage[request._id] || ""}
-                onMessageChange={(value) => handleCustomMessageChange(request._id, value)}
-
-                // IMPORTANT: Add these counter handlers!
+                onMessageChange={(v) => setCustomMessage((p) => ({ ...p, [request._id]: v }))}
+                onAccept={() => handleAccept(request._id)}
+                onReject={() => handleReject(request._id)}
+                onNegotiate={() => handleOpenNegotiation(request)}
                 onAcceptCounter={handleAcceptCounter}
                 onCounterCounter={handleCounterCounter}
                 onRejectCounter={handleRejectCounter}
-
-                onAccept={handleAccept}
-                onReject={handleReject}
-                onNegotiate={() => handleOpenNegotiation(request)}
                 aiSuggestion={aiSuggestions[request._id]}
                 winProb={winProb}
                 parseBudget={parseBudget}
@@ -424,192 +350,236 @@ const handleCounterCounter = async (negotiationId, userAmount) => {
             );
           })
         ) : (
-          <EmptyState filter={filter} searchTerm={searchTerm} onRefresh={handleRefresh} />
+          <EmptyState tab={activeTab} hasFilter={!!(filter || searchTerm)} onRefresh={handleRefresh} />
         )}
       </div>
     </div>
   );
 };
 
-// ============ REQUEST CARD COMPONENT ============
+// ─── Request Card ──────────────────────────────────────────────────────────
+// Uses ONLY backend-computed fields: request.isDealWon, request.hasUserCounter,
+// request.myNegotiationId, request.myStatus, request.myProposedBudget, request.hasResponded
 const RequestCard = ({
   request,
-  proposedBudget,
-  onBudgetChange,
-  customMessage,
-  onMessageChange,
-  onAccept,
-  onReject,
-  onNegotiate,
-  onAcceptCounter,
-  onCounterCounter,
-  onRejectCounter,
-  aiSuggestion,
-  winProb,
-  parseBudget,
-  currentOrganizerId // 👈 Make sure to pass this from parent
+  proposedBudget, onBudgetChange,
+  customMessage,  onMessageChange,
+  onAccept, onReject, onNegotiate,
+  onAcceptCounter, onCounterCounter, onRejectCounter,
+  aiSuggestion, winProb, parseBudget,
 }) => {
-  const budgetNum = parseBudget(request.budget);
+  // ── Read backend-computed fields ──────────────────────────────────────────
+  const isDealWon        = request.isDealWon        || false;
+  const hasUserCounter   = request.hasUserCounter   || false;
+  const hasResponded     = request.hasResponded      || false;
+  const myNegotiationId  = request.myNegotiationId  || null;
+  const myProposedBudget = request.myProposedBudget || null;
+  const myMessage        = request.myMessage        || null;
+  const myStatus         = request.myStatus         || "not_responded";
+  const budgetNum        = parseBudget(request.budget);
 
-  // 👇 IMPORTANT: Find if this organizer already responded
-  const myResponse = request.interestedOrganizers?.find(
-    org => org.organizerId?._id === currentOrganizerId ||
-      org.organizerId?.toString() === currentOrganizerId?.toString()
-  );
-
-  // 👇 Check if user has countered (status 'countered' means user responded)
-  const hasUserCounter = myResponse?.status === 'countered';
-  const userCounterAmount = myResponse?.proposedBudget;
-  const userCounterMessage = myResponse?.message;
-  const negotiationId = myResponse?.negotiationId;
-
-  const eventTypeColors = {
-    Wedding: "from-pink-500 to-rose-600",
-    Birthday: "from-blue-500 to-cyan-600",
-    Corporate: "from-gray-500 to-gray-700",
-    Conference: "from-purple-500 to-violet-600",
-    default: "from-green-500 to-emerald-600"
+  // ── Styling maps ──────────────────────────────────────────────────────────
+  const stripGrad = {
+    Wedding:    "from-pink-400 to-rose-500",
+    Birthday:   "from-blue-400 to-cyan-500",
+    Corporate:  "from-slate-400 to-gray-600",
+    Conference: "from-purple-400 to-violet-600",
+    default:    "from-emerald-400 to-teal-500",
   };
-
-  const eventTypeBg = {
-    Wedding: "bg-gradient-to-br from-pink-50 to-rose-50",
-    Birthday: "bg-gradient-to-br from-blue-50 to-cyan-50",
-    Corporate: "bg-gradient-to-br from-gray-50 to-gray-100",
-    Conference: "bg-gradient-to-br from-purple-50 to-violet-50",
-    default: "bg-gradient-to-br from-green-50 to-emerald-50"
+  const cardBg = {
+    Wedding:    "from-pink-50/50 to-rose-50/30",
+    Birthday:   "from-blue-50/50 to-cyan-50/30",
+    Corporate:  "from-slate-50/50 to-gray-50/30",
+    Conference: "from-purple-50/50 to-violet-50/30",
+    default:    "from-emerald-50/50 to-teal-50/30",
   };
+  const stripClass = `bg-gradient-to-r ${stripGrad[request.eventType] || stripGrad.default}`;
+  const bgClass    = `bg-gradient-to-br ${cardBg[request.eventType]   || cardBg.default}`;
 
+  // ══════════════════════════════════════════════════════════════════════
+  // WON CARD — deal is done and this organizer was selected
+  // ══════════════════════════════════════════════════════════════════════
+  if (isDealWon) {
+    return (
+      <div className="relative overflow-hidden rounded-2xl border-2 border-emerald-300 shadow-xl bg-gradient-to-br from-emerald-50 to-green-50">
+        <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-green-400" />
+        <div className="p-5 space-y-4">
+
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{getEventIcon(request.eventType)}</span>
+              <div>
+                <h3 className="text-base font-bold text-gray-800">{request.eventType} Event</h3>
+                <p className="text-xs text-gray-500 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {new Date(request.date).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+            <span className="flex items-center gap-1 px-3 py-1 text-xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full">
+              <Trophy className="w-3 h-3" /> DEAL WON
+            </span>
+          </div>
+
+          {/* Client */}
+          <div className="flex items-center gap-3 p-3 bg-white/70 rounded-xl border border-white">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+              <User className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Client</p>
+              <p className="text-sm font-semibold text-gray-800">{request.userId?.fullname || "Unknown"}</p>
+              <p className="text-xs text-gray-500">{request.userId?.email}</p>
+            </div>
+          </div>
+
+          {/* Details grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <InfoBox label="Venue"  value={request.venue} />
+            <InfoBox label="Agreed Budget" value={`NPR ${(myProposedBudget || budgetNum).toLocaleString()}`} highlight />
+          </div>
+
+          {/* Message sent */}
+          {myMessage && (
+            <div className="p-3 bg-white/60 rounded-xl border border-emerald-100 text-sm text-gray-700 italic">
+              "{myMessage}"
+            </div>
+          )}
+
+          {/* Confirmation notice */}
+          <div className="flex items-center gap-2 p-3 bg-emerald-100 rounded-xl border border-emerald-200">
+            <BadgeCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <p className="text-xs text-emerald-800 font-medium">
+              You are confirmed as the organizer. Contact the client to proceed.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // NORMAL CARD
+  // ══════════════════════════════════════════════════════════════════════
   return (
-    <div className={`${eventTypeBg[request.eventType] || eventTypeBg.default} group relative overflow-hidden rounded-2xl border border-gray-200 shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]`}>
+    <div className={`relative overflow-hidden rounded-2xl border border-gray-200/80 shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all duration-300 ${bgClass}`}>
 
-      {/* Event Type Badge */}
-      <div className="absolute z-10 top-4 right-4">
-        <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg bg-gradient-to-r ${eventTypeColors[request.eventType] || eventTypeColors.default} text-white`}>
+      {/* Top colour strip */}
+      <div className={`h-1 ${stripClass}`} />
+
+      {/* Status chips (top-right) */}
+      <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white shadow bg-gradient-to-r ${stripGrad[request.eventType] || stripGrad.default}`}>
           {request.eventType}
         </span>
+        {/* Counter-offer chip — uses backend hasUserCounter */}
+        {hasUserCounter && (
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-600 text-white animate-pulse shadow">
+            🔔 Counter!
+          </span>
+        )}
+        {hasResponded && !hasUserCounter && (
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-white shadow">
+            ⏳ Pending
+          </span>
+        )}
       </div>
 
-      {/* Status Badge - Shows negotiation state */}
-      {myResponse && (
-        <div className="absolute z-10 top-4 left-4">
-          <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${hasUserCounter
-            ? 'bg-purple-500 text-white animate-pulse'
-            : 'bg-yellow-500 text-white'
-            }`}>
-            {hasUserCounter ? '🔔 User Countered!' : '⏳ Offer Pending'}
-          </span>
-        </div>
-      )}
+      <div className="p-5 space-y-4">
 
-      {/* Event Header */}
-      <div className="p-6 pb-0">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="text-3xl">{getEventTypeIcon(request.eventType)}</div>
-          <div className="flex-1">
-            <h3 className="text-xl font-bold text-gray-800 line-clamp-1">{request.eventType} Event</h3>
-            <div className="flex items-center gap-1 text-sm text-gray-500">
-              <Clock className="w-4 h-4" />
-              <span>{new Date(request.date).toLocaleDateString()}</span>
-            </div>
+        {/* Event header */}
+        <div className="flex items-center gap-3 pr-20">
+          <span className="text-2xl">{getEventIcon(request.eventType)}</span>
+          <div>
+            <h3 className="text-base font-bold text-gray-800">{request.eventType} Event</h3>
+            <p className="text-xs text-gray-500 flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {new Date(request.date).toLocaleDateString()}
+            </p>
           </div>
         </div>
 
-        {/* Client Info */}
-        <div className="mb-6 space-y-3">
-          <div className="flex items-center gap-3 p-3 border bg-white/50 backdrop-blur-sm rounded-xl border-white/80">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-100 to-purple-100">
-              <User className="w-5 h-5 text-indigo-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="mb-1 text-xs text-gray-500">Requested by</p>
-              <p className="text-sm font-semibold text-gray-800 truncate">
-                {request.userId?.fullname || "Unknown User"}
-              </p>
-              <p className="text-xs text-gray-500 truncate">
-                {request.userId?.email || "No email provided"}
-              </p>
+        {/* Client */}
+        <div className="flex items-center gap-2 p-2.5 bg-white/60 rounded-xl border border-white">
+          <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+            <User className="w-3.5 h-3.5 text-indigo-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] text-gray-400">Client</p>
+            <p className="text-sm font-semibold text-gray-800 truncate">{request.userId?.fullname || "Unknown"}</p>
+          </div>
+        </div>
+
+        {/* Budget + Venue */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center gap-2 p-2.5 bg-white/60 rounded-xl border border-white">
+            <DollarSign className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+            <div>
+              <p className="text-[10px] text-gray-400">Budget</p>
+              <p className="text-sm font-bold text-gray-800">NPR {budgetNum.toLocaleString()}</p>
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-2 p-3 border bg-white/50 backdrop-blur-sm rounded-xl border-white/80">
-              <div className="p-1.5 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg">
-                <DollarSign className="w-4 h-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Budget</p>
-                <p className="text-sm font-semibold text-gray-800">NPR {budgetNum.toLocaleString()}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 p-3 border bg-white/50 backdrop-blur-sm rounded-xl border-white/80">
-              <div className="p-1.5 bg-gradient-to-br from-emerald-100 to-green-100 rounded-lg">
-                <MapPin className="w-4 h-4 text-emerald-600" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-gray-500">Venue</p>
-                <p className="text-sm font-semibold text-gray-800 truncate">{request.venue}</p>
-              </div>
+          <div className="flex items-center gap-2 p-2.5 bg-white/60 rounded-xl border border-white min-w-0">
+            <MapPin className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] text-gray-400">Venue</p>
+              <p className="text-sm font-bold text-gray-800 truncate">{request.venue}</p>
             </div>
           </div>
         </div>
 
         {/* AI Suggestion */}
         {aiSuggestion && (
-          <div className={`mb-4 p-3 rounded-lg ${aiSuggestion.type === 'success' ? 'bg-green-50 border-green-200' :
-            aiSuggestion.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
-              'bg-blue-50 border-blue-200'
-            } border`}>
-            <div className="flex items-start gap-2">
-              {aiSuggestion.type === 'success' ? (
-                <Award className="w-4 h-4 text-green-500 mt-0.5" />
-              ) : aiSuggestion.type === 'warning' ? (
-                <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5" />
-              ) : (
-                <Zap className="w-4 h-4 text-blue-500 mt-0.5" />
-              )}
-              <p className="text-sm">{aiSuggestion.message}</p>
-            </div>
+          <div className={`flex items-start gap-2 p-3 rounded-xl border text-sm ${
+            aiSuggestion.type === "success" ? "bg-green-50 border-green-200 text-green-800" :
+            aiSuggestion.type === "warning" ? "bg-amber-50 border-amber-200 text-amber-800" :
+                                              "bg-blue-50 border-blue-200 text-blue-800"
+          }`}>
+            {aiSuggestion.type === "success" ? <Award className="w-4 h-4 mt-0.5 flex-shrink-0" /> :
+             aiSuggestion.type === "warning" ? <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" /> :
+                                               <Zap className="w-4 h-4 mt-0.5 flex-shrink-0" />}
+            <p className="text-xs leading-relaxed">{aiSuggestion.message}</p>
           </div>
         )}
 
-        {/* 👇 CASE 1: USER COUNTERED - MOST IMPORTANT! */}
+        {/* ══════════════════════════════════════════════════════════════
+            CASE A: USER HAS COUNTERED (highest priority UI block)
+            Uses: request.hasUserCounter, request.myNegotiationId, request.myProposedBudget
+        ══════════════════════════════════════════════════════════════ */}
         {hasUserCounter && (
-          <div className="p-4 mb-6 bg-purple-100 border-2 border-purple-400 rounded-xl animate-pulse">
-            <div className="flex items-center gap-2 mb-3">
-              <MessageSquare className="w-5 h-5 text-purple-700" />
-              <span className="font-bold text-purple-800">🔔 USER SENT A COUNTER OFFER!</span>
+          <div className="p-4 bg-purple-50 border-2 border-purple-400 rounded-xl space-y-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-purple-700" />
+              <span className="text-sm font-bold text-purple-800">User Sent a Counter Offer!</span>
             </div>
 
-            <div className="p-4 mb-4 bg-white rounded-lg">
-              <p className="text-sm text-gray-500">User's counter offer:</p>
-              <p className="text-2xl font-bold text-purple-600">
-                NPR {userCounterAmount?.toLocaleString()}
+            <div className="p-3 bg-white rounded-lg">
+              <p className="text-xs text-gray-500 mb-0.5">Their counter amount</p>
+              <p className="text-xl font-bold text-purple-700">
+                NPR {myProposedBudget?.toLocaleString() || "—"}
               </p>
-              {userCounterMessage && (
-                <p className="mt-2 text-sm italic text-gray-700">
-                  "{userCounterMessage}"
-                </p>
+              {myMessage && (
+                <p className="mt-1.5 text-xs text-gray-600 italic">"{myMessage}"</p>
               )}
             </div>
 
-            {/* Action Buttons for Counter */}
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <button
-                onClick={() => onAcceptCounter(negotiationId, userCounterAmount)}
-                className="flex-1 py-3 font-medium text-white rounded-lg bg-emerald-500 hover:bg-emerald-600"
+                onClick={() => onAcceptCounter(myNegotiationId, myProposedBudget)}
+                className="flex-1 py-2.5 text-xs font-bold text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 transition-colors"
               >
-                ✅ Accept {userCounterAmount?.toLocaleString()}
+                ✅ Accept {myProposedBudget?.toLocaleString()}
               </button>
               <button
-                onClick={() => onCounterCounter(negotiationId, userCounterAmount)}
-                className="flex-1 py-3 font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600"
+                onClick={() => onCounterCounter(myNegotiationId, myProposedBudget)}
+                className="flex-1 py-2.5 text-xs font-bold text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
               >
                 🔄 Counter
               </button>
               <button
-                onClick={() => onRejectCounter(negotiationId)}
-                className="flex-1 py-3 font-medium text-white bg-red-500 rounded-lg hover:bg-red-600"
+                onClick={() => onRejectCounter(myNegotiationId)}
+                className="flex-1 py-2.5 text-xs font-bold text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
               >
                 ❌ Reject
               </button>
@@ -617,252 +587,175 @@ const RequestCard = ({
           </div>
         )}
 
-        {/* 👇 CASE 2: Organizer already responded, waiting for user */}
-        {myResponse && !hasUserCounter && (
-          <div className="p-4 mb-6 border border-yellow-200 bg-yellow-50 rounded-xl">
-            <div className="flex items-center gap-2 mb-2 text-yellow-700">
-              <Clock className="w-5 h-5" />
-              <span className="font-medium">Your offer is pending</span>
+        {/* ══════════════════════════════════════════════════════════════
+            CASE B: Already responded — my offer is pending, waiting for user
+            Uses: hasResponded, myProposedBudget, myMessage
+        ══════════════════════════════════════════════════════════════ */}
+        {hasResponded && !hasUserCounter && (
+          <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+            <Clock className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Your Offer — Awaiting Response</p>
+              {myProposedBudget && (
+                <p className="text-sm text-amber-700 font-bold">NPR {myProposedBudget.toLocaleString()}</p>
+              )}
+              {myMessage && (
+                <p className="text-xs text-gray-600 mt-1 italic">"{myMessage}"</p>
+              )}
             </div>
-            <p className="text-lg font-semibold">NPR {myResponse.proposedBudget?.toLocaleString()}</p>
-            <p className="mt-2 text-sm text-gray-600">Waiting for user to respond...</p>
           </div>
         )}
 
-        {/* 👇 CASE 3: No response yet - Show input fields */}
-        {!myResponse && (
-          <>
-            {/* Proposed Budget Input */}
-            <div className="mb-4">
-              <label className="block mb-2 text-sm font-medium text-gray-700">
-                Your Proposed Budget (Optional)
-              </label>
+        {/* ══════════════════════════════════════════════════════════════
+            CASE C: No response yet — show input fields
+        ══════════════════════════════════════════════════════════════ */}
+        {!hasResponded && !hasUserCounter && (
+          <div className="space-y-3">
+            <div>
+              <label className="block mb-1 text-xs font-medium text-gray-600">Your Proposed Budget (optional)</label>
               <div className="relative">
-                <DollarSign className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
+                <DollarSign className="absolute w-4 h-4 text-gray-400 -translate-y-1/2 left-3 top-1/2" />
                 <input
                   type="number"
                   value={proposedBudget}
                   onChange={(e) => onBudgetChange(e.target.value)}
-                  placeholder="Enter your budget"
-                  className="w-full py-3 pl-10 pr-4 transition-all duration-300 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="Enter amount"
+                  className="w-full py-2.5 pl-9 pr-4 text-sm bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none"
                 />
               </div>
             </div>
 
-            {/* Win Probability */}
             {winProb && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-500">Win Probability</span>
-                  <span className={`text-xs font-semibold ${winProb.color}`}>
-                    {winProb.value}
-                  </span>
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-[10px] text-gray-500">Win Probability</span>
+                  <span className={`text-[10px] font-bold ${winProb.color}`}>{winProb.label}</span>
                 </div>
-                <div className="h-2 overflow-hidden bg-gray-200 rounded-full">
-                  <div
-                    className={`h-full rounded-full ${winProb.value === 'High' ? 'bg-green-500' :
-                      winProb.value === 'Medium' ? 'bg-yellow-500' :
-                        'bg-red-500'
-                      }`}
-                    style={{
-                      width: winProb.value === 'High' ? '80%' :
-                        winProb.value === 'Medium' ? '50%' : '20%'
-                    }}
-                  />
+                <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${winProb.barClass}`} style={{ width: winProb.width }} />
                 </div>
               </div>
             )}
 
-            {/* Custom Message */}
-            <div className="mb-6">
-              <label className="block mb-2 text-sm font-medium text-gray-700">
-                Custom Message (Optional)
-              </label>
+            <div>
+              <label className="block mb-1 text-xs font-medium text-gray-600">Message (optional)</label>
               <textarea
                 value={customMessage}
                 onChange={(e) => onMessageChange(e.target.value)}
-                placeholder="Add a personal message to increase your chances..."
-                className="w-full px-4 py-3 transition-all duration-300 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="Add a personal note to increase your chances…"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none resize-none"
                 rows="2"
               />
             </div>
-          </>
+          </div>
         )}
       </div>
 
-      {/* 👇 Action Buttons - Different for each case */}
-      <div className="p-6 pt-0">
-        {!myResponse ? (
-          // No response yet - Show Accept/Negotiate/Reject
-          <div className="flex gap-3">
-            <button
-              onClick={() => onAccept(request._id, proposedBudget, customMessage)}
-              className="flex items-center justify-center flex-1 gap-2 py-3 font-medium text-white transition-all duration-300 shadow-lg rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 hover:shadow-xl"
-            >
-              <Check className="w-5 h-5" />
-              <span>Accept</span>
+      {/* ── Action Buttons ── */}
+      <div className="px-5 pb-5">
+        {/* Case C: no response yet */}
+        {!hasResponded && !hasUserCounter && (
+          <div className="flex gap-2">
+            <button onClick={onAccept}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 shadow-sm transition-all">
+              <Check className="w-4 h-4" /> Accept
             </button>
-
-            <button
-              onClick={onNegotiate}
-              className="flex items-center justify-center flex-1 gap-2 py-3 font-medium text-white transition-all duration-300 shadow-lg rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:shadow-xl"
-            >
-              <MessageSquare className="w-5 h-5" />
-              <span>Negotiate</span>
+            <button onClick={onNegotiate}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-sm transition-all">
+              <MessageSquare className="w-4 h-4" /> Negotiate
             </button>
-
-            <button
-              onClick={() => onReject(request._id)}
-              className="flex items-center justify-center px-4 py-3 font-medium text-gray-700 transition-all duration-300 shadow-md rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 hover:shadow-lg"
-            >
-              <X className="w-5 h-5" />
+            <button onClick={onReject}
+              className="px-3 py-2.5 text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
+              <X className="w-4 h-4" />
             </button>
           </div>
-        ) : !hasUserCounter ? (
-          // Already responded, waiting - Show View Details button
-          <button
-            onClick={onNegotiate}
-            className="w-full py-3 font-medium text-white transition-all duration-300 bg-yellow-500 rounded-xl hover:bg-yellow-600"
-          >
+        )}
+        {/* Case B: responded, waiting — allow viewing negotiation status */}
+        {hasResponded && !hasUserCounter && (
+          <button onClick={onNegotiate}
+            className="w-full py-2.5 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors">
             View Negotiation Status
           </button>
-        ) : null}
-        {/* If user countered, buttons are shown in the purple section above */}
+        )}
+        {/* Case A: counter shown — action buttons already inside the purple block above */}
       </div>
     </div>
   );
 };
-// ============ NEGOTIATION MODAL ============
+
+// ─── Negotiation Modal ─────────────────────────────────────────────────────
 const NegotiationModal = ({ request, aiAnalysis, proposedBudget, onBudgetChange, customMessage, onMessageChange, onSubmit, onClose, loading, parseBudget }) => {
   const budgetNum = parseBudget(request.budget);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="w-full max-w-lg bg-white rounded-2xl">
-        <div className="p-6 text-white border-b bg-gradient-to-r from-blue-500 to-purple-500">
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-xl font-bold">
-              <Brain className="w-5 h-5" />
-              AI Negotiation Assistant
-            </h2>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/20">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="p-5 text-white bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 font-bold text-sm">
+            <Brain className="w-4 h-4" /> AI Negotiation Assistant
+          </h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition">
+            <X className="w-4 h-4" />
+          </button>
         </div>
-
-        <div className="p-6 space-y-4">
-
-          {/* AI Price Analysis */}
+        <div className="p-5 space-y-4">
           {aiAnalysis && (
-            <div className="p-4 border border-purple-200 bg-purple-50 rounded-xl">
-              <div className="flex items-center gap-2 mb-2">
-                <Brain className="w-4 h-4 text-purple-600" />
-                <h3 className="font-medium text-purple-900">AI Market Analysis</h3>
-              </div>
-
+            <div className="p-3 border border-purple-200 bg-purple-50 rounded-xl text-sm">
+              <p className="font-semibold text-purple-900 mb-1 flex items-center gap-1.5">
+                <Brain className="w-3.5 h-3.5 text-purple-600" /> AI Market Analysis
+              </p>
               {aiAnalysis.marketAnalysis?.estimatedPrice && (
-                <p className="mb-2 text-sm text-gray-700">
-                  Market Price: NPR {aiAnalysis.marketAnalysis.estimatedPrice.toLocaleString()}
-                </p>
+                <p className="text-gray-700 text-xs">Market Price: <strong>NPR {aiAnalysis.marketAnalysis.estimatedPrice.toLocaleString()}</strong></p>
               )}
-
               {aiAnalysis.validation?.suggestion && (
-                <p className="text-xs text-gray-600">💡 {aiAnalysis.validation.suggestion}</p>
-              )}
-
-              {aiAnalysis.validation?.minReasonable && aiAnalysis.validation?.maxReasonable && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Reasonable Range: NPR {aiAnalysis.validation.minReasonable.toLocaleString()} - {aiAnalysis.validation.maxReasonable.toLocaleString()}
-                </p>
+                <p className="text-xs text-gray-600 mt-0.5">💡 {aiAnalysis.validation.suggestion}</p>
               )}
             </div>
           )}
-
-          {/* Request Summary */}
-          <div className="p-4 bg-gray-50 rounded-xl">
-            <p className="text-sm"><span className="font-medium">Event:</span> {request.eventType} in {request.venue}</p>
-            <p className="text-sm"><span className="font-medium">Budget:</span> NPR {budgetNum.toLocaleString()}</p>
-            <p className="text-sm"><span className="font-medium">Date:</span> {new Date(request.date).toLocaleDateString()}</p>
+          <div className="p-3 bg-gray-50 rounded-xl text-xs space-y-0.5">
+            <p><span className="font-medium">Event:</span> {request.eventType} @ {request.venue}</p>
+            <p><span className="font-medium">Client Budget:</span> NPR {budgetNum.toLocaleString()}</p>
+            <p><span className="font-medium">Date:</span> {new Date(request.date).toLocaleDateString()}</p>
           </div>
-
-          {/* Offer Form */}
           <div>
-            <label className="block mb-1 text-sm font-medium">Your Offer (NPR)</label>
-            <input
-              type="number"
-              value={proposedBudget}
-              onChange={(e) => onBudgetChange(e.target.value)}
-              placeholder="Enter your offer"
-              className="w-full p-3 border rounded-xl"
-            />
-
-            {/* Quick suggestions */}
+            <label className="block mb-1.5 text-sm font-medium text-gray-700">Your Offer (NPR)</label>
+            <input type="number" value={proposedBudget} onChange={(e) => onBudgetChange(e.target.value)}
+              placeholder="Enter offer" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none text-sm" />
             {aiAnalysis?.marketAnalysis?.estimatedPrice && (
               <div className="flex gap-2 mt-2">
-                <button
-                  onClick={() => onBudgetChange(Math.round(aiAnalysis.marketAnalysis.estimatedPrice * 0.9))}
-                  className="px-2 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
-                >
-                  -10%
-                </button>
-                <button
-                  onClick={() => onBudgetChange(aiAnalysis.marketAnalysis.estimatedPrice)}
-                  className="px-2 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
-                >
-                  Market
-                </button>
-                <button
-                  onClick={() => onBudgetChange(budgetNum)}
-                  className="px-2 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
-                >
-                  Budget
-                </button>
+                {[{ label: "−10%", val: Math.round(aiAnalysis.marketAnalysis.estimatedPrice * 0.9) },
+                  { label: "Market", val: aiAnalysis.marketAnalysis.estimatedPrice },
+                  { label: "Budget", val: budgetNum }].map((b) => (
+                  <button key={b.label} onClick={() => onBudgetChange(b.val)}
+                    className="flex-1 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    {b.label}
+                  </button>
+                ))}
               </div>
             )}
           </div>
-
           <div>
-            <label className="block mb-1 text-sm font-medium">Message</label>
-            <textarea
-              value={customMessage}
-              onChange={(e) => onMessageChange(e.target.value)}
-              rows={3}
-              placeholder="Why should they choose you?"
-              className="w-full p-3 border rounded-xl"
-            />
+            <label className="block mb-1.5 text-sm font-medium text-gray-700">Message</label>
+            <textarea value={customMessage} onChange={(e) => onMessageChange(e.target.value)} rows={3}
+              placeholder="Why should they choose you?" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none resize-none text-sm" />
           </div>
-
-          {/* Success Probability */}
-          {proposedBudget && aiAnalysis?.marketAnalysis?.estimatedPrice && (
-            <div className={`p-3 rounded-lg ${proposedBudget < aiAnalysis.marketAnalysis.estimatedPrice * 0.9 ? 'bg-green-50' :
-              proposedBudget < aiAnalysis.marketAnalysis.estimatedPrice * 1.1 ? 'bg-yellow-50' : 'bg-red-50'
-              }`}>
-              <p className={`text-sm font-medium ${proposedBudget < aiAnalysis.marketAnalysis.estimatedPrice * 0.9 ? 'text-green-700' :
-                proposedBudget < aiAnalysis.marketAnalysis.estimatedPrice * 1.1 ? 'text-yellow-700' : 'text-red-700'
-                }`}>
-                <TrendingUp className="inline w-4 h-4 mr-1" />
-                Success Probability: {
-                  proposedBudget < aiAnalysis.marketAnalysis.estimatedPrice * 0.9 ? 'High' :
-                    proposedBudget < aiAnalysis.marketAnalysis.estimatedPrice * 1.1 ? 'Medium' : 'Low'
-                }
-              </p>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            <button
-              onClick={onSubmit}
-              disabled={loading}
-              className="flex-1 py-3 font-medium text-white bg-blue-500 rounded-xl hover:bg-blue-600"
-            >
-              {loading ? 'Submitting...' : 'Start Negotiation'}
+          {proposedBudget && aiAnalysis?.marketAnalysis?.estimatedPrice && (() => {
+            const ratio = proposedBudget / aiAnalysis.marketAnalysis.estimatedPrice;
+            const [cls, label] = ratio < 0.9 ? ["bg-green-50 border-green-200 text-green-700", "High"] :
+                                 ratio < 1.1 ? ["bg-amber-50 border-amber-200 text-amber-700", "Medium"] :
+                                              ["bg-red-50 border-red-200 text-red-700", "Low"];
+            return (
+              <div className={`p-3 rounded-lg border text-xs font-medium ${cls}`}>
+                <TrendingUp className="inline w-3.5 h-3.5 mr-1" />
+                Success Probability: {label}
+              </div>
+            );
+          })()}
+          <div className="flex gap-3 pt-1">
+            <button onClick={onSubmit} disabled={loading}
+              className="flex-1 py-3 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-60">
+              {loading ? "Submitting…" : "Start Negotiation"}
             </button>
-            <button
-              onClick={onClose}
-              className="px-6 py-3 border rounded-xl hover:bg-gray-50"
-            >
+            <button onClick={onClose} className="px-5 py-3 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
               Cancel
             </button>
           </div>
@@ -872,159 +765,71 @@ const NegotiationModal = ({ request, aiAnalysis, proposedBudget, onBudgetChange,
   );
 };
 
-// ============ HELPER FUNCTIONS ============
-const getEventTypeIcon = (eventType) => {
-  const icons = {
-    Wedding: "💒",
-    Sports: "⚽",
-    Corporate: "🏢",
-    Conference: "🎤",
-    Birthday: "🎂",
-    Party: "🎉"
-  };
-  return icons[eventType] || "🎉";
-};
-
-const getWinProbability = (request, proposedPrice) => {
-  if (!proposedPrice) return null;
-
-  const requestBudget = parseBudget(request.budget);
-  const priceRatio = proposedPrice / requestBudget;
-
-  if (priceRatio <= 0.9) return { value: 'High', color: 'text-green-600' };
-  if (priceRatio <= 1.0) return { value: 'Medium', color: 'text-yellow-600' };
-  return { value: 'Low', color: 'text-red-600' };
-};
-
-const parseBudget = (budget) => {
-  if (budget === null || budget === undefined) return 0;
-  const budgetStr = budget.toString();
-  const numericValue = budgetStr.replace(/[^0-9]/g, '');
-  return parseInt(numericValue) || 0;
-};
-
-// ============ HEADER & STATS COMPONENTS ============
-const HeaderSection = ({ onRefresh }) => (
-  <div className="p-6 border border-gray-100 shadow-xl bg-gradient-to-br from-white to-gray-50 rounded-2xl md:p-8">
-    <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
-      <div>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="p-3 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl">
-            <Activity className="w-6 h-6 text-indigo-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-800">Event Requests</h1>
-          <AIBadge type="organizer" agent="negotiation" />
-        </div>
-        <p className="text-lg text-gray-600">Manage and respond to incoming event opportunities</p>
+// ─── Small helpers ─────────────────────────────────────────────────────────
+const StatCard = ({ title, value, gradient, icon: Icon }) => (
+  <div className={`relative overflow-hidden p-4 rounded-2xl text-white shadow-lg bg-gradient-to-br ${gradient}`}>
+    <div className="absolute -right-2 -top-2 w-16 h-16 bg-white/10 rounded-full" />
+    <div className="relative z-10">
+      <div className="p-1.5 mb-2 w-fit bg-white/20 rounded-lg">
+        <Icon className="w-4 h-4 text-white" />
       </div>
-
-      <button onClick={onRefresh} className="flex items-center gap-2 px-5 py-3 font-medium text-gray-700 transition-all duration-300 shadow-md rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 hover:shadow-lg">
-        <RefreshCw className="w-5 h-5" />
-        Refresh
-      </button>
+      <p className="text-[10px] font-medium text-white/80 uppercase tracking-wide">{title}</p>
+      <p className="text-2xl font-bold">{value}</p>
     </div>
   </div>
 );
 
-const StatsSection = ({ requests, parseBudget }) => {
-  const total = requests.length;
-  const pending = requests.filter(r => r.status === 'open').length;
-  const accepted = requests.filter(r => r.status === 'deal_done').length;
-  const budget = requests.reduce((sum, r) => sum + parseBudget(r.budget), 0);
-
-  return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard title="Total Requests" value={total} icon={Target} color="blue" />
-      <StatCard title="Pending" value={pending} icon={Clock} color="green" />
-      <StatCard title="Accepted" value={accepted} icon={Check} color="purple" />
-      <StatCard title="Revenue Potential" value={`NPR ${budget.toLocaleString()}`} icon={DollarSign} color="orange" />
-    </div>
-  );
-};
-
-const StatCard = ({ title, value, icon: Icon, color }) => {
-  const colorClasses = {
-    blue: "from-blue-500 via-blue-600 to-indigo-600",
-    green: "from-emerald-500 via-emerald-600 to-green-600",
-    purple: "from-purple-500 via-purple-600 to-violet-600",
-    orange: "from-amber-500 via-orange-600 to-yellow-600"
-  };
-
-  return (
-    <div className={`relative overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-br ${colorClasses[color]} p-6 text-white shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]`}>
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute w-32 h-32 bg-white rounded-full -right-6 -top-6 opacity-20 blur-xl"></div>
-        <div className="absolute w-32 h-32 bg-white rounded-full -left-6 -bottom-6 opacity-10 blur-xl"></div>
-      </div>
-      <div className="relative z-10">
-        <div className="p-3 mb-4 rounded-xl bg-white/20 backdrop-blur-sm w-fit">
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-        <h3 className="text-sm font-medium tracking-wide text-white/90">{title}</h3>
-        <p className="text-3xl font-bold tracking-tight text-white">{value}</p>
-      </div>
-    </div>
-  );
-};
-
-const FilterSection = ({ filter, onFilterChange, searchTerm, onSearchChange }) => (
-  <div className="p-6 border border-gray-100 shadow-xl bg-gradient-to-br from-white to-gray-50 rounded-2xl">
-    <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-      <div className="flex items-center gap-4">
-        <Filter className="w-5 h-5 text-indigo-600" />
-        <select value={filter} onChange={onFilterChange} className="px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500">
-          <option value="">All Event Types</option>
-          <option value="Wedding">💒 Wedding</option>
-          <option value="Birthday">🎂 Birthday</option>
-          <option value="Corporate">🏢 Corporate</option>
-          <option value="Conference">🎤 Conference</option>
-        </select>
-      </div>
-
-      <div className="relative flex-1 max-w-md">
-        <Search className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
-        <input
-          type="text"
-          placeholder="Search..."
-          value={searchTerm}
-          onChange={onSearchChange}
-          className="w-full py-2 pl-10 pr-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-        />
-      </div>
-    </div>
+const InfoBox = ({ label, value, highlight }) => (
+  <div className={`p-2.5 rounded-xl border ${highlight ? "bg-emerald-50 border-emerald-200" : "bg-white/70 border-white"}`}>
+    <p className="text-[10px] text-gray-400">{label}</p>
+    <p className={`text-sm font-bold truncate ${highlight ? "text-emerald-700" : "text-gray-800"}`}>{value}</p>
   </div>
 );
 
 const LoadingSpinner = () => (
-  <div className="flex items-center justify-center h-96">
-    <RefreshCw className="w-16 h-16 text-blue-500 animate-spin" />
+  <div className="flex flex-col items-center justify-center h-80">
+    <RefreshCw className="w-10 h-10 text-indigo-500 animate-spin mb-3" />
+    <p className="text-sm text-gray-500">Loading requests…</p>
   </div>
 );
 
 const ErrorDisplay = ({ error, onRefresh }) => (
-  <div className="p-6 border-l-4 border-red-500 bg-red-50 rounded-2xl">
-    <AlertTriangle className="w-8 h-8 mb-2 text-red-500" />
-    <p className="mb-4 text-red-600">{error}</p>
-    <button onClick={onRefresh} className="px-4 py-2 text-white bg-red-500 rounded-lg">
-      Try Again
-    </button>
+  <div className="p-5 border-l-4 border-red-500 bg-red-50 rounded-2xl">
+    <AlertTriangle className="w-5 h-5 mb-2 text-red-500" />
+    <p className="text-sm text-red-600 mb-3">{error}</p>
+    <button onClick={onRefresh} className="px-4 py-2 text-sm text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors">Try Again</button>
   </div>
 );
 
-const EmptyState = ({ filter, searchTerm, onRefresh }) => (
-  <div className="p-12 text-center bg-white border border-gray-200 col-span-full rounded-2xl">
-    <Sparkles className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-    <h3 className="mb-3 text-2xl font-bold text-gray-800">No Event Requests Found</h3>
-    <p className="mb-8 text-gray-600">
-      {filter || searchTerm
-        ? "No event requests match your current filter or search criteria."
-        : "No event requests available at the moment. Check back soon!"
-      }
-    </p>
-    <button onClick={onRefresh} className="px-8 py-4 text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl">
-      Refresh Requests
-    </button>
-  </div>
-);
+const EmptyState = ({ tab, hasFilter, onRefresh }) => {
+  const msgs = {
+    available: { icon: "📭", title: "No Open Requests",   desc: "No available event requests right now. Check back soon!" },
+    pending:   { icon: "⏳", title: "No Pending Offers",  desc: "You haven't submitted any offers yet. Explore available requests." },
+    won:       { icon: "🏆", title: "No Deals Won Yet",    desc: "Keep negotiating — your first deal is coming!" },
+  };
+  const m = msgs[tab] || msgs.available;
+  return (
+    <div className="col-span-full p-12 text-center bg-white border border-gray-200 rounded-2xl">
+      <div className="text-5xl mb-3">{m.icon}</div>
+      <h3 className="text-lg font-bold text-gray-700 mb-2">{m.title}</h3>
+      <p className="text-sm text-gray-500 mb-5 max-w-xs mx-auto">
+        {hasFilter ? "No requests match your search or filter. Try adjusting them." : m.desc}
+      </p>
+      <button onClick={onRefresh} className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all">
+        Refresh
+      </button>
+    </div>
+  );
+};
+
+const getEventIcon = (t) => ({ Wedding: "💒", Sports: "⚽", Corporate: "🏢", Conference: "🎤", Birthday: "🎂", Party: "🎉" }[t] || "🎉");
+
+const getWinProbability = (requestBudget, proposed) => {
+  if (!proposed || !requestBudget) return null;
+  const ratio = parseInt(proposed) / requestBudget;
+  if (ratio <= 0.9) return { label: "High",   color: "text-green-600", barClass: "bg-green-500 w-4/5" };
+  if (ratio <= 1.0) return { label: "Medium", color: "text-amber-600", barClass: "bg-amber-500 w-1/2" };
+  return             { label: "Low",    color: "text-red-600",   barClass: "bg-red-500 w-1/5" };
+};
 
 export default EventRequest;
