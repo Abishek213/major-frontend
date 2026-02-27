@@ -1,73 +1,77 @@
-import { MessageSquare, Wand2, User, Building, MapPin, Calendar, Search, Star, Clock, RefreshCw, AlertCircle } from 'lucide-react';
+// src/components/ai/user/EventRequestAssistant.jsx
+import { MessageSquare, Wand2, User, Building, MapPin, Calendar, Search, Star, Clock, AlertCircle,DollarSign,Users } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import eventRequestService from '../../../services/eventRequestService';
+import { useEventRequest } from '@/hooks/useEventRequest';
+import { useAuth } from '@/context/AuthContext';
 
-// ─── Helper: pull display-friendly entities from the AI response ──────────────
-const parseAIEntities = (aiInsights, fallbackText = '') => {
-  if (!aiInsights) return null;
-
-  // Prefer backend-extracted entities; fall back to local keyword scan
-  const extracted = aiInsights.extractedEntities || {};
-
-  const text = fallbackText.toLowerCase();
-  return {
-    eventType: extracted.eventType
-      || (text.includes('tech') ? 'Technology'
-        : text.includes('music') ? 'Music'
-        : text.includes('business') ? 'Business'
-        : text.includes('wedding') ? 'Wedding'
-        : text.includes('sports') ? 'Sports'
-        : 'General'),
-    location: extracted.locations?.[0]
-      || (text.includes('kathmandu') ? 'Kathmandu'
-        : text.includes('pokhara') ? 'Pokhara'
-        : text.includes('online') ? 'Online'
-        : 'Not specified'),
-    date: extracted.date
-      || (text.includes('next month') ? 'Next Month'
-        : text.includes('next week') ? 'Next Week'
-        : text.includes('weekend') ? 'This Weekend'
-        : 'Flexible'),
-    budget: extracted.budget
-      || (text.includes('free') ? 'Free'
-        : text.includes('$') ? 'Paid'
-        : 'Not specified'),
-    attendees: extracted.attendees
-      || (text.includes('small') ? 'Small (< 50)'
-        : text.includes('large') ? 'Large (> 200)'
-        : 'Medium (50–200)')
-  };
-};
-
-// ─── Component ────────────────────────────────────────────────────────────────
-const EventRequestAssistant = ({ currentUser }) => {
+const EventRequestAssistant = () => {
+  const { user, isAuthenticated, loading: authLoading } = useAuth(); // Add authLoading
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Hello! I'm your AI Event Assistant. Describe what you're looking for in plain language — for example: 'I want a tech conference in Kathmandu next month for 100 people' — and I'll find matching organizers for you.",
+      text: "Hello! I'm your AI Event Assistant. Describe what you're looking for in plain language — for example: 'I want a wedding in Kathmandu for 100 people with 9 lakh budget' — and I'll find matching organizers for you.",
       sender: 'ai',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
-  const [entities, setEntities] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState(null);
-  const [lastRequestId, setLastRequestId] = useState(null);
+  
+  // Debug auth state
+  useEffect(() => {
+    console.log('🔐 Auth State:', { 
+      isAuthenticated, 
+      authLoading,
+      user: user ? { id: user.id, name: user.fullname } : null 
+    });
+  }, [user, isAuthenticated, authLoading]);
+
+  // USE THE REAL HOOK
+  const { processRequest, loading: aiLoading, error } = useEventRequest();
 
   const chatEndRef = useRef(null);
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => { 
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); 
+  }, [messages]);
 
-  // ── Submit handler ──────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim() || loading) return;
+    if (!input.trim() || aiLoading) return;
+
+    // Wait for auth to finish loading
+    if (authLoading) {
+      console.log('⏳ Auth still loading, please wait...');
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        text: "Authentication is still loading. Please wait a moment and try again.",
+        sender: 'ai',
+        isError: true,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+      return;
+    }
+
+    console.log('📝 Submit clicked. Auth check:', { 
+      hasUser: !!user, 
+      userId: user?.id,
+      isAuthenticated 
+    });
+
+    if (!user || !user.id) {
+      console.error('❌ No authenticated user');
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        text: "Please log in to use the AI Event Assistant.",
+        sender: 'ai',
+        isError: true,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+      return;
+    }
 
     const userText = input.trim();
     setInput('');
-    setError(null);
 
-    // Append user message immediately
+    // Add user message
     setMessages(prev => [...prev, {
       id: Date.now(),
       text: userText,
@@ -75,108 +79,75 @@ const EventRequestAssistant = ({ currentUser }) => {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }]);
 
-    setLoading(true);
+    // Call REAL API through the hook
+    const result = await processRequest(userText);
+    
+    console.log('📦 Assistant received:', result);
 
-    try {
-      // ── Call backend (POST /event-requests with useAI: true) ──────────────
-      const result = await eventRequestService.processNaturalLanguageRequest(
-        userText,
-        currentUser?.id,
-        {} // optional structured overrides
-      );
-
-      const aiInsights = result?.data?.aiInsights;
-      const requestId  = result?.data?.eventRequest?._id;
-
-      if (requestId) setLastRequestId(requestId);
-
-      // Parse entities for the detection panel
-      const detectedEntities = parseAIEntities(aiInsights, userText);
-      setEntities(detectedEntities);
-
-      // Build organizer suggestions list
-      const matchedOrganizers =
-        aiInsights?.matchedOrganizers ||
-        aiInsights?.filteredSuggestions ||
-        [];
-
-      const budgetNote = aiInsights?.budgetAnalysis?.note || aiInsights?.budgetAnalysis?.feasibility;
-      const tip        = aiInsights?.suggestions?.tip;
-
-      // Build AI reply message
-      const replyText = matchedOrganizers.length
-        ? `I found ${matchedOrganizers.length} organizer${matchedOrganizers.length > 1 ? 's' : ''} that match your request. Here are the top recommendations:`
-        : result?.message || "I've registered your request. No AI organizer matches returned yet — you can check back or browse available organizers manually.";
-
+    if (result?.success && result.organizers && result.organizers.length > 0) {
+      // Success - show organizers
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
-        text: replyText,
+        text: `I found ${result.organizers.length} organizers that match your request:`,
         sender: 'ai',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        suggestions: matchedOrganizers.slice(0, 5).map(o => ({
-          name:           o.name || o.fullname || 'Organizer',
-          match:          o.matchScore ? `${o.matchScore}%` : '—',
-          specialization: o.specialization || o.category || '',
-          rating:         o.rating,
-          responseTime:   o.responseTime,
-          completedEvents: o.completedEvents
-        })),
-        budgetNote,
-        tip,
-        requestId
+        organizers: result.organizers,
+        entities: result.entities,
+        budgetAnalysis: result.budgetAnalysis
       }]);
-
-    } catch (err) {
-      console.error('Assistant error:', err);
-      const errMsg = err?.response?.data?.error || err.message || 'Something went wrong.';
-      setError(errMsg);
+    } 
+    else if (result?.success && result.entities) {
+      // Extracted entities but no organizers
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
-        text: `Sorry, I ran into an issue: ${errMsg}`,
+        text: `I've registered your request. No matching organizers found yet. Check back later.`,
+        sender: 'ai',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        entities: result.entities
+      }]);
+    }
+    else if (error) {
+      // Show error
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        text: `Sorry, I couldn't process your request: ${error}`,
         sender: 'ai',
         isError: true,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── Reprocess last request ──────────────────────────────────────────────────
-  const handleReprocess = async () => {
-    if (!lastRequestId || loading) return;
-    setLoading(true);
-    try {
-      await eventRequestService.reprocessWithAI(lastRequestId);
-      const result = await eventRequestService.getEventRequestWithAIInsights(lastRequestId);
-      const aiInsights = result?.data?.aiInsights;
+    } else {
+      // Fallback
       setMessages(prev => [...prev, {
-        id: Date.now(),
-        text: 'Re-processed with AI. Updated insights are now attached to your request.',
+        id: Date.now() + 1,
+        text: `Your request has been submitted. Check back later for matches.`,
         sender: 'ai',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        suggestions: (aiInsights?.matchedOrganizers || []).slice(0, 5).map(o => ({
-          name:           o.name || 'Organizer',
-          match:          o.matchScore ? `${o.matchScore}%` : '—',
-          specialization: o.specialization || ''
-        }))
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
-    } catch (err) {
-      setError('Re-process failed: ' + err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
+  const handleQuickPrompt = (prompt) => {
+    setInput(prompt);
+  };
+
+  // Show loading state while auth is loading
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
+        <div className="w-12 h-12 border-4 border-blue-200 rounded-full border-t-blue-600 animate-spin"></div>
+        <p className="mt-4 text-gray-600">Loading authentication...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col">
+    <div className="flex flex-col bg-white border border-gray-200 shadow-sm rounded-2xl">
 
       {/* Header */}
       <div className="p-6 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-green-100 to-emerald-100">
               <Wand2 className="w-6 h-6 text-green-600" />
             </div>
             <div>
@@ -184,37 +155,34 @@ const EventRequestAssistant = ({ currentUser }) => {
               <p className="text-sm text-gray-500">Describe your event in plain language</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {lastRequestId && (
-              <button
-                onClick={handleReprocess}
-                disabled={loading}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-full hover:bg-gray-50 disabled:opacity-50 transition-colors"
-                title="Re-run AI on your last request"
-              >
-                <RefreshCw className="w-3 h-3" />
-                Re-run AI
-              </button>
-            )}
-            <span className="text-xs text-gray-400">Powered by AI</span>
-          </div>
+          <span className="text-xs text-gray-400">Powered by AI</span>
         </div>
+        {!isAuthenticated && !authLoading && (
+          <div className="p-2 mt-2 text-xs rounded-lg text-amber-600 bg-amber-50">
+            Please log in to use the AI assistant
+          </div>
+        )}
       </div>
 
-      {/* Quick prompts */}
+      {/* Quick prompts - disabled if not authenticated */}
       <div className="px-4 py-3 border-b border-gray-100">
-        <p className="text-xs text-gray-500 mb-2">Try saying:</p>
+        <p className="mb-2 text-xs text-gray-500">Try saying:</p>
         <div className="flex flex-wrap gap-2">
           {[
-            'Tech conference in Kathmandu next month',
-            'Weekend music festival for 200 people',
-            'Free online workshop next week',
-            'Business networking event with $5000 budget'
+            'I want a wedding in Kathmandu for 100 people with 9 lakh budget',
+            'Need a conference venue in Pokhara for 200 people next month',
+            'Looking for birthday party organizer in Lalitpur with 5 lakh budget',
+            'Corporate event for 50 people in Butwal'
           ].map((prompt, idx) => (
             <button
               key={idx}
-              onClick={() => setInput(prompt)}
-              className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors"
+              onClick={() => isAuthenticated ? handleQuickPrompt(prompt) : null}
+              disabled={!isAuthenticated}
+              className={`px-3 py-1.5 text-xs rounded-full transition-colors ${
+                isAuthenticated 
+                  ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' 
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+              }`}
             >
               {prompt}
             </button>
@@ -222,16 +190,8 @@ const EventRequestAssistant = ({ currentUser }) => {
         </div>
       </div>
 
-      {/* Error banner */}
-      {error && (
-        <div className="mx-4 mt-3 flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
       {/* Chat messages */}
-      <div className="flex-1 h-96 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 p-4 space-y-4 overflow-y-auto h-96">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
@@ -256,56 +216,47 @@ const EventRequestAssistant = ({ currentUser }) => {
 
               <p className="text-sm">{msg.text}</p>
 
-              {/* Budget / tip notes */}
-              {(msg.budgetNote || msg.tip) && (
-                <div className="mt-2 space-y-1">
-                  {msg.budgetNote && (
-                    <p className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                      💰 Budget: {msg.budgetNote}
-                    </p>
-                  )}
-                  {msg.tip && (
-                    <p className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      💡 {msg.tip}
-                    </p>
-                  )}
+              {/* Budget Analysis */}
+              {msg.budgetAnalysis && (
+                <div className="p-2 mt-2 rounded-lg bg-green-50">
+                  <p className="text-xs font-medium text-green-700">💰 Budget Analysis:</p>
+                  <p className="text-xs text-gray-600">
+                    Estimated: NPR {msg.budgetAnalysis.estimatedCost?.low?.toLocaleString()} - {msg.budgetAnalysis.estimatedCost?.high?.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-600">Feasibility: {msg.budgetAnalysis.feasibility}</p>
                 </div>
               )}
 
               {/* Organizer suggestions */}
-              {msg.suggestions?.length > 0 && (
+              {msg.organizers && msg.organizers.length > 0 && (
                 <div className="mt-3 space-y-2">
-                  {msg.suggestions.map((s, idx) => (
-                    <div key={idx} className="p-3 bg-white/20 rounded-lg">
-                      <div className="flex justify-between items-start gap-2">
+                  {msg.organizers.map((organizer, idx) => (
+                    <div key={organizer.id || idx} className="p-3 bg-white border border-gray-200 rounded-lg">
+                      <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{s.name}</p>
-                          {s.specialization && (
-                            <p className="text-xs opacity-80">{s.specialization}</p>
-                          )}
+                          <p className="text-sm font-medium">{organizer.name}</p>
+                          <p className="text-xs text-gray-500">{organizer.specialization}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            {s.rating && (
-                              <span className="flex items-center gap-0.5 text-xs opacity-75">
-                                <Star className="w-3 h-3" /> {s.rating}
+                            {organizer.rating && (
+                              <span className="flex items-center gap-0.5 text-xs">
+                                <Star className="w-3 h-3 text-yellow-500" /> {organizer.rating}
                               </span>
                             )}
-                            {s.responseTime && (
-                              <span className="flex items-center gap-0.5 text-xs opacity-75">
-                                <Clock className="w-3 h-3" /> {s.responseTime}
+                            {organizer.responseTime && (
+                              <span className="flex items-center gap-0.5 text-xs">
+                                <Clock className="w-3 h-3" /> {organizer.responseTime}
                               </span>
                             )}
-                            {s.completedEvents && (
-                              <span className="text-xs opacity-75">
-                                {s.completedEvents} events
+                            {organizer.completedEvents > 0 && (
+                              <span className="text-xs">
+                                {organizer.completedEvents} events
                               </span>
                             )}
                           </div>
                         </div>
-                        {s.match && s.match !== '—' && (
-                          <span className="shrink-0 px-2 py-1 bg-green-500 text-white text-xs rounded-full">
-                            {s.match} match
-                          </span>
-                        )}
+                        <span className="px-2 py-1 text-xs text-white bg-green-500 rounded-full shrink-0">
+                          {organizer.matchScore}% match
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -316,9 +267,9 @@ const EventRequestAssistant = ({ currentUser }) => {
         ))}
 
         {/* Typing indicator */}
-        {loading && (
+        {aiLoading && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-2xl rounded-bl-none p-4">
+            <div className="p-4 bg-gray-100 rounded-bl-none rounded-2xl">
               <div className="flex items-center gap-2">
                 <div className="flex space-x-1">
                   {[0, 0.2, 0.4].map((delay, i) => (
@@ -338,26 +289,88 @@ const EventRequestAssistant = ({ currentUser }) => {
         <div ref={chatEndRef} />
       </div>
 
+      {/* Detected entity panel - Show from last AI message */}
       {/* Detected entity panel */}
-      {entities && (
-        <div className="px-4 py-3 border-t border-gray-100">
-          <div className="flex items-center gap-2 mb-2">
-            <Search className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-medium text-gray-800">AI Detected:</span>
+{messages.length > 0 && messages[messages.length-1].sender === 'ai' && messages[messages.length-1].entities && (
+  <div className="px-4 py-3 border-t border-gray-100">
+    <div className="flex items-center gap-2 mb-2">
+      <Search className="w-4 h-4 text-blue-600" />
+      <span className="text-sm font-medium text-gray-800">AI Detected:</span>
+    </div>
+    <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+      {/* Show Event Type */}
+      {messages[messages.length-1].entities.eventType && (
+        <div className="bg-blue-50 rounded-lg p-2.5">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Building className="w-3 h-3 text-blue-600" />
+            <span className="text-xs font-medium text-blue-700">Event</span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-            {Object.entries(entities).map(([key, value]) => (
-              <div key={key} className="bg-blue-50 rounded-lg p-2.5">
-                <div className="flex items-center gap-1.5 mb-1">
-                  {key === 'location'  && <MapPin    className="w-3 h-3 text-blue-600" />}
-                  {key === 'date'      && <Calendar  className="w-3 h-3 text-blue-600" />}
-                  {key === 'eventType' && <Building  className="w-3 h-3 text-blue-600" />}
-                  <span className="text-xs font-medium text-blue-700 capitalize">{key}</span>
-                </div>
-                <p className="text-xs text-gray-800 font-medium">{value}</p>
-              </div>
-            ))}
+          <p className="text-xs font-medium text-gray-800">
+            {messages[messages.length-1].entities.eventType}
+          </p>
+        </div>
+      )}
+      
+      {/* Show Location */}
+      {messages[messages.length-1].entities.location && (
+        <div className="bg-blue-50 rounded-lg p-2.5">
+          <div className="flex items-center gap-1.5 mb-1">
+            <MapPin className="w-3 h-3 text-blue-600" />
+            <span className="text-xs font-medium text-blue-700">Location</span>
           </div>
+          <p className="text-xs font-medium text-gray-800">
+            {messages[messages.length-1].entities.location}
+          </p>
+        </div>
+      )}
+      
+      {/* Show Date */}
+      {messages[messages.length-1].entities.date && (
+        <div className="bg-blue-50 rounded-lg p-2.5">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Calendar className="w-3 h-3 text-blue-600" />
+            <span className="text-xs font-medium text-blue-700">Date</span>
+          </div>
+          <p className="text-xs font-medium text-gray-800">
+            {messages[messages.length-1].entities.date}
+          </p>
+        </div>
+      )}
+      
+      {/* Show Guest Count - NOW USING guestCount */}
+      {messages[messages.length-1].entities.guestCount && (
+        <div className="bg-blue-50 rounded-lg p-2.5">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Users className="w-3 h-3 text-blue-600" />
+            <span className="text-xs font-medium text-blue-700">Guests</span>
+          </div>
+          <p className="text-xs font-medium text-gray-800">
+            {messages[messages.length-1].entities.guestCount}
+          </p>
+        </div>
+      )}
+      
+      {/* Show Budget */}
+      {messages[messages.length-1].entities.budget && (
+        <div className="bg-blue-50 rounded-lg p-2.5">
+          <div className="flex items-center gap-1.5 mb-1">
+            <DollarSign className="w-3 h-3 text-blue-600" />
+            <span className="text-xs font-medium text-blue-700">Budget</span>
+          </div>
+          <p className="text-xs font-medium text-gray-800">
+            {messages[messages.length-1].entities.budget}
+          </p>
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-start gap-2 p-3 mx-4 mb-3 text-sm text-red-700 border border-red-200 rounded-lg bg-red-50">
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
@@ -368,14 +381,14 @@ const EventRequestAssistant = ({ currentUser }) => {
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="Describe your event needs… e.g. 'tech conference in Kathmandu for 200 people next month'"
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
-            disabled={loading}
+            placeholder="Describe your event needs… e.g. 'wedding in Kathmandu for 100 people with 9 lakh budget'"
+            className="flex-1 px-4 py-3 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
+            disabled={aiLoading || !isAuthenticated || authLoading}
           />
           <button
             type="submit"
-            disabled={loading || !input.trim()}
-            className="px-5 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-2 shrink-0"
+            disabled={aiLoading || !input.trim() || !isAuthenticated || authLoading}
+            className="flex items-center gap-2 px-5 py-3 text-white transition-opacity rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 disabled:opacity-50 shrink-0"
           >
             <MessageSquare className="w-4 h-4" />
             <span className="text-sm font-medium">Send</span>
